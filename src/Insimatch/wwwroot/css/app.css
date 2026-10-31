@@ -191,7 +191,7 @@ button, input, textarea { font-family: inherit; }
 .grade-prod { grid-template-columns: 1.5fr 1fr; }
 .prod-lado { display: grid; gap: 18px; }
 .grade-qual { grid-template-columns: minmax(300px, 1fr) 1.4fr; }
-.desvios { display: grid; gap: 18px; grid-template-columns: 1fr 1fr; align-content: stretch; }
+.desvios { display: grid; gap: 18px; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr auto; }
 .desvios .cartao { justify-content: space-between; }
 
 .cartao {
