@@ -2,7 +2,6 @@
 @{
     var sVol = Avaliacao.StatusVolume(C);
     var sQual = Avaliacao.StatusQualidade(C);
-    var sGeral = Avaliacao.Geral(C);
     var media = C.MediaDiaria;
     // Escala da barra: a maior entre as metas e a média realizada (+5% de folga)
     var escala = (double)Math.Max(Math.Max(C.MetaPro, C.MetaPremium), media) * 1.05;
@@ -12,29 +11,7 @@
 }
 
 <section class="painel">
-    <header class="painel-topo">
-        <div class="pessoa">
-            <div class="avatar @Avaliacao.Classe(sGeral)">@C.Iniciais</div>
-            <div>
-                <div class="rotulo-sup">Resultado individual</div>
-                <h1>@(string.IsNullOrWhiteSpace(C.Nome) ? "Nome do colaborador" : C.Nome)</h1>
-                <div class="pessoa-info">
-                    @if (!string.IsNullOrWhiteSpace(C.Equipe))
-                    {
-                        <span>@C.Equipe</span><span class="ponto">•</span>
-                    }
-                    <span>@C.MesPorExtenso</span>
-                </div>
-            </div>
-        </div>
-        <div class="selo @Avaliacao.Classe(sGeral)">
-            <span class="selo-luz"></span>
-            <div>
-                <div class="selo-rotulo">Resultado geral</div>
-                <div class="selo-valor">@Avaliacao.RotuloGeral(sGeral)</div>
-            </div>
-        </div>
-    </header>
+    <Cabecalho C="C" />
 
     <div class="secao-titulo"><span>01</span> Produção</div>
     <div class="grade grade-prod">
@@ -136,14 +113,7 @@
     </div>
 
     <div class="secao-titulo"><span>03</span> Parecer</div>
-    <article class="cartao parecer @Avaliacao.Classe(sGeral)">
-        <div class="aspas">“</div>
-        <p>@(string.IsNullOrWhiteSpace(C.Parecer) ? Avaliacao.GerarParecer(C) : C.Parecer)</p>
-        <div class="parecer-assinatura">
-            <span>@(string.IsNullOrWhiteSpace(C.Equipe) ? "Insimatch" : C.Equipe)</span>
-            <span>@C.MesPorExtenso</span>
-        </div>
-    </article>
+    <ParecerCartao C="C" />
 </section>
 
 @code {

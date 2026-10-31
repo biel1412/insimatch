@@ -88,54 +88,78 @@ public static class Avaliacao
         _ => "Abaixo do esperado"
     };
 
-    /// <summary>Gera um parecer sugerido com base nos números.</summary>
+    /// <summary>Gera um parecer formal com base nos números.</summary>
     public static string GerarParecer(Colaborador c)
     {
-        var nome = c.Nome.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "Colaborador";
-        var mes = c.MesPorExtenso.ToLowerInvariant();
+        var nome = string.IsNullOrWhiteSpace(c.Nome) ? "o(a) colaborador(a)" : c.Nome.Trim();
+        var periodo = c.MesPorExtenso.ToLowerInvariant();
+
+        if (c.Volume <= 0 || c.DiasConsiderados <= 0)
+            return $"Em análise aos indicadores de desempenho referentes a {periodo}, não constam registros " +
+                   $"suficientes de produção para {nome}, razão pela qual não é possível emitir avaliação conclusiva " +
+                   "para o período.";
+
         var media = c.MediaDiaria;
+        var geral = Geral(c);
         var partes = new List<string>();
 
-        partes.Add(Geral(c) switch
+        partes.Add($"Em análise aos indicadores de desempenho referentes a {periodo}, verifica-se que {nome} " + geral switch
         {
-            Status.Excelente => $"{nome}, seu resultado em {mes} foi excelente.",
-            Status.Bom => $"{nome}, você fechou {mes} com um bom resultado.",
-            Status.Atencao => $"{nome}, {mes} teve pontos positivos, mas há indicadores que pedem atenção.",
-            _ => $"{nome}, precisamos conversar sobre os indicadores de {mes} e montar um plano juntos."
+            Status.Excelente => "apresentou resultado excelente.",
+            Status.Bom => "apresentou resultado satisfatório.",
+            Status.Atencao => "apresentou resultado que requer atenção em parte dos indicadores.",
+            _ => "apresentou resultado abaixo do esperado."
         });
 
-        var prod = $"{c.Volume:N0} itens em {c.DiasConsiderados} dias trabalhados, uma média de {media:N1} por dia";
+        var prod = $"Foram realizados {c.Volume:N0} itens em {Plural(c.DiasConsiderados, "dia trabalhado", "dias trabalhados")}, " +
+                   $"o que corresponde a uma média de {media:N1} itens por dia";
         partes.Add(Nivel(c) switch
         {
-            NivelMeta.Premium => $"Foram {prod}, acima da meta Premium de {c.MetaPremium:N0}/dia.",
+            NivelMeta.Premium => $"{prod}, superando a meta Premium estabelecida ({c.MetaPremium:0.#}/dia).",
             NivelMeta.Pro when c.MetaPremium > 0 =>
-                $"Foram {prod}: meta Pro de {c.MetaPro:N0}/dia batida, faltando {c.MetaPremium - media:N1}/dia para a Premium.",
-            NivelMeta.Pro => $"Foram {prod}, acima da meta Pro de {c.MetaPro:N0}/dia.",
-            NivelMeta.Proximo or NivelMeta.Abaixo when c.MetaPro > 0 =>
-                $"Foram {prod}, faltando {c.MetaPro - media:N1}/dia para a meta Pro de {c.MetaPro:N0}/dia.",
+                $"{prod}, superando a meta Pro estabelecida ({c.MetaPro:0.#}/dia) e permanecendo {c.MetaPremium - media:N1} itens por dia abaixo da meta Premium ({c.MetaPremium:0.#}/dia).",
+            NivelMeta.Pro => $"{prod}, superando a meta Pro estabelecida ({c.MetaPro:0.#}/dia).",
+            NivelMeta.Proximo when c.MetaPro > 0 =>
+                $"{prod}, resultado próximo à meta Pro ({c.MetaPro:0.#}/dia), com diferença de {c.MetaPro - media:N1} itens por dia.",
+            NivelMeta.Abaixo when c.MetaPro > 0 =>
+                $"{prod}, inferior à meta Pro estabelecida ({c.MetaPro:0.#}/dia) em {c.MetaPro - media:N1} itens por dia.",
             NivelMeta.Proximo or NivelMeta.Abaixo =>
-                $"Foram {prod}, faltando {c.MetaPremium - media:N1}/dia para a meta Premium.",
-            _ => $"Foram {prod}."
+                $"{prod}, inferior à meta Premium estabelecida ({c.MetaPremium:0.#}/dia) em {c.MetaPremium - media:N1} itens por dia.",
+            _ => $"{prod}."
         });
 
-        if (c.Volume > 0)
-        {
-            var desvios = c.TotalDesvios == 0
-                ? "sem nenhum desvio"
-                : $"com {c.DesviosInternos} desvio(s) interno(s) e {c.DesviosExternos} externo(s)";
-            partes.Add(QualidadeOk(c)
-                ? $"A qualidade ficou em {c.Qualidade:N2}%, {desvios}, dentro do ideal de {QualidadeIdeal:N2}%."
-                : $"A qualidade ficou em {c.Qualidade:N2}%, {desvios}, abaixo do ideal de {QualidadeIdeal:N2}% — para esse volume, o máximo seria {DesviosPermitidos(c)} desvio(s).");
-        }
+        var desvios = c.TotalDesvios == 0
+            ? "sem registro de desvios internos ou externos"
+            : $"com {Plural(c.DesviosInternos, "desvio interno", "desvios internos", "nenhum desvio interno")} e " +
+              $"{Plural(c.DesviosExternos, "desvio externo", "desvios externos", "nenhum desvio externo")}";
+        partes.Add(QualidadeOk(c)
+            ? $"O índice de qualidade apurado foi de {c.Qualidade:N2}%, {desvios}, atendendo ao padrão mínimo de {QualidadeIdeal:N2}%."
+            : $"O índice de qualidade apurado foi de {c.Qualidade:N2}%, {desvios}, situando-se abaixo do padrão mínimo de {QualidadeIdeal:N2}%. " +
+              $"Para o volume realizado, o limite seria de {Plural(DesviosPermitidos(c), "desvio", "desvios", "nenhum desvio")}.");
 
-        partes.Add(Geral(c) switch
+        partes.Add(geral switch
         {
-            Status.Excelente => "Continue assim!",
-            Status.Bom => "Vamos buscar a próxima meta no mês que vem.",
-            Status.Atencao => "Com alguns ajustes, o próximo mês pode ser ainda melhor.",
-            _ => "Conte comigo para o plano de melhoria."
+            Status.Excelente => "Diante do exposto, o desempenho é avaliado como excelente, recomendando-se a manutenção das práticas adotadas.",
+            Status.Bom => "Diante do exposto, o desempenho é considerado satisfatório, recomendando-se a continuidade do desenvolvimento com foco no alcance da meta Premium.",
+            Status.Atencao => "Diante do exposto, recomenda-se o acompanhamento dos indicadores que não atingiram o padrão esperado, com definição de ações de melhoria para o próximo período.",
+            _ => "Diante do exposto, recomenda-se a elaboração de um plano de ação, com acompanhamento periódico dos indicadores de produção e qualidade."
         });
 
         return string.Join(" ", partes);
+    }
+
+    private static string Plural(int n, string singular, string plural, string? zero = null) =>
+        n == 0 && zero is not null ? zero : n == 1 ? $"1 {singular}" : $"{n:N0} {plural}";
+
+    /// <summary>Reconhece pareceres gerados automaticamente pelas versões anteriores (informais).</summary>
+    public static bool ParecerAntigoAutomatico(string? texto)
+    {
+        if (string.IsNullOrWhiteSpace(texto)) return false;
+        string[] marcas =
+        {
+            ", seu resultado em ", ", você fechou ", "teve pontos positivos, mas", "precisamos conversar sobre os indicadores",
+            "Continue assim!", "Conte comigo para o plano", "Vamos manter a consistência", "Vamos buscar a "
+        };
+        return marcas.Any(m => texto.Contains(m, StringComparison.Ordinal));
     }
 }

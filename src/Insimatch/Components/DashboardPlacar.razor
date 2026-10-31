@@ -1,0 +1,112 @@
+@* Modelo "Placar": tabela de indicadores com situação + quadro de veredito *@
+@{
+    var media = C.MediaDiaria;
+    var sVol = Avaliacao.StatusVolume(C);
+    var sQual = Avaliacao.StatusQualidade(C);
+    var sGeral = Avaliacao.Geral(C);
+    var permitidos = Avaliacao.DesviosPermitidos(C);
+    var nivel = Avaliacao.Nivel(C);
+    var volumeBem = nivel is NivelMeta.Proximo or NivelMeta.Pro or NivelMeta.Premium;
+    var dias = C.DiasConsiderados;
+}
+
+<section class="painel modelo-placar">
+    <Cabecalho C="C" />
+
+    <div class="grade p-linha">
+        <article class="cartao neutro tabela-cartao">
+            <table class="placar">
+                <thead>
+                    <tr><th>Indicador</th><th>Realizado</th><th>Referência</th><th>Situação</th></tr>
+                </thead>
+                <tbody>
+                    <tr class="grupo"><td colspan="4">Produção</td></tr>
+                    <tr>
+                        <td>Média diária</td>
+                        <td class="num">@media.ToString("N1")<small>/dia</small></td>
+                        <td>@Referencia(C.MetaPro, C.MetaPremium, 1, "/dia")</td>
+                        <td><span class="tag @Avaliacao.Classe(sVol)">@Avaliacao.RotuloVolume(C)</span></td>
+                    </tr>
+                    <tr>
+                        <td>Volume do mês</td>
+                        <td class="num">@C.Volume.ToString("N0")</td>
+                        <td>@Referencia(C.MetaPro, C.MetaPremium, dias, "")</td>
+                        <td><span class="tag @Avaliacao.Classe(sVol)">@Avaliacao.RotuloVolume(C)</span></td>
+                    </tr>
+                    <tr>
+                        <td>Dias trabalhados</td>
+                        <td class="num">@dias</td>
+                        <td class="mudo">—</td>
+                        <td class="mudo">—</td>
+                    </tr>
+
+                    <tr class="grupo"><td colspan="4">Qualidade</td></tr>
+                    <tr>
+                        <td>Qualidade</td>
+                        <td class="num">@C.Qualidade.ToString("N2")<small>%</small></td>
+                        <td>≥ @Avaliacao.QualidadeIdeal.ToString("N2")%</td>
+                        <td><span class="tag @Avaliacao.Classe(sQual)">@Avaliacao.RotuloQualidade(C)</span></td>
+                    </tr>
+                    <tr>
+                        <td>Desvios internos</td>
+                        <td class="num">@C.DesviosInternos</td>
+                        <td class="mudo">—</td>
+                        <td class="mudo">—</td>
+                    </tr>
+                    <tr>
+                        <td>Desvios externos</td>
+                        <td class="num">@C.DesviosExternos</td>
+                        <td class="mudo">—</td>
+                        <td class="mudo">—</td>
+                    </tr>
+                    <tr>
+                        <td>Total de desvios</td>
+                        <td class="num">@C.TotalDesvios</td>
+                        <td>máx. @permitidos para 99,94%</td>
+                        <td>
+                            <span class="tag @(C.Volume > 0 && C.TotalDesvios <= permitidos ? "st-excelente" : "st-critico")">
+                                @(C.Volume > 0 && C.TotalDesvios <= permitidos ? "Dentro do limite" : "Acima do limite")
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </article>
+
+        <article class="cartao veredito @Avaliacao.Classe(sGeral)">
+            <div class="cartao-rotulo">Resultado geral</div>
+            <div class="veredito-anel">
+                <span>@Avaliacao.RotuloGeral(sGeral)</span>
+            </div>
+            <ul class="criterios">
+                <li class="@(Avaliacao.QualidadeOk(C) ? "ok" : "nao")">
+                    <b>@(Avaliacao.QualidadeOk(C) ? "✓" : "✕")</b>
+                    Qualidade no ideal (≥ 99,94%)
+                </li>
+                <li class="@(volumeBem ? "ok" : "nao")">
+                    <b>@(volumeBem ? "✓" : "✕")</b>
+                    Média diária na meta ou próxima da meta Pro
+                </li>
+                <li class="@(nivel == NivelMeta.Premium ? "ok" : "nao")">
+                    <b>@(nivel == NivelMeta.Premium ? "✓" : "—")</b>
+                    Meta Premium atingida
+                </li>
+            </ul>
+        </article>
+    </div>
+
+    <ParecerCartao C="C" />
+</section>
+
+@code {
+    [Parameter, EditorRequired] public Colaborador C { get; set; } = default!;
+
+    private static string Referencia(decimal pro, decimal premium, int multiplicador, string sufixo)
+    {
+        var partes = new List<string>();
+        var fmt = multiplicador == 1 ? "0.#" : "N0";
+        if (pro > 0) partes.Add($"Pro {(pro * multiplicador).ToString(fmt)}{sufixo}");
+        if (premium > 0) partes.Add($"Premium {(premium * multiplicador).ToString(fmt)}{sufixo}");
+        return partes.Count == 0 ? "—" : string.Join(" · ", partes);
+    }
+}

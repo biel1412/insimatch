@@ -14,7 +14,7 @@ Escrito em **C# com Blazor WebAssembly** e hospedado no **GitHub Pages**: abre d
 | **Qualidade** | Calculada pelos desvios: **(volume − desvios internos − desvios externos) ÷ volume**. O ideal é **≥ 99,94%**. |
 | **Resultado geral** | **Está bem** quando a qualidade está no ideal e a média diária está pelo menos próxima da Meta Pro (≥ 90%). **Excelente** quando, além disso, bate a Premium. |
 
-O painel também mostra o volume do mês, os dias trabalhados, os desvios internos e externos, o máximo de desvios para manter 99,94% com aquele volume, e o **parecer** (texto do gestor ou sugestão automática).
+O painel também mostra o volume do mês, os dias trabalhados, os desvios internos e externos, o máximo de desvios para manter 99,94% com aquele volume, e o **parecer** em linguagem formal (escrito pelo gestor ou gerado automaticamente a partir dos números).
 
 ## Como usar
 
@@ -22,7 +22,8 @@ O painel também mostra o volume do mês, os dias trabalhados, os desvios intern
 2. Na aba **Colaborador**, preencha volume, dias trabalhados, **Meta Pro** e **Meta Premium** (por dia) e os desvios (ou importe uma planilha `.csv` na aba **Lista**).
 3. Escreva o parecer ou clique em **✨ Gerar sugestão**.
 4. Clique em **▶ Modo apresentação** (ou **⛶ Tela cheia**) e compartilhe a tela no Teams.
-5. Use **‹ ›** no topo para passar de um colaborador para o próximo.
+5. Use **Cor** para trocar a cor da página (Noturno, Oceano, Esmeralda, Aurora, Claro) e **Modelo** para alternar o formato de apresentação (Cartões, Gráficos, Placar). A escolha fica salva no navegador.
+6. Use **‹ ›** no topo para passar de um colaborador para o próximo.
 
 ### Planilha CSV
 
@@ -56,7 +57,11 @@ Na primeira vez, confirme em **Settings → Pages** que a origem (*Source*) est�
 
 ```
 src/Insimatch/
-├── Components/Dashboard.razor   # painel de apresentação
+├── Components/Dashboard.razor   # modelo "Cartões"
+├── Components/DashboardGraficos.razor # modelo "Gráficos"
+├── Components/DashboardPlacar.razor   # modelo "Placar"
+├── Components/Cabecalho.razor   # cabeçalho comum
+├── Components/ParecerCartao.razor # parecer comum
 ├── Components/Medidor.razor     # medidor circular de qualidade
 ├── Components/LinhaMeta.razor   # comparação meta x realizado
 ├── Models/Colaborador.cs        # dados do colaborador

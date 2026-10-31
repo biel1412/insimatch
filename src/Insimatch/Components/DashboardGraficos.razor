@@ -1,0 +1,116 @@
+@* Modelo "Gráficos": colunas comparando média x metas, meia-lua de qualidade e barra de desvios *@
+@{
+    var media = C.MediaDiaria;
+    var sVol = Avaliacao.StatusVolume(C);
+    var sQual = Avaliacao.StatusQualidade(C);
+    var topo = (double)Math.Max(Math.Max(C.MetaPro, C.MetaPremium), media) * 1.12;
+    if (topo <= 0) topo = 1;
+    var permitidos = Avaliacao.DesviosPermitidos(C);
+    var escalaDesv = Math.Max(Math.Max(C.TotalDesvios, permitidos), 1) * 1.15;
+
+    // Meia-lua (escala igual ao medidor: 99–100% quando próximo do ideal)
+    var minimo = C.Qualidade >= 99m ? 99m : C.Qualidade >= 95m ? 95m : 0m;
+    double Fr(decimal v) => (double)Math.Clamp((v - minimo) / (100m - minimo), 0, 1);
+    var th = Math.PI * (1 - Fr(Avaliacao.QualidadeIdeal));
+    var mx1 = 100 + 64 * Math.Cos(th); var my1 = 110 - 64 * Math.Sin(th);
+    var mx2 = 100 + 96 * Math.Cos(th); var my2 = 110 - 96 * Math.Sin(th);
+}
+
+<section class="painel modelo-graficos">
+    <Cabecalho C="C" />
+
+    <div class="grade g-linha1">
+        <article class="cartao @Avaliacao.Classe(sVol)">
+            <div class="cartao-topo">
+                <span class="cartao-rotulo">Média diária × metas <em>· itens por dia trabalhado</em></span>
+                <span class="chip">@Avaliacao.RotuloVolume(C)</span>
+            </div>
+            <div class="colunas">
+                <div class="coluna realizado">
+                    <span class="col-valor">@media.ToString("N1")</span>
+                    <div class="col-barra" style="height:@Pct((double)media / topo)"></div>
+                    <span class="col-nome">Realizado</span>
+                </div>
+                @if (C.MetaPro > 0)
+                {
+                    <div class="coluna meta @(media >= C.MetaPro ? "batida" : "")">
+                        <span class="col-valor">@C.MetaPro.ToString("0.#")</span>
+                        <div class="col-barra" style="height:@Pct((double)C.MetaPro / topo)"></div>
+                        <span class="col-nome">Meta Pro</span>
+                    </div>
+                }
+                @if (C.MetaPremium > 0)
+                {
+                    <div class="coluna meta @(media >= C.MetaPremium ? "batida" : "")">
+                        <span class="col-valor">@C.MetaPremium.ToString("0.#")</span>
+                        <div class="col-barra" style="height:@Pct((double)C.MetaPremium / topo)"></div>
+                        <span class="col-nome">Meta Premium</span>
+                    </div>
+                }
+            </div>
+            <div class="rodape">
+                <span>@C.Volume.ToString("N0") itens em @C.DiasConsiderados dias trabalhados</span>
+                @if (C.MetaPro > 0)
+                {
+                    <span>@((media / C.MetaPro * 100).ToString("N0"))% da meta Pro</span>
+                }
+            </div>
+        </article>
+
+        <article class="cartao @Avaliacao.Classe(sQual)">
+            <div class="cartao-topo">
+                <span class="cartao-rotulo">Qualidade</span>
+                <span class="chip">@Avaliacao.RotuloQualidade(C)</span>
+            </div>
+            <div class="meia-lua">
+                <svg viewBox="0 0 200 124">
+                    <defs>
+                        <linearGradient id="ml-grad" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" class="g1" />
+                            <stop offset="100%" class="g2" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M20 110 A80 80 0 0 1 180 110" pathLength="100" class="ml-trilho" />
+                    <path d="M20 110 A80 80 0 0 1 180 110" pathLength="100" class="ml-valor" stroke="url(#ml-grad)"
+                          stroke-dasharray="@F(Fr(C.Qualidade) * 100) 100" />
+                    <line x1="@F(mx1)" y1="@F(my1)" x2="@F(mx2)" y2="@F(my2)" class="marca-meta" />
+                </svg>
+                <div class="ml-texto">
+                    <div class="ml-valor-txt">@C.Qualidade.ToString("N2")<small>%</small></div>
+                    <div class="ml-meta">ideal ≥ @Avaliacao.QualidadeIdeal.ToString("N2")%</div>
+                </div>
+            </div>
+
+            <div class="desv-barra-bloco">
+                <div class="desv-legenda">
+                    <span><i class="leg int"></i>Internos @C.DesviosInternos</span>
+                    <span><i class="leg ext"></i>Externos @C.DesviosExternos</span>
+                    <span class="desv-max">máx. @permitidos</span>
+                </div>
+                <div class="desv-barra">
+                    <div class="seg int" style="width:@Pct(C.DesviosInternos / escalaDesv)"></div>
+                    <div class="seg ext" style="width:@Pct(C.DesviosExternos / escalaDesv)"></div>
+                    <span class="desv-limite" style="left:@Pct(permitidos / escalaDesv)"></span>
+                </div>
+            </div>
+        </article>
+    </div>
+
+    <div class="grade g-kpis">
+        <div class="kpi"><span>Volume do mês</span><strong>@C.Volume.ToString("N0")</strong></div>
+        <div class="kpi"><span>Dias trabalhados</span><strong>@C.DiasConsiderados</strong></div>
+        <div class="kpi"><span>Desvios internos</span><strong>@C.DesviosInternos</strong></div>
+        <div class="kpi"><span>Desvios externos</span><strong>@C.DesviosExternos</strong></div>
+    </div>
+
+    <ParecerCartao C="C" />
+</section>
+
+@code {
+    [Parameter, EditorRequired] public Colaborador C { get; set; } = default!;
+
+    private static string Pct(double v) =>
+        (Math.Clamp(v, 0, 1) * 100).ToString("0.#", CultureInfo.InvariantCulture) + "%";
+
+    private static string F(double v) => v.ToString("0.##", CultureInfo.InvariantCulture);
+}

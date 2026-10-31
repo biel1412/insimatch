@@ -4,7 +4,7 @@
 
 <PageTitle>Insimatch · @(Atual?.Nome ?? "Resultado individual")</PageTitle>
 
-<div class="app @(Apresentacao ? "modo-apresentacao" : "")">
+<div class="app @(Apresentacao ? "modo-apresentacao" : "")" data-tema="@Temas[TemaIdx].Id">
     <aside class="lateral">
         <div class="marca">
             <div class="marca-logo">Insi<span>match</span></div>
@@ -65,10 +65,10 @@
 
                 <div class="form-grupo">
                     Parecer
-                    <button class="link" @onclick="GerarParecerAsync">✨ Gerar sugestão</button>
+                    <button class="link" @onclick="GerarParecerAsync">✨ Gerar parecer formal</button>
                 </div>
                 <textarea rows="6" @bind="Atual.Parecer" @bind:event="oninput" @bind:after="SalvarAsync"
-                          placeholder="Escreva o parecer ou clique em “Gerar sugestão”. Se ficar vazio, o painel mostra um parecer automático."></textarea>
+                          placeholder="Escreva o parecer ou clique em “Gerar parecer formal”. Se ficar vazio, o painel mostra o parecer formal automático, sempre atualizado com os números."></textarea>
 
                 <div class="acoes">
                     <button class="btn" @onclick="NovoAsync">+ Novo</button>
@@ -128,6 +128,12 @@
                 </div>
             }
             <div class="espaco"></div>
+            <button class="btn" title="Mudar a cor da página" @onclick="MudarTemaAsync">
+                <span class="bolinha"></span> Cor: @Temas[TemaIdx].Nome
+            </button>
+            <button class="btn" title="Alternar o modelo de apresentação" @onclick="MudarVisualAsync">
+                ▦ Modelo: @Visuais[VisualIdx].Nome
+            </button>
             <button class="btn" @onclick="() => { Apresentacao = !Apresentacao; }">
                 @(Apresentacao ? "✎ Editar" : "▶ Modo apresentação")
             </button>
@@ -136,7 +142,18 @@
 
         @if (Atual is not null)
         {
-            <Dashboard C="Atual" />
+            @switch (Visuais[VisualIdx].Id)
+            {
+                case "graficos":
+                    <DashboardGraficos C="Atual" />
+                    break;
+                case "placar":
+                    <DashboardPlacar C="Atual" />
+                    break;
+                default:
+                    <Dashboard C="Atual" />
+                    break;
+            }
         }
         else
         {
@@ -153,6 +170,22 @@
     private string Busca = "";
     private string Mensagem = "";
 
+    private record Opcao(string Id, string Nome);
+
+    private static readonly Opcao[] Temas =
+    {
+        new("noturno", "Noturno"), new("oceano", "Oceano"), new("esmeralda", "Esmeralda"),
+        new("aurora", "Aurora"), new("claro", "Claro")
+    };
+
+    private static readonly Opcao[] Visuais =
+    {
+        new("cartoes", "Cartões"), new("graficos", "Gráficos"), new("placar", "Placar")
+    };
+
+    private int TemaIdx;
+    private int VisualIdx;
+
     private int IndiceAtual => Atual is null ? 0 : Math.Max(0, Lista.IndexOf(Atual));
 
     private IEnumerable<Colaborador> Filtrados => string.IsNullOrWhiteSpace(Busca)
@@ -163,7 +196,19 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
+        var temaSalvo = await LerAsync("insimatch.tema");
+        var visualSalvo = await LerAsync("insimatch.visual");
+        TemaIdx = Math.Max(0, Array.FindIndex(Temas, t => t.Id == temaSalvo));
+        VisualIdx = Math.Max(0, Array.FindIndex(Visuais, v => v.Id == visualSalvo));
         Lista = await Armazenamento.CarregarColaboradoresAsync();
+        // Limpa pareceres automáticos antigos (informais); vazio = parecer formal automático
+        var limpou = false;
+        foreach (var c in Lista.Where(x => Avaliacao.ParecerAntigoAutomatico(x.Parecer)))
+        {
+            c.Parecer = "";
+            limpou = true;
+        }
+        if (limpou) await SalvarAsync();
         if (Lista.Count == 0)
         {
             Lista.Add(new Colaborador
@@ -189,6 +234,20 @@
         var v = e.Value?.ToString();
         if (!string.IsNullOrWhiteSpace(v)) Atual.Mes = v;
         await SalvarAsync();
+    }
+
+    private async Task<string?> LerAsync(string chave) => await JS.InvokeAsync<string?>("insimatch.ler", chave);
+
+    private async Task MudarTemaAsync()
+    {
+        TemaIdx = (TemaIdx + 1) % Temas.Length;
+        await JS.InvokeVoidAsync("insimatch.gravar", "insimatch.tema", Temas[TemaIdx].Id);
+    }
+
+    private async Task MudarVisualAsync()
+    {
+        VisualIdx = (VisualIdx + 1) % Visuais.Length;
+        await JS.InvokeVoidAsync("insimatch.gravar", "insimatch.visual", Visuais[VisualIdx].Id);
     }
 
     private Task SalvarAsync() => Armazenamento.SalvarColaboradoresAsync(Lista);

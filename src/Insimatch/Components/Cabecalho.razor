@@ -1,0 +1,29 @@
+@* Cabeçalho comum a todos os modelos de apresentação *@
+@{ var sGeral = Avaliacao.Geral(C); }
+<header class="painel-topo">
+    <div class="pessoa">
+        <div class="avatar @Avaliacao.Classe(sGeral)">@C.Iniciais</div>
+        <div>
+            <div class="rotulo-sup">Resultado individual</div>
+            <h1>@(string.IsNullOrWhiteSpace(C.Nome) ? "Nome do colaborador" : C.Nome)</h1>
+            <div class="pessoa-info">
+                @if (!string.IsNullOrWhiteSpace(C.Equipe))
+                {
+                    <span>@C.Equipe</span><span class="ponto">•</span>
+                }
+                <span>@C.MesPorExtenso</span>
+            </div>
+        </div>
+    </div>
+    <div class="selo @Avaliacao.Classe(sGeral)">
+        <span class="selo-luz"></span>
+        <div>
+            <div class="selo-rotulo">Resultado geral</div>
+            <div class="selo-valor">@Avaliacao.RotuloGeral(sGeral)</div>
+        </div>
+    </div>
+</header>
+
+@code {
+    [Parameter, EditorRequired] public Colaborador C { get; set; } = default!;
+}
