@@ -36,24 +36,21 @@
                     <label>Volume do mês
                         <input type="number" min="0" @bind="Atual.Volume" @bind:event="oninput" @bind:after="SalvarAsync" />
                     </label>
-                    <label>Dias considerados
+                    <label>Dias trabalhados
                         <input type="number" min="0" max="31" @bind="Atual.DiasConsiderados" @bind:event="oninput" @bind:after="SalvarAsync" />
                     </label>
                 </div>
                 <div class="form-2">
-                    <label>Meta Pro
-                        <input type="number" min="0" @bind="Atual.MetaPro" @bind:event="oninput" @bind:after="SalvarAsync" />
+                    <label>Meta Pro (por dia)
+                        <input type="number" min="0" step="1" placeholder="Ex.: 150" @bind="Atual.MetaPro" @bind:event="oninput" @bind:after="SalvarAsync" />
                     </label>
-                    <label>Meta Premium
-                        <input type="number" min="0" @bind="Atual.MetaPremium" @bind:event="oninput" @bind:after="SalvarAsync" />
+                    <label>Meta Premium (por dia)
+                        <input type="number" min="0" step="1" placeholder="Ex.: 180" @bind="Atual.MetaPremium" @bind:event="oninput" @bind:after="SalvarAsync" />
                     </label>
                 </div>
-                <div class="calculado">Média diária (calculada): <strong>@Atual.MediaDiaria.ToString("N1")</strong></div>
+                <div class="calculado">Média diária (calculada): <strong>@Atual.MediaDiaria.ToString("N1")/dia</strong> · @Avaliacao.RotuloVolume(Atual)</div>
 
                 <div class="form-grupo">Qualidade</div>
-                <label>Qualidade (%) — ideal ≥ 99,94%
-                    <input type="number" min="0" max="100" step="0.01" @bind="Atual.Qualidade" @bind:event="oninput" @bind:after="SalvarAsync" />
-                </label>
                 <div class="form-2">
                     <label>Desvios internos
                         <input type="number" min="0" @bind="Atual.DesviosInternos" @bind:event="oninput" @bind:after="SalvarAsync" />
@@ -62,6 +59,9 @@
                         <input type="number" min="0" @bind="Atual.DesviosExternos" @bind:event="oninput" @bind:after="SalvarAsync" />
                     </label>
                 </div>
+
+                <div class="calculado">Qualidade (calculada): <strong>@Atual.Qualidade.ToString("N2")%</strong> · @Avaliacao.RotuloQualidade(Atual)
+                    <br /><small>Máximo de desvios para 99,94%: @Avaliacao.DesviosPermitidos(Atual)</small></div>
 
                 <div class="form-grupo">
                     Parecer
@@ -111,7 +111,7 @@
                     <button class="btn" @onclick="ExportarAsync">Exportar .csv</button>
                     <button class="btn" @onclick="BaixarModeloAsync">Baixar modelo</button>
                 </div>
-                <p class="dica">Colunas: Nome; Equipe; Mes (aaaa-mm); Volume; MetaPro; MetaPremium; DiasConsiderados; Qualidade; DesviosInternos; DesviosExternos; Parecer.
+                <p class="dica">Colunas: Nome; Equipe; Mes (aaaa-mm); Volume; MetaPro; MetaPremium (metas por dia); DiasConsiderados; DesviosInternos; DesviosExternos; Parecer. A qualidade é calculada.
                     Os dados ficam salvos apenas neste navegador.</p>
             </div>
         }
@@ -170,11 +170,10 @@
             {
                 Nome = "Maria Souza",
                 Equipe = "Atendimento",
-                Volume = 1320,
-                MetaPro = 1200,
-                MetaPremium = 1400,
+                Volume = 3410,
+                MetaPro = 150,
+                MetaPremium = 180,
                 DiasConsiderados = 22,
-                Qualidade = 99.96m,
                 DesviosInternos = 1,
                 DesviosExternos = 0
             });

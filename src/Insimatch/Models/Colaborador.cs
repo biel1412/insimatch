@@ -12,22 +12,32 @@ public class Colaborador
 
     // Produção
     public int Volume { get; set; }
-    public int MetaPro { get; set; }
-    public int MetaPremium { get; set; }
+    /// <summary>Meta Pro por dia trabalhado.</summary>
+    public decimal MetaPro { get; set; }
+    /// <summary>Meta Premium por dia trabalhado.</summary>
+    public decimal MetaPremium { get; set; }
     public int DiasConsiderados { get; set; }
 
-    // Qualidade
-    public decimal Qualidade { get; set; }
+    // Qualidade (calculada a partir dos desvios)
     public int DesviosInternos { get; set; }
     public int DesviosExternos { get; set; }
 
     public string Parecer { get; set; } = "";
 
+    /// <summary>Média por dia trabalhado (sem arredondar; a tela formata).</summary>
     public decimal MediaDiaria => DiasConsiderados > 0
-        ? Math.Round((decimal)Volume / DiasConsiderados, 1)
+        ? (decimal)Volume / DiasConsiderados
         : 0;
 
     public int TotalDesvios => DesviosInternos + DesviosExternos;
+
+    /// <summary>
+    /// Qualidade = (volume − desvios internos − desvios externos) ÷ volume.
+    /// Truncada em 2 casas para que o valor exibido nunca pareça maior que o real.
+    /// </summary>
+    public decimal Qualidade => Volume > 0
+        ? Math.Max(0, Math.Floor((decimal)(Volume - TotalDesvios) / Volume * 10000m) / 100m)
+        : 0;
 
     public string Iniciais
     {

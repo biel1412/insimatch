@@ -26,7 +26,7 @@ public class ArmazenamentoService(IJSRuntime js)
     // ---------- CSV (separador ";" para abrir direto no Excel em pt-BR) ----------
 
     private static readonly string[] Cabecalho =
-        { "Nome", "Equipe", "Mes", "Volume", "MetaPro", "MetaPremium", "DiasConsiderados", "Qualidade", "DesviosInternos", "DesviosExternos", "Parecer" };
+        { "Nome", "Equipe", "Mes", "Volume", "MetaPro", "MetaPremium", "DiasConsiderados", "DesviosInternos", "DesviosExternos", "Parecer" };
 
     public static string GerarCsv(IEnumerable<Colaborador> lista)
     {
@@ -36,8 +36,8 @@ public class ArmazenamentoService(IJSRuntime js)
         {
             sb.AppendLine(string.Join(';', new[]
             {
-                Esc(c.Nome), Esc(c.Equipe), c.Mes, c.Volume.ToString(), c.MetaPro.ToString(), c.MetaPremium.ToString(), c.DiasConsiderados.ToString(),
-                c.Qualidade.ToString("0.##", new CultureInfo("pt-BR")),
+                Esc(c.Nome), Esc(c.Equipe), c.Mes, c.Volume.ToString(), c.MetaPro.ToString("0.##", new CultureInfo("pt-BR")), c.MetaPremium.ToString("0.##", new CultureInfo("pt-BR")),
+                c.DiasConsiderados.ToString(),
                 c.DesviosInternos.ToString(), c.DesviosExternos.ToString(), Esc(c.Parecer)
             }));
         }
@@ -46,8 +46,8 @@ public class ArmazenamentoService(IJSRuntime js)
 
     public static string ModeloCsv() =>
         string.Join(';', Cabecalho) + "\n" +
-        "Maria Souza;Atendimento;2026-10;1320;1200;1400;22;99,96;1;0;\n" +
-        "João Lima;Atendimento;2026-10;1050;1200;1400;21;99,90;4;1;\n";
+        "Maria Souza;Atendimento;2026-10;3410;150;180;22;1;0;\n" +
+        "João Lima;Atendimento;2026-10;4400;220;250;21;2;1;\n";
 
     public static List<Colaborador> LerCsv(string conteudo)
     {
@@ -63,7 +63,7 @@ public class ArmazenamentoService(IJSRuntime js)
         int iNome = Idx("nome", "colaborador"), iEquipe = Idx("equipe", "time", "setor"),
             iMes = Idx("mes", "mesreferencia", "referencia"), iVol = Idx("volume", "volumedomes", "volumerealizado"),
             iPro = Idx("metapro", "pro"), iPrem = Idx("metapremium", "premium"),
-            iDias = Idx("diasconsiderados", "dias"), iQual = Idx("qualidade", "qualidade%"),
+            iDias = Idx("diasconsiderados", "diastrabalhados", "dias"),
             iDi = Idx("desviosinternos", "internos"), iDe = Idx("desviosexternos", "externos"),
             iPar = Idx("parecer", "observacao");
 
@@ -80,10 +80,9 @@ public class ArmazenamentoService(IJSRuntime js)
                 Equipe = Get(iEquipe),
                 Mes = string.IsNullOrWhiteSpace(Get(iMes)) ? DateTime.Today.ToString("yyyy-MM") : Get(iMes),
                 Volume = (int)Num(Get(iVol)),
-                MetaPro = (int)Num(Get(iPro)),
-                MetaPremium = (int)Num(Get(iPrem)),
+                MetaPro = Num(Get(iPro)),
+                MetaPremium = Num(Get(iPrem)),
                 DiasConsiderados = (int)Num(Get(iDias)),
-                Qualidade = Num(Get(iQual).Replace("%", "")),
                 DesviosInternos = (int)Num(Get(iDi)),
                 DesviosExternos = (int)Num(Get(iDe)),
                 Parecer = Get(iPar)

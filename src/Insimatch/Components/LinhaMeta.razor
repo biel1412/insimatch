@@ -1,25 +1,32 @@
-@* Uma linha de comparação: meta x realizado *@
+@* Uma linha de comparação: meta por dia x média diária realizada *@
 <div class="linha-meta @(Atingiu ? "ok" : "falta")">
     <span class="lm-icone">@(Atingiu ? "✓" : "•")</span>
-    <span class="lm-nome">@Nome</span>
-    <span class="lm-valor">@Meta.ToString("N0")</span>
+    <span class="lm-nome">
+        @Nome
+        @if (Dias > 0)
+        {
+            <small>no mês: @((Meta * Dias).ToString("N0")) (× @Dias dias)</small>
+        }
+    </span>
+    <span class="lm-valor">@Meta.ToString("0.#")<small>/dia</small></span>
     <span class="lm-dif">
         @if (Atingiu)
         {
-            @($"+{Realizado - Meta:N0} · {Percentual:N0}%")
+            @($"+{Realizado - Meta:N1}/dia · {Percentual:N0}%")
         }
         else
         {
-            @($"faltam {Meta - Realizado:N0} · {Percentual:N0}%")
+            @($"faltam {Meta - Realizado:N1}/dia · {Percentual:N0}%")
         }
     </span>
 </div>
 
 @code {
     [Parameter] public string Nome { get; set; } = "";
-    [Parameter] public int Meta { get; set; }
-    [Parameter] public int Realizado { get; set; }
+    [Parameter] public decimal Meta { get; set; }
+    [Parameter] public decimal Realizado { get; set; }
+    [Parameter] public int Dias { get; set; }
 
     private bool Atingiu => Realizado >= Meta;
-    private double Percentual => Meta > 0 ? (double)Realizado / Meta * 100 : 0;
+    private decimal Percentual => Meta > 0 ? Realizado / Meta * 100 : 0;
 }

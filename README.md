@@ -6,20 +6,20 @@ Escrito em **C# com Blazor WebAssembly** e hospedado no **GitHub Pages**: abre d
 
 🔗 **Acesse:** https://biel1412.github.io/insimatch/
 
-## O que aparece no painel
+## Critérios de análise
 
-| Bloco | Indicadores |
+| Indicador | Como é analisado |
 |---|---|
-| **Produção** | Volume do mês comparado com a **Meta Pro** e a **Meta Premium** · Média diária (volume ÷ dias) · Dias considerados |
-| **Qualidade** | Qualidade (%) — ideal **≥ 99,94%** · Desvios internos · Desvios externos (apenas contagem, sem limite) |
-| **Parecer** | Texto do gestor (ou sugestão automática gerada a partir dos números) |
+| **Volume / dias trabalhados** | A **média diária** (volume ÷ dias trabalhados) é comparada com a **Meta Pro** e a **Meta Premium** da pessoa. As metas são **por dia** e preenchidas por colaborador (ex.: Pro 150 / Premium 180, ou Pro 220 / Premium 250). |
+| **Qualidade** | Calculada pelos desvios: **(volume − desvios internos − desvios externos) ÷ volume**. O ideal é **≥ 99,94%**. |
+| **Resultado geral** | **Está bem** quando a qualidade está no ideal e a média diária está pelo menos próxima da Meta Pro (≥ 90%). **Excelente** quando, além disso, bate a Premium. |
 
-O volume mostra se bateu a meta Pro, a Premium, ou quanto faltou. A qualidade fica verde no ideal (≥ 99,94%) e vermelha abaixo dele. Um selo de **resultado geral** resume o mês.
+O painel também mostra o volume do mês, os dias trabalhados, os desvios internos e externos, o máximo de desvios para manter 99,94% com aquele volume, e o **parecer** (texto do gestor ou sugestão automática).
 
 ## Como usar
 
 1. Abra o link acima.
-2. Na aba **Colaborador**, preencha os dados, incluindo **Meta Pro** e **Meta Premium** (ou importe uma planilha `.csv` na aba **Lista**).
+2. Na aba **Colaborador**, preencha volume, dias trabalhados, **Meta Pro** e **Meta Premium** (por dia) e os desvios (ou importe uma planilha `.csv` na aba **Lista**).
 3. Escreva o parecer ou clique em **✨ Gerar sugestão**.
 4. Clique em **▶ Modo apresentação** (ou **⛶ Tela cheia**) e compartilhe a tela no Teams.
 5. Use **‹ ›** no topo para passar de um colaborador para o próximo.
@@ -29,8 +29,8 @@ O volume mostra se bateu a meta Pro, a Premium, ou quanto faltou. A qualidade fi
 Separador `;` (abre direto no Excel em português). Cabeçalho:
 
 ```
-Nome;Equipe;Mes;Volume;MetaPro;MetaPremium;DiasConsiderados;Qualidade;DesviosInternos;DesviosExternos;Parecer
-Maria Souza;Atendimento;2026-10;1320;1200;1400;22;99,96;1;0;
+Nome;Equipe;Mes;Volume;MetaPro;MetaPremium;DiasConsiderados;DesviosInternos;DesviosExternos;Parecer
+Maria Souza;Atendimento;2026-10;3410;150;180;22;1;0;
 ```
 
 Use o botão **Baixar modelo** no sistema para obter um arquivo pronto.
@@ -60,7 +60,7 @@ src/Insimatch/
 ├── Components/Medidor.razor     # medidor circular de qualidade
 ├── Components/LinhaMeta.razor   # comparação meta x realizado
 ├── Models/Colaborador.cs        # dados do colaborador
-├── Models/Metas.cs              # avaliação (Pro/Premium, qualidade ideal) e parecer automático
+├── Models/Metas.cs              # critérios de análise e parecer automático
 ├── Pages/Home.razor             # editor + painel
 ├── Services/ArmazenamentoService.cs  # localStorage e CSV
 └── wwwroot/                     # HTML, CSS e JS

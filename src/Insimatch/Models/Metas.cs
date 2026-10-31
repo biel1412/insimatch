@@ -2,20 +2,36 @@ namespace Insimatch.Models;
 
 public enum Status { Excelente, Bom, Atencao, Critico, Neutro }
 
-public enum NivelMeta { SemMeta, Abaixo, Pro, Premium }
+public enum NivelMeta { SemMeta, Abaixo, Proximo, Pro, Premium }
 
+/// <summary>
+/// Critérios de análise:
+/// • Volume: a média diária (volume ÷ dias trabalhados) é comparada com a meta Pro e a meta Premium
+///   de cada colaborador (as metas são por dia e podem variar de pessoa para pessoa).
+/// • Qualidade: calculada pelos desvios internos e externos sobre o volume; o ideal é ≥ 99,94%.
+/// • Está bem: qualidade no ideal e média diária pelo menos próxima da meta Pro.
+/// </summary>
 public static class Avaliacao
 {
-    /// <summary>Qualidade abaixo deste valor está abaixo do ideal.</summary>
     public const decimal QualidadeIdeal = 99.94m;
 
-    public static bool QualidadeOk(Colaborador c) => c.Qualidade >= QualidadeIdeal;
+    /// <summary>A partir de quanto da meta Pro a média é considerada "próxima da meta".</summary>
+    public const decimal FatorProximo = 0.90m;
+
+    public static bool QualidadeOk(Colaborador c) => c.Volume > 0 && c.Qualidade >= QualidadeIdeal;
+
+    /// <summary>Quantidade máxima de desvios (internos + externos) para manter 99,94%.</summary>
+    public static int DesviosPermitidos(Colaborador c) =>
+        (int)Math.Floor(c.Volume * (100m - QualidadeIdeal) / 100m);
 
     public static NivelMeta Nivel(Colaborador c)
     {
         if (c.MetaPro <= 0 && c.MetaPremium <= 0) return NivelMeta.SemMeta;
-        if (c.MetaPremium > 0 && c.Volume >= c.MetaPremium) return NivelMeta.Premium;
-        if (c.MetaPro > 0 && c.Volume >= c.MetaPro) return NivelMeta.Pro;
+        var media = c.MediaDiaria;
+        if (c.MetaPremium > 0 && media >= c.MetaPremium) return NivelMeta.Premium;
+        if (c.MetaPro > 0 && media >= c.MetaPro) return NivelMeta.Pro;
+        var referencia = c.MetaPro > 0 ? c.MetaPro : c.MetaPremium;
+        if (media >= referencia * FatorProximo) return NivelMeta.Proximo;
         return NivelMeta.Abaixo;
     }
 
@@ -23,6 +39,7 @@ public static class Avaliacao
     {
         NivelMeta.Premium => Status.Excelente,
         NivelMeta.Pro => Status.Bom,
+        NivelMeta.Proximo => Status.Atencao,
         NivelMeta.Abaixo => Status.Critico,
         _ => Status.Neutro
     };
@@ -31,22 +48,26 @@ public static class Avaliacao
     {
         NivelMeta.Premium => "Meta Premium atingida",
         NivelMeta.Pro => "Meta Pro atingida",
+        NivelMeta.Proximo => "Próximo da meta",
         NivelMeta.Abaixo => "Abaixo da meta",
         _ => "Sem meta"
     };
 
-    public static Status StatusQualidade(Colaborador c) => QualidadeOk(c) ? Status.Excelente : Status.Critico;
+    public static Status StatusQualidade(Colaborador c) =>
+        c.Volume <= 0 ? Status.Neutro : QualidadeOk(c) ? Status.Excelente : Status.Critico;
 
-    public static string RotuloQualidade(Colaborador c) => QualidadeOk(c) ? "Ideal" : "Abaixo do ideal";
+    public static string RotuloQualidade(Colaborador c) =>
+        c.Volume <= 0 ? "Sem volume" : QualidadeOk(c) ? "Ideal" : "Abaixo do ideal";
 
     public static Status Geral(Colaborador c)
     {
         var nivel = Nivel(c);
         var q = QualidadeOk(c);
-        var volOk = nivel is NivelMeta.Pro or NivelMeta.Premium or NivelMeta.SemMeta;
+        var volumeBem = nivel is NivelMeta.Proximo or NivelMeta.Pro or NivelMeta.Premium or NivelMeta.SemMeta;
+
         if (q && nivel == NivelMeta.Premium) return Status.Excelente;
-        if (q && volOk) return Status.Bom;
-        if (q || volOk) return Status.Atencao;
+        if (q && volumeBem) return Status.Bom;       // qualidade ok e pelo menos próximo da meta
+        if (q || volumeBem) return Status.Atencao;
         return Status.Critico;
     }
 
@@ -62,7 +83,7 @@ public static class Avaliacao
     public static string RotuloGeral(Status s) => s switch
     {
         Status.Excelente => "Excelente",
-        Status.Bom => "Bom",
+        Status.Bom => "Está bem",
         Status.Atencao => "Atenção",
         _ => "Abaixo do esperado"
     };
@@ -72,6 +93,7 @@ public static class Avaliacao
     {
         var nome = c.Nome.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "Colaborador";
         var mes = c.MesPorExtenso.ToLowerInvariant();
+        var media = c.MediaDiaria;
         var partes = new List<string>();
 
         partes.Add(Geral(c) switch
@@ -82,31 +104,34 @@ public static class Avaliacao
             _ => $"{nome}, precisamos conversar sobre os indicadores de {mes} e montar um plano juntos."
         });
 
-        var prod = $"{c.Volume:N0} itens em {c.DiasConsiderados} dias (média de {c.MediaDiaria:N1}/dia)";
+        var prod = $"{c.Volume:N0} itens em {c.DiasConsiderados} dias trabalhados, uma média de {media:N1} por dia";
         partes.Add(Nivel(c) switch
         {
-            NivelMeta.Premium => $"Você realizou {prod} e bateu a meta Premium de {c.MetaPremium:N0}.",
+            NivelMeta.Premium => $"Foram {prod}, acima da meta Premium de {c.MetaPremium:N0}/dia.",
             NivelMeta.Pro when c.MetaPremium > 0 =>
-                $"Você realizou {prod}, bateu a meta Pro de {c.MetaPro:N0} e ficou a {c.MetaPremium - c.Volume:N0} da Premium.",
-            NivelMeta.Pro => $"Você realizou {prod} e bateu a meta Pro de {c.MetaPro:N0}.",
-            NivelMeta.Abaixo when c.MetaPro > 0 =>
-                $"Você realizou {prod}, faltando {c.MetaPro - c.Volume:N0} para a meta Pro de {c.MetaPro:N0}.",
-            NivelMeta.Abaixo => $"Você realizou {prod}, faltando {c.MetaPremium - c.Volume:N0} para a meta Premium.",
-            _ => $"Você realizou {prod}."
+                $"Foram {prod}: meta Pro de {c.MetaPro:N0}/dia batida, faltando {c.MetaPremium - media:N1}/dia para a Premium.",
+            NivelMeta.Pro => $"Foram {prod}, acima da meta Pro de {c.MetaPro:N0}/dia.",
+            NivelMeta.Proximo or NivelMeta.Abaixo when c.MetaPro > 0 =>
+                $"Foram {prod}, faltando {c.MetaPro - media:N1}/dia para a meta Pro de {c.MetaPro:N0}/dia.",
+            NivelMeta.Proximo or NivelMeta.Abaixo =>
+                $"Foram {prod}, faltando {c.MetaPremium - media:N1}/dia para a meta Premium.",
+            _ => $"Foram {prod}."
         });
 
-        partes.Add(QualidadeOk(c)
-            ? $"A qualidade de {c.Qualidade:N2}% está no ideal (mínimo de {QualidadeIdeal:N2}%)."
-            : $"A qualidade de {c.Qualidade:N2}% ficou abaixo do ideal de {QualidadeIdeal:N2}%.");
-
-        partes.Add(c.TotalDesvios == 0
-            ? "Nenhum desvio registrado no período — parabéns pelo cuidado."
-            : $"Foram registrados {c.DesviosInternos} desvio(s) interno(s) e {c.DesviosExternos} externo(s); vamos olhar juntos as causas.");
+        if (c.Volume > 0)
+        {
+            var desvios = c.TotalDesvios == 0
+                ? "sem nenhum desvio"
+                : $"com {c.DesviosInternos} desvio(s) interno(s) e {c.DesviosExternos} externo(s)";
+            partes.Add(QualidadeOk(c)
+                ? $"A qualidade ficou em {c.Qualidade:N2}%, {desvios}, dentro do ideal de {QualidadeIdeal:N2}%."
+                : $"A qualidade ficou em {c.Qualidade:N2}%, {desvios}, abaixo do ideal de {QualidadeIdeal:N2}% — para esse volume, o máximo seria {DesviosPermitidos(c)} desvio(s).");
+        }
 
         partes.Add(Geral(c) switch
         {
             Status.Excelente => "Continue assim!",
-            Status.Bom => "Vamos buscar a meta Premium no próximo mês.",
+            Status.Bom => "Vamos buscar a próxima meta no mês que vem.",
             Status.Atencao => "Com alguns ajustes, o próximo mês pode ser ainda melhor.",
             _ => "Conte comigo para o plano de melhoria."
         });

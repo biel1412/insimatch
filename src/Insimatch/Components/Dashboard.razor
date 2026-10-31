@@ -3,10 +3,12 @@
     var sVol = Avaliacao.StatusVolume(C);
     var sQual = Avaliacao.StatusQualidade(C);
     var sGeral = Avaliacao.Geral(C);
-    // Escala da barra: a maior entre as metas e o realizado
-    var escala = Math.Max(Math.Max(C.MetaPro, C.MetaPremium), C.Volume);
+    var media = C.MediaDiaria;
+    // Escala da barra: a maior entre as metas e a média realizada (+5% de folga)
+    var escala = (double)Math.Max(Math.Max(C.MetaPro, C.MetaPremium), media) * 1.05;
     if (escala <= 0) escala = 1;
     var temMeta = C.MetaPro > 0 || C.MetaPremium > 0;
+    var permitidos = Avaliacao.DesviosPermitidos(C);
 }
 
 <section class="painel">
@@ -38,51 +40,53 @@
     <div class="grade grade-prod">
         <article class="cartao destaque @Avaliacao.Classe(sVol)">
             <div class="cartao-topo">
-                <span class="cartao-rotulo">Volume do mês</span>
+                <span class="cartao-rotulo">Média diária <em>· volume ÷ dias trabalhados</em></span>
                 <span class="chip">@Avaliacao.RotuloVolume(C)</span>
             </div>
-            <div class="numero">@C.Volume.ToString("N0")</div>
+            <div class="numero">@media.ToString("N1")<small>/dia</small></div>
 
             @if (temMeta)
             {
                 <div class="barra-metas">
-                    <div class="barra"><div style="width:@Pct((double)C.Volume / escala)"></div></div>
+                    <div class="barra"><div style="width:@Pct((double)media / escala)"></div></div>
                     @if (C.MetaPro > 0)
                     {
-                        <span class="marco @(C.Volume >= C.MetaPro ? "ok" : "") @(Fim(C.MetaPro, escala))" style="left:@Pct((double)C.MetaPro / escala)"><i>Pro</i></span>
+                        <span class="marco @(media >= C.MetaPro ? "ok" : "") @(Borda((double)C.MetaPro / escala))"
+                              style="left:@Pct((double)C.MetaPro / escala)"><i>Pro @C.MetaPro.ToString("0.#")</i></span>
                     }
                     @if (C.MetaPremium > 0)
                     {
-                        <span class="marco @(C.Volume >= C.MetaPremium ? "ok" : "") @(Fim(C.MetaPremium, escala))" style="left:@Pct((double)C.MetaPremium / escala)"><i>Premium</i></span>
+                        <span class="marco baixo @(media >= C.MetaPremium ? "ok" : "") @(Borda((double)C.MetaPremium / escala))"
+                              style="left:@Pct((double)C.MetaPremium / escala)"><i>Premium @C.MetaPremium.ToString("0.#")</i></span>
                     }
                 </div>
 
                 <div class="metas-linhas">
                     @if (C.MetaPro > 0)
                     {
-                        <LinhaMeta Nome="Meta Pro" Meta="C.MetaPro" Realizado="C.Volume" />
+                        <LinhaMeta Nome="Meta Pro" Meta="C.MetaPro" Realizado="media" Dias="C.DiasConsiderados" />
                     }
                     @if (C.MetaPremium > 0)
                     {
-                        <LinhaMeta Nome="Meta Premium" Meta="C.MetaPremium" Realizado="C.Volume" />
+                        <LinhaMeta Nome="Meta Premium" Meta="C.MetaPremium" Realizado="media" Dias="C.DiasConsiderados" />
                     }
                 </div>
             }
             else
             {
-                <div class="rodape"><span>Informe a meta Pro e a meta Premium no editor para comparar.</span></div>
+                <div class="rodape"><span>Informe a meta Pro e a meta Premium (por dia) no editor para comparar.</span></div>
             }
         </article>
 
         <div class="prod-lado">
             <article class="cartao neutro">
-                <div class="cartao-topo"><span class="cartao-rotulo">Média diária</span></div>
-                <div class="numero">@C.MediaDiaria.ToString("N1")<small>/dia</small></div>
-                <div class="rodape"><span>volume ÷ dias considerados</span></div>
+                <div class="cartao-topo"><span class="cartao-rotulo">Volume do mês</span></div>
+                <div class="numero">@C.Volume.ToString("N0")</div>
+                <div class="rodape"><span>total realizado no período</span></div>
             </article>
 
             <article class="cartao neutro">
-                <div class="cartao-topo"><span class="cartao-rotulo">Dias considerados</span></div>
+                <div class="cartao-topo"><span class="cartao-rotulo">Dias trabalhados</span></div>
                 <div class="numero">@C.DiasConsiderados<small>dias</small></div>
                 <div class="dias">
                     @for (var i = 0; i < Math.Min(C.DiasConsiderados, 31); i++)
@@ -102,6 +106,9 @@
                 <span class="chip">@Avaliacao.RotuloQualidade(C)</span>
             </div>
             <Medidor Valor="C.Qualidade" Meta="Avaliacao.QualidadeIdeal" StatusAtual="sQual" />
+            <div class="rodape centro">
+                <span>(volume − desvios) ÷ volume</span>
+            </div>
         </article>
 
         <div class="desvios">
@@ -116,6 +123,15 @@
                 <div class="numero">@C.DesviosExternos</div>
                 <div class="rodape"><span>apontados externamente</span></div>
             </article>
+
+            @if (C.Volume > 0)
+            {
+                <div class="desvios-resumo @(C.TotalDesvios <= permitidos ? "ok" : "falta")">
+                    <strong>@C.TotalDesvios</strong> desvio(s) no total
+                    <span class="ponto">•</span>
+                    para manter @Avaliacao.QualidadeIdeal.ToString("N2")% com @C.Volume.ToString("N0") de volume, o máximo é <strong>@permitidos</strong>
+                </div>
+            }
         </div>
     </div>
 
@@ -134,11 +150,7 @@
     [Parameter, EditorRequired] public Colaborador C { get; set; } = default!;
 
     // Rótulos perto das bordas são alinhados para não serem cortados
-    private static string Fim(int valor, int escala)
-    {
-        var f = (double)valor / escala;
-        return f >= 0.88 ? "fim" : f <= 0.12 ? "inicio" : "";
-    }
+    private static string Borda(double f) => f >= 0.85 ? "fim" : f <= 0.12 ? "inicio" : "";
 
     private static string Pct(double v) =>
         (Math.Clamp(v, 0, 1) * 100).ToString("0.#", CultureInfo.InvariantCulture) + "%";

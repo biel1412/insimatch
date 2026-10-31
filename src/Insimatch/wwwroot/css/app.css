@@ -230,7 +230,7 @@ button, input, textarea { font-family: inherit; }
 .dias span { height: 8px; border-radius: 3px; background: linear-gradient(90deg, var(--acento), var(--acento-2)); opacity: .85; }
 
 /* Metas Pro / Premium */
-.barra-metas { position: relative; margin: 26px 0 4px; }
+.barra-metas { position: relative; margin: 30px 0 30px; }
 .barra-metas .barra { height: 12px; }
 .marco { position: absolute; top: -6px; width: 3px; height: 24px; margin-left: -1.5px; border-radius: 2px; background: var(--texto-3); }
 .marco.ok { background: var(--texto); }
@@ -240,6 +240,7 @@ button, input, textarea { font-family: inherit; }
     color: var(--texto-2); white-space: nowrap;
 }
 .marco.ok i { color: var(--texto); }
+.marco.baixo i { bottom: auto; top: 30px; }
 .marco.fim i { left: auto; right: -2px; transform: none; }
 .marco.inicio i { left: -2px; transform: none; }
 .desvios .numero { font-size: clamp(56px, 6vw, 84px); }
@@ -251,7 +252,20 @@ button, input, textarea { font-family: inherit; }
 .lm-icone { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; font-weight: 800; font-size: 14px; }
 .linha-meta.ok .lm-icone { background: color-mix(in srgb, var(--verde) 20%, transparent); color: var(--verde); }
 .linha-meta.falta .lm-icone { background: color-mix(in srgb, var(--vermelho) 18%, transparent); color: var(--vermelho); }
-.lm-nome { font-weight: 600; color: var(--texto-2); }
+.lm-nome { font-weight: 600; color: var(--texto-2); display: flex; flex-direction: column; }
+.lm-nome small { font-weight: 500; font-size: 12px; color: var(--texto-3); margin-top: 2px; }
+.lm-valor small { font-size: 12px; font-weight: 600; color: var(--texto-2); margin-left: 2px; }
+.cartao-rotulo em { font-style: normal; color: var(--texto-3); font-weight: 500; font-size: 12px; }
+.rodape.centro { justify-content: center; }
+.desvios-resumo {
+    grid-column: 1 / -1; padding: 14px 18px; border-radius: 14px; font-size: 14px; color: var(--texto-2);
+    background: rgba(0,0,0,.18); border: 1px solid var(--vidro-borda);
+}
+.desvios-resumo strong { color: var(--texto); font-size: 16px; }
+.desvios-resumo.ok { border-color: color-mix(in srgb, var(--verde) 35%, transparent); }
+.desvios-resumo.ok strong:last-child { color: var(--verde); }
+.desvios-resumo.falta { border-color: color-mix(in srgb, var(--vermelho) 40%, transparent); }
+.desvios-resumo.falta strong:first-child { color: var(--vermelho); }
 .lm-valor { font-weight: 800; font-size: 18px; }
 .lm-dif { font-size: 13px; font-weight: 700; min-width: 130px; text-align: right; }
 .linha-meta.ok .lm-dif { color: var(--verde); }
