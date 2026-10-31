@@ -1,0 +1,145 @@
+@* Painel de apresentação do resultado individual — pensado para compartilhar a tela no Teams *@
+@{
+    var sVol = Avaliacao.Maior(C.Volume, M.MetaVolume);
+    var sMed = Avaliacao.Maior(C.MediaDiaria, M.MetaMediaDiaria);
+    var sQual = Avaliacao.Qualidade(C.Qualidade, M.MetaQualidade);
+    var sDi = Avaliacao.Desvios(C.DesviosInternos, M.LimiteDesviosInternos);
+    var sDe = Avaliacao.Desvios(C.DesviosExternos, M.LimiteDesviosExternos);
+    var sGeral = Avaliacao.Geral(C, M);
+    var pctVol = M.MetaVolume > 0 ? (double)C.Volume / M.MetaVolume : 0;
+    var pctMed = M.MetaMediaDiaria > 0 ? (double)(C.MediaDiaria / M.MetaMediaDiaria) : 0;
+}
+
+<section class="painel">
+    <header class="painel-topo">
+        <div class="pessoa">
+            <div class="avatar @Avaliacao.Classe(sGeral)">@C.Iniciais</div>
+            <div>
+                <div class="rotulo-sup">Resultado individual</div>
+                <h1>@(string.IsNullOrWhiteSpace(C.Nome) ? "Nome do colaborador" : C.Nome)</h1>
+                <div class="pessoa-info">
+                    @if (!string.IsNullOrWhiteSpace(C.Equipe))
+                    {
+                        <span>@C.Equipe</span><span class="ponto">•</span>
+                    }
+                    <span>@C.MesPorExtenso</span>
+                </div>
+            </div>
+        </div>
+        <div class="selo @Avaliacao.Classe(sGeral)">
+            <span class="selo-luz"></span>
+            <div>
+                <div class="selo-rotulo">Resultado geral</div>
+                <div class="selo-valor">@Avaliacao.Rotulo(sGeral)</div>
+            </div>
+        </div>
+    </header>
+
+    <div class="secao-titulo"><span>01</span> Produção</div>
+    <div class="grade grade-3">
+        <article class="cartao destaque @Avaliacao.Classe(sVol)">
+            <div class="cartao-topo">
+                <span class="cartao-rotulo">Volume do mês</span>
+                <span class="chip">@Avaliacao.Rotulo(sVol)</span>
+            </div>
+            <div class="numero">@C.Volume.ToString("N0")</div>
+            <div class="barra"><div style="width:@Pct(pctVol)"></div></div>
+            <div class="rodape">
+                <span>@((pctVol * 100).ToString("N0"))% da meta</span>
+                <span>meta @M.MetaVolume.ToString("N0")</span>
+            </div>
+        </article>
+
+        <article class="cartao @Avaliacao.Classe(sMed)">
+            <div class="cartao-topo">
+                <span class="cartao-rotulo">Média diária</span>
+                <span class="chip">@Avaliacao.Rotulo(sMed)</span>
+            </div>
+            <div class="numero">@C.MediaDiaria.ToString("N1")<small>/dia</small></div>
+            <div class="barra"><div style="width:@Pct(pctMed)"></div></div>
+            <div class="rodape">
+                <span>@((pctMed * 100).ToString("N0"))% da meta</span>
+                <span>meta @M.MetaMediaDiaria.ToString("N0")</span>
+            </div>
+        </article>
+
+        <article class="cartao neutro">
+            <div class="cartao-topo">
+                <span class="cartao-rotulo">Dias considerados</span>
+            </div>
+            <div class="numero">@C.DiasConsiderados<small>dias</small></div>
+            <div class="dias">
+                @for (var i = 0; i < Math.Min(C.DiasConsiderados, 31); i++)
+                {
+                    <span></span>
+                }
+            </div>
+            <div class="rodape"><span>dias úteis trabalhados no mês</span></div>
+        </article>
+    </div>
+
+    <div class="secao-titulo"><span>02</span> Qualidade</div>
+    <div class="grade grade-qual">
+        <article class="cartao cartao-medidor @Avaliacao.Classe(sQual)">
+            <div class="cartao-topo">
+                <span class="cartao-rotulo">Qualidade</span>
+                <span class="chip">@Avaliacao.Rotulo(sQual)</span>
+            </div>
+            <Medidor Valor="C.Qualidade" Meta="M.MetaQualidade" StatusAtual="sQual" />
+        </article>
+
+        <div class="desvios">
+            <article class="cartao @Avaliacao.Classe(sDi)">
+                <div class="cartao-topo">
+                    <span class="cartao-rotulo">Desvios internos</span>
+                    <span class="chip">@Avaliacao.Rotulo(sDi)</span>
+                </div>
+                <div class="desvio-linha">
+                    <div class="numero">@C.DesviosInternos</div>
+                    <div class="pontos">
+                        @for (var i = 0; i < Math.Max(M.LimiteDesviosInternos, Math.Min(C.DesviosInternos, 12)); i++)
+                        {
+                            <span class="@(i < C.DesviosInternos ? "on" : "")"></span>
+                        }
+                    </div>
+                </div>
+                <div class="rodape"><span>identificados pela equipe</span><span>limite @M.LimiteDesviosInternos</span></div>
+            </article>
+
+            <article class="cartao @Avaliacao.Classe(sDe)">
+                <div class="cartao-topo">
+                    <span class="cartao-rotulo">Desvios externos</span>
+                    <span class="chip">@Avaliacao.Rotulo(sDe)</span>
+                </div>
+                <div class="desvio-linha">
+                    <div class="numero">@C.DesviosExternos</div>
+                    <div class="pontos">
+                        @for (var i = 0; i < Math.Max(M.LimiteDesviosExternos, Math.Min(C.DesviosExternos, 12)); i++)
+                        {
+                            <span class="@(i < C.DesviosExternos ? "on" : "")"></span>
+                        }
+                    </div>
+                </div>
+                <div class="rodape"><span>apontados pelo cliente</span><span>limite @M.LimiteDesviosExternos</span></div>
+            </article>
+        </div>
+    </div>
+
+    <div class="secao-titulo"><span>03</span> Parecer</div>
+    <article class="cartao parecer @Avaliacao.Classe(sGeral)">
+        <div class="aspas">“</div>
+        <p>@(string.IsNullOrWhiteSpace(C.Parecer) ? Avaliacao.GerarParecer(C, M) : C.Parecer)</p>
+        <div class="parecer-assinatura">
+            <span>@M.NomeEmpresa</span>
+            <span>@C.MesPorExtenso</span>
+        </div>
+    </article>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public Colaborador C { get; set; } = default!;
+    [Parameter, EditorRequired] public Metas M { get; set; } = default!;
+
+    private static string Pct(double v) =>
+        (Math.Clamp(v, 0, 1) * 100).ToString("0.#", CultureInfo.InvariantCulture) + "%";
+}

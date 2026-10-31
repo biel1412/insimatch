@@ -1,0 +1,41 @@
+@* Medidor circular (3/4 de arco) para percentuais *@
+<div class="medidor @Avaliacao.Classe(StatusAtual)">
+    <svg viewBox="0 0 200 200">
+        <defs>
+            <linearGradient id="grad-@IdUnico" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" class="g1" />
+                <stop offset="100%" class="g2" />
+            </linearGradient>
+        </defs>
+        <circle cx="100" cy="100" r="@R" class="trilho"
+                stroke-dasharray="@F(Arco) @F(Circ)" transform="rotate(135 100 100)" />
+        <circle cx="100" cy="100" r="@R" class="valor" stroke="url(#grad-@IdUnico)"
+                stroke-dasharray="@F(Arco * Fracao) @F(Circ)" transform="rotate(135 100 100)" />
+        @if (Meta > 0)
+        {
+            var ang = (135 + 270 * (double)Math.Clamp(Meta / 100m, 0, 1)) * Math.PI / 180;
+            var x1 = 100 + (R - 16) * Math.Cos(ang); var y1 = 100 + (R - 16) * Math.Sin(ang);
+            var x2 = 100 + (R + 16) * Math.Cos(ang); var y2 = 100 + (R + 16) * Math.Sin(ang);
+            <line x1="@F(x1)" y1="@F(y1)" x2="@F(x2)" y2="@F(y2)" class="marca-meta" />
+        }
+    </svg>
+    <div class="medidor-texto">
+        <div class="medidor-valor">@Valor.ToString("N1")<small>%</small></div>
+        <div class="medidor-meta">meta @Meta.ToString("N0")%</div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public decimal Valor { get; set; }
+    [Parameter] public decimal Meta { get; set; }
+    [Parameter] public Status StatusAtual { get; set; }
+
+    private const double R = 80;
+    private static readonly double Circ = 2 * Math.PI * R;
+    private static readonly double Arco = Circ * 0.75;
+    private readonly string IdUnico = Guid.NewGuid().ToString("N")[..8];
+    private double Fracao => (double)Math.Clamp(Valor / 100m, 0, 1);
+
+    // Atributos SVG precisam de ponto decimal, independente da cultura pt-BR
+    private static string F(double v) => v.ToString("0.##", CultureInfo.InvariantCulture);
+}

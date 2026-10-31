@@ -1,0 +1,299 @@
+@page "/"
+@inject ArmazenamentoService Armazenamento
+@inject IJSRuntime JS
+
+<PageTitle>Insimatch · @(Atual?.Nome ?? "Resultado individual")</PageTitle>
+
+<div class="app @(Apresentacao ? "modo-apresentacao" : "")">
+    <aside class="lateral">
+        <div class="marca">
+            <div class="marca-logo">Insi<span>match</span></div>
+            <div class="marca-sub">Resultados individuais</div>
+        </div>
+
+        <div class="abas">
+            <button class="@(Aba == "dados" ? "ativa" : "")" @onclick='() => { Aba = "dados"; }'>Colaborador</button>
+            <button class="@(Aba == "lista" ? "ativa" : "")" @onclick='() => { Aba = "lista"; }'>Lista (@Lista.Count)</button>
+            <button class="@(Aba == "metas" ? "ativa" : "")" @onclick='() => { Aba = "metas"; }'>Metas</button>
+        </div>
+
+        @if (Atual is not null && Aba == "dados")
+        {
+            <div class="form">
+                <label>Nome do colaborador
+                    <input @bind="Atual.Nome" @bind:event="oninput" @bind:after="SalvarAsync" placeholder="Ex.: Maria Souza" />
+                </label>
+                <div class="form-2">
+                    <label>Equipe
+                        <input @bind="Atual.Equipe" @bind:event="oninput" @bind:after="SalvarAsync" placeholder="Ex.: Atendimento" />
+                    </label>
+                    <label>Mês
+                        <input type="month" @bind="Atual.Mes" @bind:after="SalvarAsync" />
+                    </label>
+                </div>
+
+                <div class="form-grupo">Produção</div>
+                <div class="form-2">
+                    <label>Volume do mês
+                        <input type="number" min="0" @bind="Atual.Volume" @bind:event="oninput" @bind:after="SalvarAsync" />
+                    </label>
+                    <label>Dias considerados
+                        <input type="number" min="0" max="31" @bind="Atual.DiasConsiderados" @bind:event="oninput" @bind:after="SalvarAsync" />
+                    </label>
+                </div>
+                <div class="calculado">Média diária (calculada): <strong>@Atual.MediaDiaria.ToString("N1")</strong></div>
+
+                <div class="form-grupo">Qualidade</div>
+                <label>Qualidade (%)
+                    <input type="number" min="0" max="100" step="0.1" @bind="Atual.Qualidade" @bind:event="oninput" @bind:after="SalvarAsync" />
+                </label>
+                <div class="form-2">
+                    <label>Desvios internos
+                        <input type="number" min="0" @bind="Atual.DesviosInternos" @bind:event="oninput" @bind:after="SalvarAsync" />
+                    </label>
+                    <label>Desvios externos
+                        <input type="number" min="0" @bind="Atual.DesviosExternos" @bind:event="oninput" @bind:after="SalvarAsync" />
+                    </label>
+                </div>
+
+                <div class="form-grupo">
+                    Parecer
+                    <button class="link" @onclick="GerarParecerAsync">✨ Gerar sugestão</button>
+                </div>
+                <textarea rows="6" @bind="Atual.Parecer" @bind:event="oninput" @bind:after="SalvarAsync"
+                          placeholder="Escreva o parecer ou clique em “Gerar sugestão”. Se ficar vazio, o painel mostra um parecer automático."></textarea>
+
+                <div class="acoes">
+                    <button class="btn" @onclick="NovoAsync">+ Novo</button>
+                    <button class="btn" @onclick="DuplicarAsync">Duplicar</button>
+                    <button class="btn perigo" @onclick="ExcluirAsync">Excluir</button>
+                </div>
+            </div>
+        }
+        else if (Aba == "lista")
+        {
+            <div class="form">
+                <input class="busca" placeholder="Buscar por nome, equipe ou mês…" @bind="Busca" @bind:event="oninput" />
+                <ul class="lista">
+                    @foreach (var c in Filtrados)
+                    {
+                        var st = Avaliacao.Geral(c, Metas);
+                        <li class="@(c.Id == Atual?.Id ? "sel" : "")" @onclick="() => Selecionar(c)">
+                            <span class="mini-avatar @Avaliacao.Classe(st)">@c.Iniciais</span>
+                            <span class="lista-txt">
+                                <strong>@(string.IsNullOrWhiteSpace(c.Nome) ? "(sem nome)" : c.Nome)</strong>
+                                <small>@c.Equipe @(string.IsNullOrWhiteSpace(c.Equipe) ? "" : "·") @c.MesPorExtenso</small>
+                            </span>
+                        </li>
+                    }
+                </ul>
+                <div class="acoes">
+                    <button class="btn" @onclick="NovoAsync">+ Novo</button>
+                </div>
+
+                <div class="form-grupo">Importar / exportar</div>
+                <label class="btn arquivo">
+                    Importar planilha (.csv)
+                    <InputFile OnChange="ImportarAsync" accept=".csv,text/csv" />
+                </label>
+                @if (!string.IsNullOrEmpty(Mensagem))
+                {
+                    <div class="calculado">@Mensagem</div>
+                }
+                <div class="acoes">
+                    <button class="btn" @onclick="ExportarAsync">Exportar .csv</button>
+                    <button class="btn" @onclick="BaixarModeloAsync">Baixar modelo</button>
+                </div>
+                <p class="dica">Colunas: Nome; Equipe; Mes (aaaa-mm); Volume; DiasConsiderados; Qualidade; DesviosInternos; DesviosExternos; Parecer.
+                    Os dados ficam salvos apenas neste navegador.</p>
+            </div>
+        }
+        else if (Aba == "metas")
+        {
+            <div class="form">
+                <label>Nome da empresa / área (assinatura do parecer)
+                    <input @bind="Metas.NomeEmpresa" @bind:event="oninput" @bind:after="SalvarMetasAsync" />
+                </label>
+                <div class="form-grupo">Produção</div>
+                <div class="form-2">
+                    <label>Meta de volume
+                        <input type="number" min="0" @bind="Metas.MetaVolume" @bind:event="oninput" @bind:after="SalvarMetasAsync" />
+                    </label>
+                    <label>Meta média diária
+                        <input type="number" min="0" step="0.1" @bind="Metas.MetaMediaDiaria" @bind:event="oninput" @bind:after="SalvarMetasAsync" />
+                    </label>
+                </div>
+                <div class="form-grupo">Qualidade</div>
+                <label>Meta de qualidade (%)
+                    <input type="number" min="0" max="100" step="0.1" @bind="Metas.MetaQualidade" @bind:event="oninput" @bind:after="SalvarMetasAsync" />
+                </label>
+                <div class="form-2">
+                    <label>Limite desv. internos
+                        <input type="number" min="0" @bind="Metas.LimiteDesviosInternos" @bind:event="oninput" @bind:after="SalvarMetasAsync" />
+                    </label>
+                    <label>Limite desv. externos
+                        <input type="number" min="0" @bind="Metas.LimiteDesviosExternos" @bind:event="oninput" @bind:after="SalvarMetasAsync" />
+                    </label>
+                </div>
+                <p class="dica">As metas definem as cores (verde, amarelo, vermelho) e o parecer automático.</p>
+            </div>
+        }
+    </aside>
+
+    <main class="principal">
+        <div class="barra-topo">
+            @if (Lista.Count > 1)
+            {
+                <div class="navegacao">
+                    <button class="icone" title="Anterior" @onclick="() => Mover(-1)">‹</button>
+                    <span>@(IndiceAtual + 1) de @Lista.Count</span>
+                    <button class="icone" title="Próximo" @onclick="() => Mover(1)">›</button>
+                </div>
+            }
+            <div class="espaco"></div>
+            <button class="btn" @onclick="() => { Apresentacao = !Apresentacao; }">
+                @(Apresentacao ? "✎ Editar" : "▶ Modo apresentação")
+            </button>
+            <button class="btn" title="Tela cheia" @onclick="TelaCheiaAsync">⛶ Tela cheia</button>
+        </div>
+
+        @if (Atual is not null)
+        {
+            <Dashboard C="Atual" M="Metas" />
+        }
+        else
+        {
+            <div class="vazio">Carregando…</div>
+        }
+    </main>
+</div>
+
+@code {
+    private List<Colaborador> Lista = new();
+    private Colaborador? Atual;
+    private Metas Metas = new();
+    private bool Apresentacao;
+    private string Aba = "dados";
+    private string Busca = "";
+    private string Mensagem = "";
+
+    private int IndiceAtual => Atual is null ? 0 : Math.Max(0, Lista.IndexOf(Atual));
+
+    private IEnumerable<Colaborador> Filtrados => string.IsNullOrWhiteSpace(Busca)
+        ? Lista
+        : Lista.Where(c => $"{c.Nome} {c.Equipe} {c.MesPorExtenso} {c.Mes}"
+            .Contains(Busca, StringComparison.CurrentCultureIgnoreCase));
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        Metas = await Armazenamento.CarregarMetasAsync();
+        Lista = await Armazenamento.CarregarColaboradoresAsync();
+        if (Lista.Count == 0)
+        {
+            Lista.Add(new Colaborador
+            {
+                Nome = "Maria Souza",
+                Equipe = "Atendimento",
+                Volume = 1320,
+                DiasConsiderados = 22,
+                Qualidade = 97.5m,
+                DesviosInternos = 1,
+                DesviosExternos = 0
+            });
+            await SalvarAsync();
+        }
+        Atual = Lista[0];
+        StateHasChanged();
+    }
+
+    private Task SalvarAsync() => Armazenamento.SalvarColaboradoresAsync(Lista);
+    private Task SalvarMetasAsync() => Armazenamento.SalvarMetasAsync(Metas);
+
+    private void Selecionar(Colaborador c)
+    {
+        Atual = c;
+        if (!Apresentacao) Aba = "dados";
+    }
+
+    private void Mover(int passo)
+    {
+        if (Lista.Count == 0) return;
+        var i = (IndiceAtual + passo + Lista.Count) % Lista.Count;
+        Atual = Lista[i];
+    }
+
+    private async Task NovoAsync()
+    {
+        var c = new Colaborador { Mes = Atual?.Mes ?? DateTime.Today.ToString("yyyy-MM"), Equipe = Atual?.Equipe ?? "" };
+        Lista.Add(c);
+        Atual = c;
+        Aba = "dados";
+        await SalvarAsync();
+    }
+
+    private async Task DuplicarAsync()
+    {
+        if (Atual is null) return;
+        var c = Atual.Clonar();
+        c.Id = Guid.NewGuid().ToString("N");
+        c.Nome = Atual.Nome + " (cópia)";
+        Lista.Insert(Lista.IndexOf(Atual) + 1, c);
+        Atual = c;
+        await SalvarAsync();
+    }
+
+    private async Task ExcluirAsync()
+    {
+        if (Atual is null) return;
+        var i = Lista.IndexOf(Atual);
+        Lista.Remove(Atual);
+        if (Lista.Count == 0) Lista.Add(new Colaborador());
+        Atual = Lista[Math.Clamp(i, 0, Lista.Count - 1)];
+        await SalvarAsync();
+    }
+
+    private async Task GerarParecerAsync()
+    {
+        if (Atual is null) return;
+        Atual.Parecer = Avaliacao.GerarParecer(Atual, Metas);
+        await SalvarAsync();
+    }
+
+    private async Task ImportarAsync(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            using var leitor = new StreamReader(e.File.OpenReadStream(5 * 1024 * 1024));
+            var texto = await leitor.ReadToEndAsync();
+            var novos = ArmazenamentoService.LerCsv(texto);
+            if (novos.Count == 0)
+            {
+                Mensagem = "Nenhum colaborador encontrado no arquivo. Confira o cabeçalho.";
+                return;
+            }
+            // Remove o registro vazio inicial, se houver
+            Lista.RemoveAll(c => string.IsNullOrWhiteSpace(c.Nome) && c.Volume == 0);
+            Lista.AddRange(novos);
+            Atual = novos[0];
+            Mensagem = $"{novos.Count} colaborador(es) importado(s).";
+            await SalvarAsync();
+        }
+        catch (Exception ex)
+        {
+            Mensagem = "Não foi possível ler o arquivo: " + ex.Message;
+        }
+    }
+
+    private async Task ExportarAsync() =>
+        await JS.InvokeVoidAsync("insimatch.baixar", "insimatch-resultados.csv", ArmazenamentoService.GerarCsv(Lista));
+
+    private async Task BaixarModeloAsync() =>
+        await JS.InvokeVoidAsync("insimatch.baixar", "insimatch-modelo.csv", ArmazenamentoService.ModeloCsv());
+
+    private async Task TelaCheiaAsync()
+    {
+        Apresentacao = true;
+        await JS.InvokeVoidAsync("insimatch.telaCheia");
+    }
+}

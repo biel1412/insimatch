@@ -1,0 +1,11 @@
+﻿<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+    </Found>
+    <NotFound>
+        <PageTitle>Insimatch</PageTitle>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <Insimatch.Pages.Home />
+        </LayoutView>
+    </NotFound>
+</Router>
