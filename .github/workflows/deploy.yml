@@ -34,6 +34,13 @@ jobs:
           cp release/wwwroot/index.html release/wwwroot/404.html
           touch release/wwwroot/.nojekyll
 
+      - name: Guardar build (download manual)
+        uses: actions/upload-artifact@v4
+        with:
+          name: insimatch-site
+          path: release/wwwroot
+          include-hidden-files: true
+
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v4
