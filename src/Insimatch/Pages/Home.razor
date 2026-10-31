@@ -28,7 +28,7 @@
                         <input @bind="Atual.Equipe" @bind:event="oninput" @bind:after="SalvarAsync" placeholder="Ex.: Atendimento" />
                     </label>
                     <label>Mês
-                        <input type="month" @bind="Atual.Mes" @bind:after="SalvarAsync" />
+                        <input type="month" value="@Atual.Mes" @onchange="AlterarMesAsync" />
                     </label>
                 </div>
 
@@ -205,6 +205,14 @@
         }
         Atual = Lista[0];
         StateHasChanged();
+    }
+
+    private async Task AlterarMesAsync(ChangeEventArgs e)
+    {
+        if (Atual is null) return;
+        var v = e.Value?.ToString();
+        if (!string.IsNullOrWhiteSpace(v)) Atual.Mes = v;
+        await SalvarAsync();
     }
 
     private Task SalvarAsync() => Armazenamento.SalvarColaboradoresAsync(Lista);
