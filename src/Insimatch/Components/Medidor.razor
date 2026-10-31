@@ -1,4 +1,5 @@
-@* Medidor circular (3/4 de arco) para percentuais *@
+@* Medidor circular (3/4 de arco). A escala se ajusta para valores próximos de 100%,
+   assim diferenças como 99,90% x 99,94% ficam visíveis. *@
 <div class="medidor @Avaliacao.Classe(StatusAtual)">
     <svg viewBox="0 0 200 200">
         <defs>
@@ -10,19 +11,19 @@
         <circle cx="100" cy="100" r="@R" class="trilho"
                 stroke-dasharray="@F(Arco) @F(Circ)" transform="rotate(135 100 100)" />
         <circle cx="100" cy="100" r="@R" class="valor" stroke="url(#grad-@IdUnico)"
-                stroke-dasharray="@F(Arco * Fracao) @F(Circ)" transform="rotate(135 100 100)" />
-        @if (Meta > 0)
-        {
-            var ang = (135 + 270 * (double)Math.Clamp(Meta / 100m, 0, 1)) * Math.PI / 180;
+                stroke-dasharray="@F(Arco * Fracao(Valor)) @F(Circ)" transform="rotate(135 100 100)" />
+        @{
+            var ang = (135 + 270 * Fracao(Meta)) * Math.PI / 180;
             var x1 = 100 + (R - 16) * Math.Cos(ang); var y1 = 100 + (R - 16) * Math.Sin(ang);
             var x2 = 100 + (R + 16) * Math.Cos(ang); var y2 = 100 + (R + 16) * Math.Sin(ang);
-            <line x1="@F(x1)" y1="@F(y1)" x2="@F(x2)" y2="@F(y2)" class="marca-meta" />
         }
+        <line x1="@F(x1)" y1="@F(y1)" x2="@F(x2)" y2="@F(y2)" class="marca-meta" />
     </svg>
     <div class="medidor-texto">
-        <div class="medidor-valor">@Valor.ToString("N1")<small>%</small></div>
-        <div class="medidor-meta">meta @Meta.ToString("N0")%</div>
+        <div class="medidor-valor">@Valor.ToString("N2")<small>%</small></div>
+        <div class="medidor-meta">ideal ≥ @Meta.ToString("N2")%</div>
     </div>
+    <div class="medidor-escala"><span>@Minimo.ToString("N0")%</span><span>100%</span></div>
 </div>
 
 @code {
@@ -34,7 +35,11 @@
     private static readonly double Circ = 2 * Math.PI * R;
     private static readonly double Arco = Circ * 0.75;
     private readonly string IdUnico = Guid.NewGuid().ToString("N")[..8];
-    private double Fracao => (double)Math.Clamp(Valor / 100m, 0, 1);
+
+    // Início da escala: 99% quando o valor está perto do ideal, senão 95% ou 0%
+    private decimal Minimo => Valor >= 99m ? 99m : Valor >= 95m ? 95m : 0m;
+
+    private double Fracao(decimal v) => (double)Math.Clamp((v - Minimo) / (100m - Minimo), 0, 1);
 
     // Atributos SVG precisam de ponto decimal, independente da cultura pt-BR
     private static string F(double v) => v.ToString("0.##", CultureInfo.InvariantCulture);

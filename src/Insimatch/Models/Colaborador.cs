@@ -12,6 +12,8 @@ public class Colaborador
 
     // Produção
     public int Volume { get; set; }
+    public int MetaPro { get; set; }
+    public int MetaPremium { get; set; }
     public int DiasConsiderados { get; set; }
 
     // Qualidade

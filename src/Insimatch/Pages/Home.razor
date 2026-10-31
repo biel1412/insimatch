@@ -14,7 +14,6 @@
         <div class="abas">
             <button class="@(Aba == "dados" ? "ativa" : "")" @onclick='() => { Aba = "dados"; }'>Colaborador</button>
             <button class="@(Aba == "lista" ? "ativa" : "")" @onclick='() => { Aba = "lista"; }'>Lista (@Lista.Count)</button>
-            <button class="@(Aba == "metas" ? "ativa" : "")" @onclick='() => { Aba = "metas"; }'>Metas</button>
         </div>
 
         @if (Atual is not null && Aba == "dados")
@@ -41,11 +40,19 @@
                         <input type="number" min="0" max="31" @bind="Atual.DiasConsiderados" @bind:event="oninput" @bind:after="SalvarAsync" />
                     </label>
                 </div>
+                <div class="form-2">
+                    <label>Meta Pro
+                        <input type="number" min="0" @bind="Atual.MetaPro" @bind:event="oninput" @bind:after="SalvarAsync" />
+                    </label>
+                    <label>Meta Premium
+                        <input type="number" min="0" @bind="Atual.MetaPremium" @bind:event="oninput" @bind:after="SalvarAsync" />
+                    </label>
+                </div>
                 <div class="calculado">Média diária (calculada): <strong>@Atual.MediaDiaria.ToString("N1")</strong></div>
 
                 <div class="form-grupo">Qualidade</div>
-                <label>Qualidade (%)
-                    <input type="number" min="0" max="100" step="0.1" @bind="Atual.Qualidade" @bind:event="oninput" @bind:after="SalvarAsync" />
+                <label>Qualidade (%) — ideal ≥ 99,94%
+                    <input type="number" min="0" max="100" step="0.01" @bind="Atual.Qualidade" @bind:event="oninput" @bind:after="SalvarAsync" />
                 </label>
                 <div class="form-2">
                     <label>Desvios internos
@@ -77,7 +84,7 @@
                 <ul class="lista">
                     @foreach (var c in Filtrados)
                     {
-                        var st = Avaliacao.Geral(c, Metas);
+                        var st = Avaliacao.Geral(c);
                         <li class="@(c.Id == Atual?.Id ? "sel" : "")" @onclick="() => Selecionar(c)">
                             <span class="mini-avatar @Avaliacao.Classe(st)">@c.Iniciais</span>
                             <span class="lista-txt">
@@ -104,38 +111,8 @@
                     <button class="btn" @onclick="ExportarAsync">Exportar .csv</button>
                     <button class="btn" @onclick="BaixarModeloAsync">Baixar modelo</button>
                 </div>
-                <p class="dica">Colunas: Nome; Equipe; Mes (aaaa-mm); Volume; DiasConsiderados; Qualidade; DesviosInternos; DesviosExternos; Parecer.
+                <p class="dica">Colunas: Nome; Equipe; Mes (aaaa-mm); Volume; MetaPro; MetaPremium; DiasConsiderados; Qualidade; DesviosInternos; DesviosExternos; Parecer.
                     Os dados ficam salvos apenas neste navegador.</p>
-            </div>
-        }
-        else if (Aba == "metas")
-        {
-            <div class="form">
-                <label>Nome da empresa / área (assinatura do parecer)
-                    <input @bind="Metas.NomeEmpresa" @bind:event="oninput" @bind:after="SalvarMetasAsync" />
-                </label>
-                <div class="form-grupo">Produção</div>
-                <div class="form-2">
-                    <label>Meta de volume
-                        <input type="number" min="0" @bind="Metas.MetaVolume" @bind:event="oninput" @bind:after="SalvarMetasAsync" />
-                    </label>
-                    <label>Meta média diária
-                        <input type="number" min="0" step="0.1" @bind="Metas.MetaMediaDiaria" @bind:event="oninput" @bind:after="SalvarMetasAsync" />
-                    </label>
-                </div>
-                <div class="form-grupo">Qualidade</div>
-                <label>Meta de qualidade (%)
-                    <input type="number" min="0" max="100" step="0.1" @bind="Metas.MetaQualidade" @bind:event="oninput" @bind:after="SalvarMetasAsync" />
-                </label>
-                <div class="form-2">
-                    <label>Limite desv. internos
-                        <input type="number" min="0" @bind="Metas.LimiteDesviosInternos" @bind:event="oninput" @bind:after="SalvarMetasAsync" />
-                    </label>
-                    <label>Limite desv. externos
-                        <input type="number" min="0" @bind="Metas.LimiteDesviosExternos" @bind:event="oninput" @bind:after="SalvarMetasAsync" />
-                    </label>
-                </div>
-                <p class="dica">As metas definem as cores (verde, amarelo, vermelho) e o parecer automático.</p>
             </div>
         }
     </aside>
@@ -159,7 +136,7 @@
 
         @if (Atual is not null)
         {
-            <Dashboard C="Atual" M="Metas" />
+            <Dashboard C="Atual" />
         }
         else
         {
@@ -171,7 +148,6 @@
 @code {
     private List<Colaborador> Lista = new();
     private Colaborador? Atual;
-    private Metas Metas = new();
     private bool Apresentacao;
     private string Aba = "dados";
     private string Busca = "";
@@ -187,7 +163,6 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
-        Metas = await Armazenamento.CarregarMetasAsync();
         Lista = await Armazenamento.CarregarColaboradoresAsync();
         if (Lista.Count == 0)
         {
@@ -196,8 +171,10 @@
                 Nome = "Maria Souza",
                 Equipe = "Atendimento",
                 Volume = 1320,
+                MetaPro = 1200,
+                MetaPremium = 1400,
                 DiasConsiderados = 22,
-                Qualidade = 97.5m,
+                Qualidade = 99.96m,
                 DesviosInternos = 1,
                 DesviosExternos = 0
             });
@@ -216,7 +193,6 @@
     }
 
     private Task SalvarAsync() => Armazenamento.SalvarColaboradoresAsync(Lista);
-    private Task SalvarMetasAsync() => Armazenamento.SalvarMetasAsync(Metas);
 
     private void Selecionar(Colaborador c)
     {
@@ -264,7 +240,7 @@
     private async Task GerarParecerAsync()
     {
         if (Atual is null) return;
-        Atual.Parecer = Avaliacao.GerarParecer(Atual, Metas);
+        Atual.Parecer = Avaliacao.GerarParecer(Atual);
         await SalvarAsync();
     }
 

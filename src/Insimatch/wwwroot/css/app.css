@@ -188,8 +188,11 @@ button, input, textarea { font-family: inherit; }
 
 .grade { display: grid; gap: 18px; }
 .grade-3 { grid-template-columns: repeat(3, 1fr); }
+.grade-prod { grid-template-columns: 1.5fr 1fr; }
+.prod-lado { display: grid; gap: 18px; }
 .grade-qual { grid-template-columns: minmax(300px, 1fr) 1.4fr; }
-.desvios { display: grid; gap: 18px; }
+.desvios { display: grid; gap: 18px; grid-template-columns: 1fr 1fr; align-content: stretch; }
+.desvios .cartao { justify-content: space-between; }
 
 .cartao {
     position: relative; overflow: hidden; padding: 22px 24px; border-radius: var(--raio);
@@ -226,6 +229,31 @@ button, input, textarea { font-family: inherit; }
 .dias { display: grid; grid-template-columns: repeat(11, 1fr); gap: 5px; min-height: 8px; }
 .dias span { height: 8px; border-radius: 3px; background: linear-gradient(90deg, var(--acento), var(--acento-2)); opacity: .85; }
 
+/* Metas Pro / Premium */
+.barra-metas { position: relative; margin: 26px 0 4px; }
+.barra-metas .barra { height: 12px; }
+.marco { position: absolute; top: -6px; width: 3px; height: 24px; margin-left: -1.5px; border-radius: 2px; background: var(--texto-3); }
+.marco.ok { background: var(--texto); }
+.marco i {
+    position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
+    font-style: normal; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--texto-2); white-space: nowrap;
+}
+.marco.ok i { color: var(--texto); }
+.metas-linhas { display: grid; gap: 8px; margin-top: 6px; }
+.linha-meta {
+    display: grid; grid-template-columns: 26px 1fr auto auto; align-items: center; gap: 12px;
+    padding: 11px 14px; border-radius: 12px; background: rgba(0,0,0,.18); border: 1px solid var(--vidro-borda);
+}
+.lm-icone { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; font-weight: 800; font-size: 14px; }
+.linha-meta.ok .lm-icone { background: color-mix(in srgb, var(--verde) 20%, transparent); color: var(--verde); }
+.linha-meta.falta .lm-icone { background: color-mix(in srgb, var(--vermelho) 18%, transparent); color: var(--vermelho); }
+.lm-nome { font-weight: 600; color: var(--texto-2); }
+.lm-valor { font-weight: 800; font-size: 18px; }
+.lm-dif { font-size: 13px; font-weight: 700; min-width: 130px; text-align: right; }
+.linha-meta.ok .lm-dif { color: var(--verde); }
+.linha-meta.falta .lm-dif { color: var(--vermelho); }
+
 /* Medidor */
 .cartao-medidor { align-items: stretch; }
 .medidor { position: relative; width: 100%; max-width: 280px; margin: 0 auto; aspect-ratio: 1; }
@@ -240,6 +268,7 @@ button, input, textarea { font-family: inherit; }
 .medidor-valor { font-size: clamp(40px, 4.2vw, 56px); font-weight: 800; letter-spacing: -0.03em; }
 .medidor-valor small { font-size: .45em; color: var(--texto-2); margin-left: 2px; }
 .medidor-meta { color: var(--texto-3); font-size: 13px; font-weight: 600; margin-top: 2px; }
+.medidor-escala { position: absolute; left: 14%; right: 14%; bottom: 6%; display: flex; justify-content: space-between; font-size: 11px; color: var(--texto-3); font-weight: 600; }
 
 /* Desvios */
 .desvio-linha { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
@@ -262,14 +291,14 @@ button, input, textarea { font-family: inherit; }
 /* ---------- Responsivo ---------- */
 @media (max-width: 1100px) {
     .grade-3 { grid-template-columns: 1fr 1fr; }
-    .grade-qual { grid-template-columns: 1fr; }
+    .grade-qual, .grade-prod { grid-template-columns: 1fr; }
 }
 @media (max-width: 860px) {
     .app { grid-template-columns: 1fr; }
     .lateral { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--vidro-borda); }
     .app.modo-apresentacao .lateral { display: none; }
     .principal { padding: 18px; }
-    .grade-3 { grid-template-columns: 1fr; }
+    .grade-3, .desvios { grid-template-columns: 1fr; }
 }
 
 /* ---------- Erro Blazor ---------- */

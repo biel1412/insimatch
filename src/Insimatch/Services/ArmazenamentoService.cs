@@ -10,7 +10,6 @@ namespace Insimatch.Services;
 public class ArmazenamentoService(IJSRuntime js)
 {
     private const string ChaveColaboradores = "insimatch.colaboradores";
-    private const string ChaveMetas = "insimatch.metas";
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = false };
 
     public async Task<List<Colaborador>> CarregarColaboradoresAsync()
@@ -24,21 +23,10 @@ public class ArmazenamentoService(IJSRuntime js)
     public Task SalvarColaboradoresAsync(List<Colaborador> lista) =>
         js.InvokeVoidAsync("insimatch.gravar", ChaveColaboradores, JsonSerializer.Serialize(lista, Json)).AsTask();
 
-    public async Task<Metas> CarregarMetasAsync()
-    {
-        var txt = await js.InvokeAsync<string?>("insimatch.ler", ChaveMetas);
-        if (string.IsNullOrWhiteSpace(txt)) return new();
-        try { return JsonSerializer.Deserialize<Metas>(txt, Json) ?? new(); }
-        catch { return new(); }
-    }
-
-    public Task SalvarMetasAsync(Metas metas) =>
-        js.InvokeVoidAsync("insimatch.gravar", ChaveMetas, JsonSerializer.Serialize(metas, Json)).AsTask();
-
     // ---------- CSV (separador ";" para abrir direto no Excel em pt-BR) ----------
 
     private static readonly string[] Cabecalho =
-        { "Nome", "Equipe", "Mes", "Volume", "DiasConsiderados", "Qualidade", "DesviosInternos", "DesviosExternos", "Parecer" };
+        { "Nome", "Equipe", "Mes", "Volume", "MetaPro", "MetaPremium", "DiasConsiderados", "Qualidade", "DesviosInternos", "DesviosExternos", "Parecer" };
 
     public static string GerarCsv(IEnumerable<Colaborador> lista)
     {
@@ -48,7 +36,7 @@ public class ArmazenamentoService(IJSRuntime js)
         {
             sb.AppendLine(string.Join(';', new[]
             {
-                Esc(c.Nome), Esc(c.Equipe), c.Mes, c.Volume.ToString(), c.DiasConsiderados.ToString(),
+                Esc(c.Nome), Esc(c.Equipe), c.Mes, c.Volume.ToString(), c.MetaPro.ToString(), c.MetaPremium.ToString(), c.DiasConsiderados.ToString(),
                 c.Qualidade.ToString("0.##", new CultureInfo("pt-BR")),
                 c.DesviosInternos.ToString(), c.DesviosExternos.ToString(), Esc(c.Parecer)
             }));
@@ -58,8 +46,8 @@ public class ArmazenamentoService(IJSRuntime js)
 
     public static string ModeloCsv() =>
         string.Join(';', Cabecalho) + "\n" +
-        "Maria Souza;Atendimento;2026-10;1320;22;97,5;1;0;\n" +
-        "João Lima;Atendimento;2026-10;1050;21;93,2;4;1;\n";
+        "Maria Souza;Atendimento;2026-10;1320;1200;1400;22;99,96;1;0;\n" +
+        "João Lima;Atendimento;2026-10;1050;1200;1400;21;99,90;4;1;\n";
 
     public static List<Colaborador> LerCsv(string conteudo)
     {
@@ -73,7 +61,8 @@ public class ArmazenamentoService(IJSRuntime js)
         int Idx(params string[] nomes) => cab.FindIndex(h => nomes.Contains(h));
 
         int iNome = Idx("nome", "colaborador"), iEquipe = Idx("equipe", "time", "setor"),
-            iMes = Idx("mes", "mesreferencia", "referencia"), iVol = Idx("volume", "volumedomes"),
+            iMes = Idx("mes", "mesreferencia", "referencia"), iVol = Idx("volume", "volumedomes", "volumerealizado"),
+            iPro = Idx("metapro", "pro"), iPrem = Idx("metapremium", "premium"),
             iDias = Idx("diasconsiderados", "dias"), iQual = Idx("qualidade", "qualidade%"),
             iDi = Idx("desviosinternos", "internos"), iDe = Idx("desviosexternos", "externos"),
             iPar = Idx("parecer", "observacao");
@@ -91,6 +80,8 @@ public class ArmazenamentoService(IJSRuntime js)
                 Equipe = Get(iEquipe),
                 Mes = string.IsNullOrWhiteSpace(Get(iMes)) ? DateTime.Today.ToString("yyyy-MM") : Get(iMes),
                 Volume = (int)Num(Get(iVol)),
+                MetaPro = (int)Num(Get(iPro)),
+                MetaPremium = (int)Num(Get(iPrem)),
                 DiasConsiderados = (int)Num(Get(iDias)),
                 Qualidade = Num(Get(iQual).Replace("%", "")),
                 DesviosInternos = (int)Num(Get(iDi)),
