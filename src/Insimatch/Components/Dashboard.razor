@@ -49,11 +49,11 @@
                     <div class="barra"><div style="width:@Pct((double)C.Volume / escala)"></div></div>
                     @if (C.MetaPro > 0)
                     {
-                        <span class="marco @(C.Volume >= C.MetaPro ? "ok" : "")" style="left:@Pct((double)C.MetaPro / escala)"><i>Pro</i></span>
+                        <span class="marco @(C.Volume >= C.MetaPro ? "ok" : "") @(Fim(C.MetaPro, escala))" style="left:@Pct((double)C.MetaPro / escala)"><i>Pro</i></span>
                     }
                     @if (C.MetaPremium > 0)
                     {
-                        <span class="marco @(C.Volume >= C.MetaPremium ? "ok" : "")" style="left:@Pct((double)C.MetaPremium / escala)"><i>Premium</i></span>
+                        <span class="marco @(C.Volume >= C.MetaPremium ? "ok" : "") @(Fim(C.MetaPremium, escala))" style="left:@Pct((double)C.MetaPremium / escala)"><i>Premium</i></span>
                     }
                 </div>
 
@@ -132,6 +132,13 @@
 
 @code {
     [Parameter, EditorRequired] public Colaborador C { get; set; } = default!;
+
+    // Rótulos perto das bordas são alinhados para não serem cortados
+    private static string Fim(int valor, int escala)
+    {
+        var f = (double)valor / escala;
+        return f >= 0.88 ? "fim" : f <= 0.12 ? "inicio" : "";
+    }
 
     private static string Pct(double v) =>
         (Math.Clamp(v, 0, 1) * 100).ToString("0.#", CultureInfo.InvariantCulture) + "%";

@@ -240,6 +240,9 @@ button, input, textarea { font-family: inherit; }
     color: var(--texto-2); white-space: nowrap;
 }
 .marco.ok i { color: var(--texto); }
+.marco.fim i { left: auto; right: -2px; transform: none; }
+.marco.inicio i { left: -2px; transform: none; }
+.desvios .numero { font-size: clamp(56px, 6vw, 84px); }
 .metas-linhas { display: grid; gap: 8px; margin-top: 6px; }
 .linha-meta {
     display: grid; grid-template-columns: 26px 1fr auto auto; align-items: center; gap: 12px;
