@@ -51,9 +51,9 @@
             var fora = comMeta.Count(c => AvaliacaoCliente.StatusCampo(c) == Status.Critico);
             return new[]
             {
-                new Criterio($"{naMeta} de {comMeta.Count} indicadores na meta", naMeta == comMeta.Count),
-                new Criterio(proximos == 0 ? "Nenhum indicador apenas próximo da meta" : $"{proximos} indicador(es) próximo(s) da meta", proximos == 0),
-                new Criterio(fora == 0 ? "Nenhum indicador fora da meta" : $"{fora} indicador(es) fora da meta", fora == 0)
+                new Criterio(comMeta.Count == 1 ? (naMeta == 1 ? "Único indicador com meta: na meta" : "Único indicador com meta: fora") : $"{naMeta} de {comMeta.Count} indicadores na meta", naMeta == comMeta.Count),
+                new Criterio(proximos == 0 ? "Nenhum indicador apenas próximo da meta" : AvaliacaoCliente.Plural(proximos, "indicador próximo da meta", "indicadores próximos da meta"), proximos == 0),
+                new Criterio(fora == 0 ? "Nenhum indicador fora da meta" : AvaliacaoCliente.Plural(fora, "indicador fora da meta", "indicadores fora da meta"), fora == 0)
             };
         }
     }

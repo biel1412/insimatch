@@ -877,18 +877,19 @@ button, input, textarea { font-family: inherit; }
 .cv-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); grid-auto-flow: dense; gap: 16px; }
 .campo-v.span-2 { grid-column: span 2; }
 .campo-v .cartao-rotulo { font-weight: 700; }
-.cv-num { font-size: clamp(30px, 3vw, 44px); overflow-wrap: anywhere; }
-.campo-v.span-2 .cv-num { font-size: clamp(40px, 4.4vw, 64px); }
+.campo-v { container-type: inline-size; }
+.cv-num { font-size: clamp(22px, 13cqi, 44px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.campo-v.span-2 .cv-num { font-size: clamp(32px, 10cqi, 64px); }
 .campo-v.info { justify-content: space-between; }
 .cv-texto { font-size: 22px; font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
 .cv-texto.sim { color: var(--verde); }
 .cv-texto.nao { color: var(--vermelho); }
-.cv-anel { display: grid; grid-template-columns: minmax(110px, 150px) 1fr; gap: 16px; align-items: center; }
+.cv-anel { display: grid; grid-template-columns: minmax(96px, 42%) 1fr; gap: 14px; align-items: center; }
 .cv-anel .anel circle { stroke-width: 18; }
 .cv-anel .anel-texto strong { font-size: clamp(24px, 2.2vw, 32px); }
 .cv-anel .anel-texto span { font-size: 11px; }
 .cv-anel-dados { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.cv-anel-dados strong { font-size: clamp(22px, 2vw, 30px); font-weight: 800; overflow-wrap: anywhere; }
+.cv-anel-dados strong { font-size: clamp(16px, 7cqi, 30px); font-weight: 800; white-space: nowrap; }
 .cv-anel-dados span { font-size: 13px; color: var(--texto-3); }
 .campo-v .medidor { max-width: 230px; }
 .campo-v .medidor-valor { font-size: clamp(28px, 2.6vw, 40px); }
@@ -941,3 +942,6 @@ button, input, textarea { font-family: inherit; }
     .gp-rosca, .cv-anel { grid-template-columns: 1fr; }
     .tipos-grade { grid-template-columns: 1fr; }
 }
+
+.placar td.num { white-space: nowrap; }
+.foco-faixa strong { white-space: nowrap; }
