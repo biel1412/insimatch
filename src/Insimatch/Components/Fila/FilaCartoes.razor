@@ -24,7 +24,7 @@
 
     <div class="grade g-kpis">
         <div class="kpi"><span>Total de fluxos</span><strong>@F.Total.ToString("N0")</strong></div>
-        <div class="kpi"><span>Total de páginas</span><strong>@(AvaliacaoFila.Paginas(F.Centralizada) + AvaliacaoFila.Paginas(F.Autorizar))</strong></div>
+        <div class="kpi"><span>Páginas ocupadas</span><strong>@AvaliacaoFila.PaginasOcupadas(F)</strong></div>
         <div class="kpi"><span>Data dos fluxos</span><strong>@F.DiaAnterior.ToString("dd/MM")</strong></div>
         <div class="kpi"><span>Atualizado às</span><strong>@F.DataHora.ToString("HH:mm")</strong></div>
     </div>

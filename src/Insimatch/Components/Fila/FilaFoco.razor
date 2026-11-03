@@ -14,7 +14,7 @@
         new Indicador("Autorizar", F.Autorizar.ToString("N0"), " fluxos", AvaliacaoFila.StatusFila(F.Autorizar),
             AvaliacaoFila.RotuloFila(F.Autorizar), AvaliacaoFila.PaginasTexto(F.Autorizar)),
         new Indicador("Total", F.Total.ToString("N0"), " fluxos", AvaliacaoFila.Geral(F),
-            AvaliacaoFila.RotuloGeral(F), AvaliacaoFila.PaginasTexto(F.Total))
+            AvaliacaoFila.RotuloGeral(F), AvaliacaoFila.PaginasOcupadasTexto(F))
     };
 
     private IReadOnlyList<Indicador> Outros => new[]

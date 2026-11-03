@@ -17,7 +17,7 @@
         new LinhaPlacar("Autorizar", F.Autorizar.ToString("N0"), " fluxos", AvaliacaoFila.PaginasTexto(F.Autorizar),
             AvaliacaoFila.StatusFila(F.Autorizar), AvaliacaoFila.RotuloFila(F.Autorizar)),
         new LinhaPlacar("", Grupo: "Consolidado"),
-        new LinhaPlacar("Total", F.Total.ToString("N0"), " fluxos", AvaliacaoFila.PaginasTexto(F.Total),
+        new LinhaPlacar("Total", F.Total.ToString("N0"), " fluxos", AvaliacaoFila.PaginasOcupadasTexto(F),
             AvaliacaoFila.Geral(F), AvaliacaoFila.RotuloGeral(F)),
         new LinhaPlacar("Atualização", F.DataHora.ToString("HH:mm"), null, F.DataHora.ToString("dd/MM/yyyy"))
     };

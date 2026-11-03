@@ -41,14 +41,25 @@ public static class AvaliacaoFila
 
     public static int Paginas(int fluxos) => (int)Math.Ceiling(fluxos / (double)FluxosPorPagina);
 
+    public static string Fluxos(int n) => n == 1 ? "1 fluxo" : $"{n:N0} fluxos";
+
+    /// <summary>Páginas ocupadas somando as duas filas (cada fila tem as suas páginas).</summary>
+    public static int PaginasOcupadas(AtualizacaoFila f) => Paginas(f.Centralizada) + Paginas(f.Autorizar);
+
     public static string PaginasTexto(int fluxos)
     {
         if (fluxos <= 0) return "nenhuma página";
         var completas = fluxos / FluxosPorPagina;
         var resto = fluxos % FluxosPorPagina;
-        var pag = completas == 1 ? "1 página" : $"{completas} páginas";
-        if (completas == 0) return $"{resto} fluxo(s) na 1ª página";
-        return resto == 0 ? pag : $"{pag} e {resto} fluxo(s)";
+        var pag = completas == 1 ? "1 página completa" : $"{completas} páginas completas";
+        if (completas == 0) return $"{Fluxos(resto)} na 1ª página";
+        return resto == 0 ? pag : $"{pag} e {Fluxos(resto)}";
+    }
+
+    public static string PaginasOcupadasTexto(AtualizacaoFila f)
+    {
+        var n = PaginasOcupadas(f);
+        return n == 0 ? "nenhuma página" : n == 1 ? "1 página ocupada" : $"{n} páginas ocupadas";
     }
 
     public static Status StatusFila(int fluxos) =>
@@ -91,7 +102,7 @@ public static class AvaliacaoFila
 
     private static string Fila(string nome, int fluxos, string dia) => fluxos <= 0
         ? $"A fila {nome} não apresenta fluxos com data do dia anterior ({dia}), encontrando-se em dia."
-        : $"A fila {nome} apresenta {fluxos:N0} fluxo(s) com data do dia anterior ({dia}), " +
+        : $"A fila {nome} apresenta {Fluxos(fluxos)} com data do dia anterior ({dia}), " +
           $"o equivalente a {PaginasTexto(fluxos)}, {Situacao(fluxos)}.";
 
     public static string GerarParecer(AtualizacaoFila f)
@@ -105,7 +116,9 @@ public static class AvaliacaoFila
         };
 
         if (f.Total > 0)
-            partes.Add($"No total, são {f.Total:N0} fluxo(s) pendente(s) do dia anterior ({PaginasTexto(f.Total)}).");
+            partes.Add(f.Total == 1
+                ? "No total, há 1 fluxo pendente do dia anterior."
+                : $"No total, são {f.Total:N0} fluxos pendentes do dia anterior, distribuídos em {PaginasOcupadasTexto(f)}.");
 
         partes.Add(Geral(f) switch
         {
