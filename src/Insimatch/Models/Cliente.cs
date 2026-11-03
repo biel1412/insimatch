@@ -146,9 +146,10 @@ public static class AvaliacaoCliente
         var n = v.ToString(fmt, Br);
         return c.Tipo switch
         {
-            TipoCampo.Moeda => $"{(string.IsNullOrWhiteSpace(c.Simbolo) ? "" : c.Simbolo.Trim() + " ")}{n}",
+            // espaço inseparável: "R$ 1.234,50" nunca quebra entre símbolo e número
+            TipoCampo.Moeda => $"{(string.IsNullOrWhiteSpace(c.Simbolo) ? "" : c.Simbolo.Trim() + "\u00A0")}{n}",
             TipoCampo.Percentual => n + "%",
-            _ => string.IsNullOrWhiteSpace(c.Unidade) ? n : $"{n} {c.Unidade.Trim()}"
+            _ => string.IsNullOrWhiteSpace(c.Unidade) ? n : $"{n}\u00A0{c.Unidade.Trim()}"
         };
     }
 
@@ -161,7 +162,13 @@ public static class AvaliacaoCliente
     };
 
     public static string MetaTexto(CampoCliente c) =>
-        c.Meta.HasValue ? (c.Sentido == SentidoMeta.MenorMelhor ? "≤ " : "≥ ") + Numero(c, c.Meta.Value) : "—";
+        c.Meta.HasValue ? (c.Sentido == SentidoMeta.MenorMelhor ? "≤\u00A0" : "≥\u00A0") + Numero(c, c.Meta.Value) : "—";
+
+    /// <summary>Meta escrita por extenso, para o parecer ("meta de 12.000" / "meta máxima de 6,0 min").</summary>
+    public static string MetaExtenso(CampoCliente c) =>
+        !c.Meta.HasValue ? "" : (c.Sentido == SentidoMeta.MenorMelhor ? "meta máxima de " : "meta de ") + Numero(c, c.Meta.Value);
+
+    public static string Plural(int n, string singular, string plural) => n == 1 ? $"1 {singular}" : $"{n} {plural}";
 
     /// <summary>Atingimento em % (maior é melhor: valor ÷ meta; menor é melhor: meta ÷ valor).</summary>
     public static decimal Atingimento(CampoCliente c)
@@ -242,11 +249,11 @@ public static class AvaliacaoCliente
             var at = Atingimento(c).ToString("N1", Br);
             var rel = StatusCampo(c) switch
             {
-                Status.Excelente => "atendendo à meta",
-                Status.Atencao => "próximo à meta",
-                _ => "fora da meta"
+                Status.Excelente => "atendendo à",
+                Status.Atencao => "próximo à",
+                _ => "fora da"
             };
-            return $"{c.Nome} registrou {Valor(c)}, {rel} de {MetaTexto(c)} ({at}% de atingimento)";
+            return $"{c.Nome} registrou {Valor(c)}, {rel} {MetaExtenso(c)} ({at}% de atingimento)";
         }
 
         var abertura = $"Em análise aos indicadores {nome} referentes a {periodo}, verifica-se " + geral switch
@@ -258,7 +265,9 @@ public static class AvaliacaoCliente
             _ => "o seguinte cenário"
         };
         if (comMeta.Count > 0)
-            abertura += $", com {naMeta.Count} de {comMeta.Count} indicador(es) com meta atendido(s)";
+            abertura += comMeta.Count == 1
+                ? (naMeta.Count == 1 ? ", com o único indicador com meta atendido" : ", com o único indicador com meta não atendido")
+                : $", com {naMeta.Count} de {comMeta.Count} indicadores com meta atendidos";
         abertura += ".";
 
         var conclusao = geral switch
@@ -292,7 +301,8 @@ public static class AvaliacaoCliente
             partes.Add("Foram registrados, ainda, os seguintes indicadores: " +
                        string.Join("; ", semMeta.Select(c => $"{c.Nome}: {Valor(c)}")) + ".");
         if (fora.Count > 0)
-            partes.Add($"Requer(em) atenção prioritária: {string.Join(", ", fora.Select(c => c.Nome))}.");
+            partes.Add((fora.Count == 1 ? "Requer atenção prioritária: " : "Requerem atenção prioritária: ") +
+                       string.Join(", ", fora.Select(c => c.Nome)) + ".");
         partes.Add(conclusao);
         return string.Join(" ", partes);
     }
