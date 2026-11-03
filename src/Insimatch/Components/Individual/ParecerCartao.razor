@@ -1,0 +1,9 @@
+@* Parecer do resultado individual *@
+<ParecerBloco Texto="@(string.IsNullOrWhiteSpace(C.Parecer) ? Avaliacao.GerarParecer(C) : C.Parecer)"
+              Status="Avaliacao.Geral(C)"
+              Assinatura="@(string.IsNullOrWhiteSpace(C.Equipe) ? "insiTalent" : C.Equipe)"
+              Periodo="@C.MesPorExtenso" />
+
+@code {
+    [Parameter, EditorRequired] public Colaborador C { get; set; } = default!;
+}

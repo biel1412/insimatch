@@ -1,0 +1,41 @@
+@* Modelo "Foco": poucos números, bem grandes, para uma conversa direta *@
+<section class="painel modelo-foco">
+    @Superior
+
+    <div class="foco-grade" style="--n:@Indicadores.Count">
+        @foreach (var ind in Indicadores)
+        {
+            <div class="foco-item @Avaliacao.Classe(ind.Status)">
+                <div class="foco-rotulo">@ind.Rotulo</div>
+                <div class="foco-valor">@ind.Valor<small>@ind.Sufixo</small></div>
+                @if (!string.IsNullOrEmpty(ind.StatusRotulo))
+                {
+                    <div class="foco-status"><span class="selo-luz"></span>@ind.StatusRotulo</div>
+                }
+                @if (!string.IsNullOrEmpty(ind.Detalhe))
+                {
+                    <div class="foco-detalhe">@ind.Detalhe</div>
+                }
+            </div>
+        }
+    </div>
+
+    @if (Secundarios.Count > 0)
+    {
+        <div class="foco-faixa">
+            @foreach (var ind in Secundarios)
+            {
+                <div><span>@ind.Rotulo</span><strong>@ind.Valor<small>@ind.Sufixo</small></strong></div>
+            }
+        </div>
+    }
+
+    @Inferior
+</section>
+
+@code {
+    [Parameter] public RenderFragment? Superior { get; set; }
+    [Parameter] public RenderFragment? Inferior { get; set; }
+    [Parameter] public IReadOnlyList<Indicador> Indicadores { get; set; } = Array.Empty<Indicador>();
+    [Parameter] public IReadOnlyList<Indicador> Secundarios { get; set; } = Array.Empty<Indicador>();
+}

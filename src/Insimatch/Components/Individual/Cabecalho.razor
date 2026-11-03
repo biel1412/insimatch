@@ -1,0 +1,16 @@
+@* Cabeçalho do resultado individual *@
+@{ var sGeral = Avaliacao.Geral(C); }
+<Topo Sigla="@C.Iniciais"
+      RotuloSup="Resultado individual"
+      Titulo="@(string.IsNullOrWhiteSpace(C.Nome) ? "Nome do colaborador" : C.Nome)"
+      Info="@Info"
+      Status="sGeral"
+      SeloValor="@Avaliacao.RotuloGeral(sGeral)" />
+
+@code {
+    [Parameter, EditorRequired] public Colaborador C { get; set; } = default!;
+
+    private IReadOnlyList<string> Info => string.IsNullOrWhiteSpace(C.Equipe)
+        ? new[] { C.MesPorExtenso }
+        : new[] { C.Equipe, C.MesPorExtenso };
+}

@@ -1,0 +1,31 @@
+@* Modelo "Placar" da atualização de fila *@
+@{ var st = AvaliacaoFila.Geral(F); }
+<PlacarLayout Linhas="@Linhas" Criterios="@Criterios" Status="st"
+              VereditoRotulo="Situação das filas" VereditoValor="@AvaliacaoFila.RotuloGeral(F)">
+    <Superior><FilaCabecalho F="F" /></Superior>
+    <Inferior><FilaParecer F="F" /></Inferior>
+</PlacarLayout>
+
+@code {
+    [Parameter, EditorRequired] public AtualizacaoFila F { get; set; } = default!;
+
+    private IReadOnlyList<LinhaPlacar> Linhas => new[]
+    {
+        new LinhaPlacar("", Grupo: $"Fluxos com data de {F.DiaAnterior:dd/MM/yyyy}"),
+        new LinhaPlacar("Centralizada", F.Centralizada.ToString("N0"), " fluxos", AvaliacaoFila.PaginasTexto(F.Centralizada),
+            AvaliacaoFila.StatusFila(F.Centralizada), AvaliacaoFila.RotuloFila(F.Centralizada)),
+        new LinhaPlacar("Autorizar", F.Autorizar.ToString("N0"), " fluxos", AvaliacaoFila.PaginasTexto(F.Autorizar),
+            AvaliacaoFila.StatusFila(F.Autorizar), AvaliacaoFila.RotuloFila(F.Autorizar)),
+        new LinhaPlacar("", Grupo: "Consolidado"),
+        new LinhaPlacar("Total", F.Total.ToString("N0"), " fluxos", AvaliacaoFila.PaginasTexto(F.Total),
+            AvaliacaoFila.Geral(F), AvaliacaoFila.RotuloGeral(F)),
+        new LinhaPlacar("Atualização", F.DataHora.ToString("HH:mm"), null, F.DataHora.ToString("dd/MM/yyyy"))
+    };
+
+    private IReadOnlyList<Criterio> Criterios => new[]
+    {
+        new Criterio("Centralizada em dia ou sob controle (até 1 página)", AvaliacaoFila.StatusFila(F.Centralizada) is Status.Excelente or Status.Bom),
+        new Criterio("Autorizar em dia ou sob controle (até 1 página)", AvaliacaoFila.StatusFila(F.Autorizar) is Status.Excelente or Status.Bom),
+        new Criterio("Nenhuma fila com acúmulo (acima de 3 páginas)", AvaliacaoFila.Geral(F) != Status.Critico)
+    };
+}

@@ -39,29 +39,9 @@ public class Colaborador
         ? Math.Max(0, Math.Floor((decimal)(Volume - TotalDesvios) / Volume * 10000m) / 100m)
         : 0;
 
-    public string Iniciais
-    {
-        get
-        {
-            var partes = Nome.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (partes.Length == 0) return "?";
-            if (partes.Length == 1) return partes[0][..1].ToUpperInvariant();
-            return (partes[0][..1] + partes[^1][..1]).ToUpperInvariant();
-        }
-    }
+    public string Iniciais => Datas.Iniciais(Nome);
 
-    public string MesPorExtenso
-    {
-        get
-        {
-            string[] nomes = { "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-                               "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro" };
-            var p = Mes.Split('-');
-            if (p.Length == 2 && int.TryParse(p[0], out var ano) && int.TryParse(p[1], out var m) && m is >= 1 and <= 12)
-                return $"{nomes[m - 1]} de {ano}";
-            return Mes;
-        }
-    }
+    public string MesPorExtenso => Datas.MesPorExtenso(Mes);
 
     public Colaborador Clonar() => (Colaborador)MemberwiseClone();
 }

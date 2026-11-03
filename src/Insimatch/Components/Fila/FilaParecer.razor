@@ -1,0 +1,9 @@
+@* Parecer da atualização de fila *@
+<ParecerBloco Texto="@(string.IsNullOrWhiteSpace(F.Parecer) ? AvaliacaoFila.GerarParecer(F) : F.Parecer)"
+              Status="AvaliacaoFila.Geral(F)"
+              Assinatura="Atualização de fila"
+              Periodo="@F.Rotulo" />
+
+@code {
+    [Parameter, EditorRequired] public AtualizacaoFila F { get; set; } = default!;
+}

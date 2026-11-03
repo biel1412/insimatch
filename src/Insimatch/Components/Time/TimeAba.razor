@@ -1,0 +1,224 @@
+@* Aba "Resultado do time" — editor + apresentação *@
+@inject ArmazenamentoService Armazenamento
+
+<PageTitle>insiTalent · @(Atual?.Nome is { Length: > 0 } n ? n : "Resultado do time")</PageTitle>
+
+<aside class="lateral">
+    <div class="marca">
+        <div class="marca-logo">insi<span>Talent</span></div>
+        <div class="marca-sub">Resultado do time</div>
+    </div>
+
+    <div class="abas">
+        <button class="@(Aba == "dados" ? "ativa" : "")" @onclick='() => { Aba = "dados"; }'>Time</button>
+        <button class="@(Aba == "lista" ? "ativa" : "")" @onclick='() => { Aba = "lista"; }'>Lista (@Lista.Count)</button>
+    </div>
+
+    @if (Atual is not null && Aba == "dados")
+    {
+        <div class="form">
+            <div class="form-2">
+                <label>Nome do time
+                    <input @bind="Atual.Nome" @bind:event="oninput" @bind:after="SalvarAsync" placeholder="Ex.: Atendimento" />
+                </label>
+                <label>Mês
+                    <input type="month" value="@Atual.Mes" @onchange="AlterarMesAsync" />
+                </label>
+            </div>
+
+            <div class="form-grupo">Volume</div>
+            <div class="form-2">
+                <label>Meta de volume
+                    <input type="number" min="0" @bind="Atual.MetaVolume" @bind:event="oninput" @bind:after="SalvarAsync" />
+                </label>
+                <label>Volume atingido
+                    <input type="number" min="0" @bind="Atual.VolumeAtingido" @bind:event="oninput" @bind:after="SalvarAsync" />
+                </label>
+            </div>
+            <div class="calculado">Atingimento: <strong>@Atual.Atingimento.ToString("N1")%</strong> · @AvaliacaoTime.RotuloVolume(Atual)</div>
+
+            <div class="form-grupo">Qualidade</div>
+            <div class="form-2">
+                <label>Meta de qualidade (%)
+                    <input type="number" min="0" max="100" step="0.01" @bind="Atual.MetaQualidade" @bind:event="oninput" @bind:after="SalvarAsync" />
+                </label>
+                <label>Qualidade do mês (%)
+                    <input type="number" min="0" max="100" step="0.01" @bind="Atual.Qualidade" @bind:event="oninput" @bind:after="SalvarAsync" />
+                </label>
+            </div>
+            <div class="form-2">
+                <label>Desvios internos
+                    <input type="number" min="0" @bind="Atual.DesviosInternos" @bind:event="oninput" @bind:after="SalvarAsync" />
+                </label>
+                <label>Desvios externos
+                    <input type="number" min="0" @bind="Atual.DesviosExternos" @bind:event="oninput" @bind:after="SalvarAsync" />
+                </label>
+            </div>
+            <div class="calculado">Qualidade: <strong>@AvaliacaoTime.RotuloQualidade(Atual)</strong> · Resultado: <strong>@Avaliacao.RotuloGeral(AvaliacaoTime.Geral(Atual))</strong></div>
+
+            <div class="form-grupo">
+                Parecer do time
+                <button class="link" @onclick="GerarParecerAsync">✨ Gerar parecer formal</button>
+            </div>
+            <textarea rows="7" @bind="Atual.Parecer" @bind:event="oninput" @bind:after="SalvarAsync"
+                      placeholder="Clique em “Gerar parecer formal” para criar o texto com base no resultado e ajuste o que quiser. Se ficar vazio, o painel mostra o parecer automático."></textarea>
+
+            <div class="acoes">
+                <button class="btn" @onclick="NovoAsync">+ Novo</button>
+                <button class="btn" @onclick="DuplicarAsync">Duplicar</button>
+                <button class="btn perigo" @onclick="ExcluirAsync">Excluir</button>
+            </div>
+        </div>
+    }
+    else if (Aba == "lista")
+    {
+        <div class="form">
+            <ul class="lista">
+                @foreach (var t in Lista)
+                {
+                    var st = AvaliacaoTime.Geral(t);
+                    <li class="@(t.Id == Atual?.Id ? "sel" : "")" @onclick="() => Selecionar(t)">
+                        <span class="mini-avatar @Avaliacao.Classe(st)">@t.Iniciais</span>
+                        <span class="lista-txt">
+                            <strong>@(string.IsNullOrWhiteSpace(t.Nome) ? "(sem nome)" : t.Nome)</strong>
+                            <small>@t.MesPorExtenso · @t.Atingimento.ToString("N0")% da meta</small>
+                        </span>
+                    </li>
+                }
+            </ul>
+            <div class="acoes">
+                <button class="btn" @onclick="NovoAsync">+ Novo</button>
+            </div>
+            <p class="dica">Os dados ficam salvos apenas neste navegador.</p>
+        </div>
+    }
+</aside>
+
+<main class="principal">
+    <div class="barra-topo">
+        @if (Lista.Count > 1)
+        {
+            <div class="navegacao">
+                <button class="icone" title="Anterior" @onclick="() => Mover(-1)">‹</button>
+                <span>@(IndiceAtual + 1) de @Lista.Count</span>
+                <button class="icone" title="Próximo" @onclick="() => Mover(1)">›</button>
+            </div>
+        }
+        <div class="espaco"></div>
+        @Ferramentas
+    </div>
+
+    @if (Atual is not null)
+    {
+        @switch (Modelo)
+        {
+            case "placar":
+                <TimePlacar T="Atual" />
+                break;
+            case "foco":
+                <TimeFoco T="Atual" />
+                break;
+            default:
+                <TimeCartoes T="Atual" />
+                break;
+        }
+    }
+    else
+    {
+        <div class="vazio">Carregando…</div>
+    }
+</main>
+
+@code {
+    [Parameter] public bool Apresentacao { get; set; }
+    [Parameter] public string Modelo { get; set; } = "cartoes";
+    [Parameter] public RenderFragment? Ferramentas { get; set; }
+
+    private const string Chave = "insitalent.times";
+    private List<ResultadoTime> Lista = new();
+    private ResultadoTime? Atual;
+    private string Aba = "dados";
+
+    private int IndiceAtual => Atual is null ? 0 : Math.Max(0, Lista.IndexOf(Atual));
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        Lista = await Armazenamento.CarregarAsync<List<ResultadoTime>>(Chave) ?? new();
+        if (Lista.Count == 0)
+        {
+            Lista.Add(new ResultadoTime
+            {
+                Nome = "Atendimento",
+                MetaVolume = 52000,
+                VolumeAtingido = 50340,
+                MetaQualidade = 99.94m,
+                Qualidade = 99.95m,
+                DesviosInternos = 18,
+                DesviosExternos = 6
+            });
+            await SalvarAsync();
+        }
+        Atual = Lista[0];
+        StateHasChanged();
+    }
+
+    private Task SalvarAsync() => Armazenamento.SalvarAsync(Chave, Lista);
+
+    private async Task AlterarMesAsync(ChangeEventArgs e)
+    {
+        if (Atual is null) return;
+        var v = e.Value?.ToString();
+        if (!string.IsNullOrWhiteSpace(v)) Atual.Mes = v;
+        await SalvarAsync();
+    }
+
+    private void Selecionar(ResultadoTime t)
+    {
+        Atual = t;
+        if (!Apresentacao) Aba = "dados";
+    }
+
+    private void Mover(int passo)
+    {
+        if (Lista.Count == 0) return;
+        Atual = Lista[(IndiceAtual + passo + Lista.Count) % Lista.Count];
+    }
+
+    private async Task NovoAsync()
+    {
+        var t = new ResultadoTime { Mes = Atual?.Mes ?? DateTime.Today.ToString("yyyy-MM"), MetaQualidade = Atual?.MetaQualidade ?? 99.94m };
+        Lista.Add(t);
+        Atual = t;
+        Aba = "dados";
+        await SalvarAsync();
+    }
+
+    private async Task DuplicarAsync()
+    {
+        if (Atual is null) return;
+        var t = Atual.Clonar();
+        t.Id = Guid.NewGuid().ToString("N");
+        t.Nome = Atual.Nome + " (cópia)";
+        Lista.Insert(Lista.IndexOf(Atual) + 1, t);
+        Atual = t;
+        await SalvarAsync();
+    }
+
+    private async Task ExcluirAsync()
+    {
+        if (Atual is null) return;
+        var i = Lista.IndexOf(Atual);
+        Lista.Remove(Atual);
+        if (Lista.Count == 0) Lista.Add(new ResultadoTime());
+        Atual = Lista[Math.Clamp(i, 0, Lista.Count - 1)];
+        await SalvarAsync();
+    }
+
+    private async Task GerarParecerAsync()
+    {
+        if (Atual is null) return;
+        Atual.Parecer = AvaliacaoTime.GerarParecer(Atual);
+        await SalvarAsync();
+    }
+}

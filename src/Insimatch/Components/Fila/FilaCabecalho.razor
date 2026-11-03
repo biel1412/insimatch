@@ -1,0 +1,16 @@
+@* Cabeçalho da atualização de fila *@
+@{ var st = AvaliacaoFila.Geral(F); }
+<Topo RotuloSup="Atualização de fila"
+      Titulo="Fluxos do dia anterior"
+      Info="@(new[] { $"Atualizado em {F.Rotulo}", $"Fluxos com data de {F.DiaAnterior:dd/MM}" })"
+      Status="st"
+      SeloRotulo="Situação das filas"
+      SeloValor="@AvaliacaoFila.RotuloGeral(F)">
+    <Icone>
+        <svg viewBox="0 0 24 24" class="ico-avatar"><rect x="4" y="4" width="16" height="4" rx="1.5" /><rect x="4" y="10" width="16" height="4" rx="1.5" /><rect x="4" y="16" width="10" height="4" rx="1.5" /></svg>
+    </Icone>
+</Topo>
+
+@code {
+    [Parameter, EditorRequired] public AtualizacaoFila F { get; set; } = default!;
+}

@@ -1,0 +1,45 @@
+@* Modelo "Cartões" da atualização de fila *@
+<section class="painel modelo-fila">
+    <FilaCabecalho F="F" />
+
+    <div class="secao-titulo"><span>01</span> Filas · fluxos com data do dia anterior</div>
+    <div class="grade fila-grade">
+        @foreach (var (nome, fluxos) in new[] { ("Centralizada", F.Centralizada), ("Autorizar", F.Autorizar) })
+        {
+            var st = AvaliacaoFila.StatusFila(fluxos);
+            <article class="cartao destaque @Avaliacao.Classe(st)">
+                <div class="cartao-topo">
+                    <span class="cartao-rotulo fila-nome">@nome</span>
+                    <span class="chip">@AvaliacaoFila.RotuloFila(fluxos)</span>
+                </div>
+                <div class="numero gigante">@fluxos.ToString("N0")<small>fluxos</small></div>
+                <div class="fila-paginas-txt">
+                    = <strong>@AvaliacaoFila.PaginasTexto(fluxos)</strong>
+                    <span class="mudo">· 15 fluxos por página</span>
+                </div>
+                <FilaPaginas Fluxos="fluxos" />
+            </article>
+        }
+    </div>
+
+    <div class="grade g-kpis">
+        <div class="kpi"><span>Total de fluxos</span><strong>@F.Total.ToString("N0")</strong></div>
+        <div class="kpi"><span>Total de páginas</span><strong>@(AvaliacaoFila.Paginas(F.Centralizada) + AvaliacaoFila.Paginas(F.Autorizar))</strong></div>
+        <div class="kpi"><span>Data dos fluxos</span><strong>@F.DiaAnterior.ToString("dd/MM")</strong></div>
+        <div class="kpi"><span>Atualizado às</span><strong>@F.DataHora.ToString("HH:mm")</strong></div>
+    </div>
+
+    <div class="legenda-fila">
+        <span class="st-excelente"><i></i>Em dia: 0 fluxos</span>
+        <span class="st-bom"><i></i>Sob controle: até 1 página</span>
+        <span class="st-atencao"><i></i>Atenção: até 3 páginas</span>
+        <span class="st-critico"><i></i>Acúmulo: acima de 3 páginas</span>
+    </div>
+
+    <div class="secao-titulo"><span>02</span> Parecer</div>
+    <FilaParecer F="F" />
+</section>
+
+@code {
+    [Parameter, EditorRequired] public AtualizacaoFila F { get; set; } = default!;
+}

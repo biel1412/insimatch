@@ -1,0 +1,207 @@
+@* Aba "Atualização de fila" — editor + apresentação *@
+@inject ArmazenamentoService Armazenamento
+
+<PageTitle>insiTalent · Atualização de fila</PageTitle>
+
+<aside class="lateral">
+    <div class="marca">
+        <div class="marca-logo">insi<span>Talent</span></div>
+        <div class="marca-sub">Atualização de fila</div>
+    </div>
+
+    <div class="abas">
+        <button class="@(Aba == "dados" ? "ativa" : "")" @onclick='() => { Aba = "dados"; }'>Atualizar</button>
+        <button class="@(Aba == "lista" ? "ativa" : "")" @onclick='() => { Aba = "lista"; }'>Histórico (@Lista.Count)</button>
+    </div>
+
+    @if (Atual is not null && Aba == "dados")
+    {
+        <div class="form">
+            <label>Data e hora da atualização
+                <span class="campo-com-botao">
+                    <input type="datetime-local" @bind="Atual.DataHora" @bind:after="SalvarAsync" />
+                    <button class="btn" title="Usar a data e hora atuais" @onclick="AgoraAsync">Agora</button>
+                </span>
+            </label>
+            <div class="calculado">Fluxos considerados: com data de <strong>@Atual.DiaAnterior.ToString("dd/MM/yyyy")</strong> (dia anterior) · cada página possui 15 fluxos</div>
+
+            <div class="form-grupo">Centralizada</div>
+            <label>Fluxos com data do dia anterior
+                <span class="campo-com-botao">
+                    <button class="btn" title="Menos 1 página (15 fluxos)" @onclick="() => AjustarAsync(true, -15)">−15</button>
+                    <input type="number" min="0" @bind="Atual.Centralizada" @bind:event="oninput" @bind:after="SalvarAsync" />
+                    <button class="btn" title="Mais 1 página (15 fluxos)" @onclick="() => AjustarAsync(true, 15)">+15</button>
+                </span>
+            </label>
+            <div class="calculado">= <strong>@AvaliacaoFila.PaginasTexto(Atual.Centralizada)</strong> · @AvaliacaoFila.RotuloFila(Atual.Centralizada)</div>
+
+            <div class="form-grupo">Autorizar</div>
+            <label>Fluxos com data do dia anterior
+                <span class="campo-com-botao">
+                    <button class="btn" title="Menos 1 página (15 fluxos)" @onclick="() => AjustarAsync(false, -15)">−15</button>
+                    <input type="number" min="0" @bind="Atual.Autorizar" @bind:event="oninput" @bind:after="SalvarAsync" />
+                    <button class="btn" title="Mais 1 página (15 fluxos)" @onclick="() => AjustarAsync(false, 15)">+15</button>
+                </span>
+            </label>
+            <div class="calculado">= <strong>@AvaliacaoFila.PaginasTexto(Atual.Autorizar)</strong> · @AvaliacaoFila.RotuloFila(Atual.Autorizar)</div>
+
+            <div class="form-grupo">
+                Parecer
+                <button class="link" @onclick="GerarParecerAsync">✨ Gerar parecer formal</button>
+            </div>
+            <textarea rows="7" @bind="Atual.Parecer" @bind:event="oninput" @bind:after="SalvarAsync"
+                      placeholder="Clique em “Gerar parecer formal” para criar o texto com base na situação das filas e edite o que quiser. Se ficar vazio, o painel mostra o parecer automático."></textarea>
+
+            <div class="acoes">
+                <button class="btn" @onclick="NovaAsync">+ Nova atualização</button>
+                <button class="btn perigo" @onclick="ExcluirAsync">Excluir</button>
+            </div>
+            <p class="dica">Situação: em dia (0) · sob controle (até 1 página) · atenção (até 3 páginas) · acúmulo (acima de 3 páginas).</p>
+        </div>
+    }
+    else if (Aba == "lista")
+    {
+        <div class="form">
+            <ul class="lista">
+                @foreach (var f in Lista.OrderByDescending(x => x.DataHora))
+                {
+                    var st = AvaliacaoFila.Geral(f);
+                    <li class="@(f.Id == Atual?.Id ? "sel" : "")" @onclick="() => Selecionar(f)">
+                        <span class="mini-avatar @Avaliacao.Classe(st)">@f.DataHora.ToString("dd")</span>
+                        <span class="lista-txt">
+                            <strong>@f.Rotulo</strong>
+                            <small>Centralizada @f.Centralizada · Autorizar @f.Autorizar · @AvaliacaoFila.RotuloGeral(f)</small>
+                        </span>
+                    </li>
+                }
+            </ul>
+            <div class="acoes">
+                <button class="btn" @onclick="NovaAsync">+ Nova atualização</button>
+            </div>
+            <p class="dica">Os dados ficam salvos apenas neste navegador.</p>
+        </div>
+    }
+</aside>
+
+<main class="principal">
+    <div class="barra-topo">
+        @if (Lista.Count > 1)
+        {
+            <div class="navegacao">
+                <button class="icone" title="Anterior" @onclick="() => Mover(-1)">‹</button>
+                <span>@(IndiceAtual + 1) de @Lista.Count</span>
+                <button class="icone" title="Próximo" @onclick="() => Mover(1)">›</button>
+            </div>
+        }
+        <div class="espaco"></div>
+        @Ferramentas
+    </div>
+
+    @if (Atual is not null)
+    {
+        @switch (Modelo)
+        {
+            case "placar":
+                <FilaPlacar F="Atual" />
+                break;
+            case "foco":
+                <FilaFoco F="Atual" />
+                break;
+            default:
+                <FilaCartoes F="Atual" />
+                break;
+        }
+    }
+    else
+    {
+        <div class="vazio">Carregando…</div>
+    }
+</main>
+
+@code {
+    [Parameter] public bool Apresentacao { get; set; }
+    [Parameter] public string Modelo { get; set; } = "cartoes";
+    [Parameter] public RenderFragment? Ferramentas { get; set; }
+
+    private const string Chave = "insitalent.fila";
+    private List<AtualizacaoFila> Lista = new();
+    private AtualizacaoFila? Atual;
+    private string Aba = "dados";
+
+    // Navegação em ordem cronológica (mais antiga → mais recente)
+    private List<AtualizacaoFila> Ordenada => Lista.OrderBy(x => x.DataHora).ToList();
+    private int IndiceAtual => Atual is null ? 0 : Math.Max(0, Ordenada.IndexOf(Atual));
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        Lista = await Armazenamento.CarregarAsync<List<AtualizacaoFila>>(Chave) ?? new();
+        if (Lista.Count == 0)
+        {
+            Lista.Add(new AtualizacaoFila { Centralizada = 37, Autorizar = 12 });
+            await SalvarAsync();
+        }
+        Atual = Lista.OrderByDescending(x => x.DataHora).First();
+        StateHasChanged();
+    }
+
+    private Task SalvarAsync() => Armazenamento.SalvarAsync(Chave, Lista);
+
+    private async Task AgoraAsync()
+    {
+        if (Atual is null) return;
+        Atual.DataHora = AtualizacaoFila.AgoraSemSegundos();
+        await SalvarAsync();
+    }
+
+    private async Task AjustarAsync(bool centralizada, int delta)
+    {
+        if (Atual is null) return;
+        if (centralizada) Atual.Centralizada = Math.Max(0, Atual.Centralizada + delta);
+        else Atual.Autorizar = Math.Max(0, Atual.Autorizar + delta);
+        await SalvarAsync();
+    }
+
+    private void Selecionar(AtualizacaoFila f)
+    {
+        Atual = f;
+        if (!Apresentacao) Aba = "dados";
+    }
+
+    private void Mover(int passo)
+    {
+        var ord = Ordenada;
+        if (ord.Count == 0) return;
+        Atual = ord[(IndiceAtual + passo + ord.Count) % ord.Count];
+    }
+
+    private async Task NovaAsync()
+    {
+        // Começa com os números da atualização atual, para só ajustar o que mudou
+        var f = new AtualizacaoFila
+        {
+            Centralizada = Atual?.Centralizada ?? 0,
+            Autorizar = Atual?.Autorizar ?? 0
+        };
+        Lista.Add(f);
+        Atual = f;
+        Aba = "dados";
+        await SalvarAsync();
+    }
+
+    private async Task ExcluirAsync()
+    {
+        if (Atual is null) return;
+        Lista.Remove(Atual);
+        if (Lista.Count == 0) Lista.Add(new AtualizacaoFila());
+        Atual = Lista.OrderByDescending(x => x.DataHora).First();
+        await SalvarAsync();
+    }
+
+    private async Task GerarParecerAsync()
+    {
+        if (Atual is null) return;
+        Atual.Parecer = AvaliacaoFila.GerarParecer(Atual);
+        await SalvarAsync();
+    }
+}

@@ -2,175 +2,81 @@
 @inject ArmazenamentoService Armazenamento
 @inject IJSRuntime JS
 
-<PageTitle>Insimatch · @(Atual?.Nome ?? "Resultado individual")</PageTitle>
+<div class="app @(Apresentacao ? "modo-apresentacao" : "")" data-tema="@Temas[TemaIdx].Id" data-fundo="@Fundos[FundoIdx].Id">
+    <PapelDeParede Fundo="@Fundos[FundoIdx].Id" />
 
-<div class="app @(Apresentacao ? "modo-apresentacao" : "")" data-tema="@Temas[TemaIdx].Id">
-    <aside class="lateral">
-        <div class="marca">
-            <div class="marca-logo">Insi<span>match</span></div>
-            <div class="marca-sub">Resultados individuais</div>
-        </div>
-
-        <div class="abas">
-            <button class="@(Aba == "dados" ? "ativa" : "")" @onclick='() => { Aba = "dados"; }'>Colaborador</button>
-            <button class="@(Aba == "lista" ? "ativa" : "")" @onclick='() => { Aba = "lista"; }'>Lista (@Lista.Count)</button>
-        </div>
-
-        @if (Atual is not null && Aba == "dados")
-        {
-            <div class="form">
-                <label>Nome do colaborador
-                    <input @bind="Atual.Nome" @bind:event="oninput" @bind:after="SalvarAsync" placeholder="Ex.: Maria Souza" />
-                </label>
-                <div class="form-2">
-                    <label>Equipe
-                        <input @bind="Atual.Equipe" @bind:event="oninput" @bind:after="SalvarAsync" placeholder="Ex.: Atendimento" />
-                    </label>
-                    <label>Mês
-                        <input type="month" value="@Atual.Mes" @onchange="AlterarMesAsync" />
-                    </label>
-                </div>
-
-                <div class="form-grupo">Produção</div>
-                <div class="form-2">
-                    <label>Volume do mês
-                        <input type="number" min="0" @bind="Atual.Volume" @bind:event="oninput" @bind:after="SalvarAsync" />
-                    </label>
-                    <label>Dias trabalhados
-                        <input type="number" min="0" max="31" @bind="Atual.DiasConsiderados" @bind:event="oninput" @bind:after="SalvarAsync" />
-                    </label>
-                </div>
-                <div class="form-2">
-                    <label>Meta Pro (por dia)
-                        <input type="number" min="0" step="1" placeholder="Ex.: 150" @bind="Atual.MetaPro" @bind:event="oninput" @bind:after="SalvarAsync" />
-                    </label>
-                    <label>Meta Premium (por dia)
-                        <input type="number" min="0" step="1" placeholder="Ex.: 180" @bind="Atual.MetaPremium" @bind:event="oninput" @bind:after="SalvarAsync" />
-                    </label>
-                </div>
-                <div class="calculado">Média diária (calculada): <strong>@Atual.MediaDiaria.ToString("N1")/dia</strong> · @Avaliacao.RotuloVolume(Atual)</div>
-
-                <div class="form-grupo">Qualidade</div>
-                <div class="form-2">
-                    <label>Desvios internos
-                        <input type="number" min="0" @bind="Atual.DesviosInternos" @bind:event="oninput" @bind:after="SalvarAsync" />
-                    </label>
-                    <label>Desvios externos
-                        <input type="number" min="0" @bind="Atual.DesviosExternos" @bind:event="oninput" @bind:after="SalvarAsync" />
-                    </label>
-                </div>
-
-                <div class="calculado">Qualidade (calculada): <strong>@Atual.Qualidade.ToString("N2")%</strong> · @Avaliacao.RotuloQualidade(Atual)
-                    <br /><small>Máximo de desvios para 99,94%: @Avaliacao.DesviosPermitidos(Atual)</small></div>
-
-                <div class="form-grupo">
-                    Parecer
-                    <button class="link" @onclick="GerarParecerAsync">✨ Gerar parecer formal</button>
-                </div>
-                <textarea rows="6" @bind="Atual.Parecer" @bind:event="oninput" @bind:after="SalvarAsync"
-                          placeholder="Escreva o parecer ou clique em “Gerar parecer formal”. Se ficar vazio, o painel mostra o parecer formal automático, sempre atualizado com os números."></textarea>
-
-                <div class="acoes">
-                    <button class="btn" @onclick="NovoAsync">+ Novo</button>
-                    <button class="btn" @onclick="DuplicarAsync">Duplicar</button>
-                    <button class="btn perigo" @onclick="ExcluirAsync">Excluir</button>
-                </div>
-            </div>
-        }
-        else if (Aba == "lista")
-        {
-            <div class="form">
-                <input class="busca" placeholder="Buscar por nome, equipe ou mês…" @bind="Busca" @bind:event="oninput" />
-                <ul class="lista">
-                    @foreach (var c in Filtrados)
-                    {
-                        var st = Avaliacao.Geral(c);
-                        <li class="@(c.Id == Atual?.Id ? "sel" : "")" @onclick="() => Selecionar(c)">
-                            <span class="mini-avatar @Avaliacao.Classe(st)">@c.Iniciais</span>
-                            <span class="lista-txt">
-                                <strong>@(string.IsNullOrWhiteSpace(c.Nome) ? "(sem nome)" : c.Nome)</strong>
-                                <small>@c.Equipe @(string.IsNullOrWhiteSpace(c.Equipe) ? "" : "·") @c.MesPorExtenso</small>
-                            </span>
-                        </li>
-                    }
-                </ul>
-                <div class="acoes">
-                    <button class="btn" @onclick="NovoAsync">+ Novo</button>
-                </div>
-
-                <div class="form-grupo">Importar / exportar</div>
-                <label class="btn arquivo">
-                    Importar planilha (.csv)
-                    <InputFile OnChange="ImportarAsync" accept=".csv,text/csv" />
-                </label>
-                @if (!string.IsNullOrEmpty(Mensagem))
-                {
-                    <div class="calculado">@Mensagem</div>
-                }
-                <div class="acoes">
-                    <button class="btn" @onclick="ExportarAsync">Exportar .csv</button>
-                    <button class="btn" @onclick="BaixarModeloAsync">Baixar modelo</button>
-                </div>
-                <p class="dica">Colunas: Nome; Equipe; Mes (aaaa-mm); Volume; MetaPro; MetaPremium (metas por dia); DiasConsiderados; DesviosInternos; DesviosExternos; Parecer. A qualidade é calculada.
-                    Os dados ficam salvos apenas neste navegador.</p>
-            </div>
-        }
-    </aside>
-
-    <main class="principal">
-        <div class="barra-topo">
-            @if (Lista.Count > 1)
+    @* Menu principal: dock vertical com indicador deslizante *@
+    <nav class="dock" style="--ativo:@AbaIdx" aria-label="Funções">
+        <div class="dock-logo" title="insiTalent">i<span>T</span></div>
+        <div class="dock-itens">
+            <span class="dock-indicador"></span>
+            @for (var i = 0; i < Abas.Length; i++)
             {
-                <div class="navegacao">
-                    <button class="icone" title="Anterior" @onclick="() => Mover(-1)">‹</button>
-                    <span>@(IndiceAtual + 1) de @Lista.Count</span>
-                    <button class="icone" title="Próximo" @onclick="() => Mover(1)">›</button>
-                </div>
+                var idx = i;
+                var aba = Abas[i];
+                <button class="dock-item @(idx == AbaIdx ? "ativo" : "")" data-tip="@aba.Nome"
+                        aria-current="@(idx == AbaIdx ? "page" : null)" @onclick="() => MudarAbaAsync(idx)">
+                    <span class="dock-ico">
+                        @if (aba.Id == "individual")
+                        {
+                            <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6" /><path d="M4.8 20c.8-4 3.7-6.2 7.2-6.2s6.4 2.2 7.2 6.2" /></svg>
+                        }
+                        else if (aba.Id == "time")
+                        {
+                            <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" /><circle cx="17" cy="9.5" r="2.4" /><path d="M2.8 19c.6-3.3 3.2-5.2 6.2-5.2s5.6 1.9 6.2 5.2" /><path d="M15.2 14.3c2.6-.3 5 1.2 5.8 4.7" /></svg>
+                        }
+                        else
+                        {
+                            <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="4" rx="1.5" /><rect x="4" y="10" width="16" height="4" rx="1.5" /><rect x="4" y="16" width="10" height="4" rx="1.5" /></svg>
+                        }
+                    </span>
+                    <span class="dock-txt">@aba.Curto</span>
+                </button>
             }
-            <div class="espaco"></div>
-            <button class="btn" title="Mudar a cor da página" @onclick="MudarTemaAsync">
-                <span class="bolinha"></span> Cor: @Temas[TemaIdx].Nome
-            </button>
-            <button class="btn" title="Alternar o modelo de apresentação" @onclick="MudarVisualAsync">
-                ▦ Modelo: @Visuais[VisualIdx].Nome
-            </button>
-            <button class="btn" @onclick="() => { Apresentacao = !Apresentacao; }">
-                @(Apresentacao ? "✎ Editar" : "▶ Modo apresentação")
-            </button>
-            <button class="btn" title="Tela cheia" @onclick="TelaCheiaAsync">⛶ Tela cheia</button>
         </div>
+        <div class="dock-rodape">@(AbaIdx + 1)/@Abas.Length</div>
+    </nav>
 
-        @if (Atual is not null)
+    @if (!Pronto)
+    {
+        <div class="vazio">Carregando…</div>
+    }
+    else
+    {
+        @switch (Abas[AbaIdx].Id)
         {
-            @switch (Visuais[VisualIdx].Id)
-            {
-                case "graficos":
-                    <DashboardGraficos C="Atual" />
-                    break;
-                case "placar":
-                    <DashboardPlacar C="Atual" />
-                    break;
-                default:
-                    <Dashboard C="Atual" />
-                    break;
-            }
+            case "time":
+                <TimeAba @key="@("time")" Apresentacao="Apresentacao" Modelo="@ModeloAtual.Id" Ferramentas="Ferramentas" />
+                break;
+            case "fila":
+                <FilaAba @key="@("fila")" Apresentacao="Apresentacao" Modelo="@ModeloAtual.Id" Ferramentas="Ferramentas" />
+                break;
+            default:
+                <IndividualAba @key="@("individual")" Apresentacao="Apresentacao" Modelo="@ModeloAtual.Id" Ferramentas="Ferramentas" />
+                break;
         }
-        else
-        {
-            <div class="vazio">Carregando…</div>
-        }
-    </main>
+    }
 </div>
 
 @code {
-    private List<Colaborador> Lista = new();
-    private Colaborador? Atual;
-    private bool Apresentacao;
-    private string Aba = "dados";
-    private string Busca = "";
-    private string Mensagem = "";
+    private record Aba(string Id, string Nome, string Curto, Opcao[] Modelos);
 
-    private record Opcao(string Id, string Nome);
+    private static readonly Aba[] Abas =
+    {
+        new("individual", "Resultado individual", "Individual", new Opcao[]
+        {
+            new("cartoes", "Cartões"), new("graficos", "Gráficos"), new("placar", "Placar"),
+            new("foco", "Foco"), new("mosaico", "Mosaico")
+        }),
+        new("time", "Resultado do time", "Time", new Opcao[]
+        {
+            new("cartoes", "Cartões"), new("placar", "Placar"), new("foco", "Foco")
+        }),
+        new("fila", "Atualização de fila", "Fila", new Opcao[]
+        {
+            new("cartoes", "Cartões"), new("placar", "Placar"), new("foco", "Foco")
+        })
+    };
 
     private static readonly Opcao[] Temas =
     {
@@ -178,164 +84,109 @@
         new("aurora", "Aurora"), new("claro", "Claro")
     };
 
-    private static readonly Opcao[] Visuais =
+    private static readonly Opcao[] Fundos =
     {
-        new("cartoes", "Cartões"), new("graficos", "Gráficos"), new("placar", "Placar")
+        new("brilho", "Brilho"), new("aurora", "Aurora"), new("ondas", "Ondas"), new("grade", "Grade"),
+        new("pontos", "Pontos"), new("geometrico", "Geométrico"), new("liso", "Liso")
     };
 
+    private bool Pronto;
+    private bool Apresentacao;
+    private int AbaIdx;
     private int TemaIdx;
-    private int VisualIdx;
+    private int FundoIdx;
+    private readonly int[] ModeloIdx = new int[Abas.Length];
 
-    private int IndiceAtual => Atual is null ? 0 : Math.Max(0, Lista.IndexOf(Atual));
-
-    private IEnumerable<Colaborador> Filtrados => string.IsNullOrWhiteSpace(Busca)
-        ? Lista
-        : Lista.Where(c => $"{c.Nome} {c.Equipe} {c.MesPorExtenso} {c.Mes}"
-            .Contains(Busca, StringComparison.CurrentCultureIgnoreCase));
+    private Opcao ModeloAtual => Abas[AbaIdx].Modelos[ModeloIdx[AbaIdx]];
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
-        var temaSalvo = await LerAsync("insimatch.tema");
-        var visualSalvo = await LerAsync("insimatch.visual");
-        TemaIdx = Math.Max(0, Array.FindIndex(Temas, t => t.Id == temaSalvo));
-        VisualIdx = Math.Max(0, Array.FindIndex(Visuais, v => v.Id == visualSalvo));
-        Lista = await Armazenamento.CarregarColaboradoresAsync();
-        // Limpa pareceres automáticos antigos (informais); vazio = parecer formal automático
-        var limpou = false;
-        foreach (var c in Lista.Where(x => Avaliacao.ParecerAntigoAutomatico(x.Parecer)))
+
+        TemaIdx = Indice(Temas, await Armazenamento.LerTextoAsync("insimatch.tema"));
+        FundoIdx = Indice(Fundos, await Armazenamento.LerTextoAsync("insitalent.fundo"));
+        AbaIdx = Math.Max(0, Array.FindIndex(Abas, a => a.Id == "individual"));
+        var abaSalva = await Armazenamento.LerTextoAsync("insitalent.aba");
+        var achou = Array.FindIndex(Abas, a => a.Id == abaSalva);
+        if (achou >= 0) AbaIdx = achou;
+
+        for (var i = 0; i < Abas.Length; i++)
         {
-            c.Parecer = "";
-            limpou = true;
+            var salvo = await Armazenamento.LerTextoAsync($"insitalent.modelo.{Abas[i].Id}");
+            // compatibilidade com a versão anterior (só havia o individual)
+            if (salvo is null && Abas[i].Id == "individual") salvo = await Armazenamento.LerTextoAsync("insimatch.visual");
+            ModeloIdx[i] = Indice(Abas[i].Modelos, salvo);
         }
-        if (limpou) await SalvarAsync();
-        if (Lista.Count == 0)
-        {
-            Lista.Add(new Colaborador
-            {
-                Nome = "Maria Souza",
-                Equipe = "Atendimento",
-                Volume = 3410,
-                MetaPro = 150,
-                MetaPremium = 180,
-                DiasConsiderados = 22,
-                DesviosInternos = 1,
-                DesviosExternos = 0
-            });
-            await SalvarAsync();
-        }
-        Atual = Lista[0];
+
+        Pronto = true;
         StateHasChanged();
     }
 
-    private async Task AlterarMesAsync(ChangeEventArgs e)
-    {
-        if (Atual is null) return;
-        var v = e.Value?.ToString();
-        if (!string.IsNullOrWhiteSpace(v)) Atual.Mes = v;
-        await SalvarAsync();
-    }
+    private static int Indice(Opcao[] opcoes, string? id) => Math.Max(0, Array.FindIndex(opcoes, o => o.Id == id));
 
-    private async Task<string?> LerAsync(string chave) => await JS.InvokeAsync<string?>("insimatch.ler", chave);
+    private async Task MudarAbaAsync(int idx)
+    {
+        AbaIdx = idx;
+        await Armazenamento.GravarTextoAsync("insitalent.aba", Abas[idx].Id);
+    }
 
     private async Task MudarTemaAsync()
     {
         TemaIdx = (TemaIdx + 1) % Temas.Length;
-        await JS.InvokeVoidAsync("insimatch.gravar", "insimatch.tema", Temas[TemaIdx].Id);
+        await Armazenamento.GravarTextoAsync("insimatch.tema", Temas[TemaIdx].Id);
     }
 
-    private async Task MudarVisualAsync()
+    private async Task MudarFundoAsync()
     {
-        VisualIdx = (VisualIdx + 1) % Visuais.Length;
-        await JS.InvokeVoidAsync("insimatch.gravar", "insimatch.visual", Visuais[VisualIdx].Id);
+        FundoIdx = (FundoIdx + 1) % Fundos.Length;
+        await Armazenamento.GravarTextoAsync("insitalent.fundo", Fundos[FundoIdx].Id);
     }
 
-    private Task SalvarAsync() => Armazenamento.SalvarColaboradoresAsync(Lista);
-
-    private void Selecionar(Colaborador c)
+    private async Task MudarModeloAsync()
     {
-        Atual = c;
-        if (!Apresentacao) Aba = "dados";
+        var modelos = Abas[AbaIdx].Modelos;
+        ModeloIdx[AbaIdx] = (ModeloIdx[AbaIdx] + 1) % modelos.Length;
+        await Armazenamento.GravarTextoAsync($"insitalent.modelo.{Abas[AbaIdx].Id}", ModeloAtual.Id);
     }
 
-    private void Mover(int passo)
-    {
-        if (Lista.Count == 0) return;
-        var i = (IndiceAtual + passo + Lista.Count) % Lista.Count;
-        Atual = Lista[i];
-    }
-
-    private async Task NovoAsync()
-    {
-        var c = new Colaborador { Mes = Atual?.Mes ?? DateTime.Today.ToString("yyyy-MM"), Equipe = Atual?.Equipe ?? "" };
-        Lista.Add(c);
-        Atual = c;
-        Aba = "dados";
-        await SalvarAsync();
-    }
-
-    private async Task DuplicarAsync()
-    {
-        if (Atual is null) return;
-        var c = Atual.Clonar();
-        c.Id = Guid.NewGuid().ToString("N");
-        c.Nome = Atual.Nome + " (cópia)";
-        Lista.Insert(Lista.IndexOf(Atual) + 1, c);
-        Atual = c;
-        await SalvarAsync();
-    }
-
-    private async Task ExcluirAsync()
-    {
-        if (Atual is null) return;
-        var i = Lista.IndexOf(Atual);
-        Lista.Remove(Atual);
-        if (Lista.Count == 0) Lista.Add(new Colaborador());
-        Atual = Lista[Math.Clamp(i, 0, Lista.Count - 1)];
-        await SalvarAsync();
-    }
-
-    private async Task GerarParecerAsync()
-    {
-        if (Atual is null) return;
-        Atual.Parecer = Avaliacao.GerarParecer(Atual);
-        await SalvarAsync();
-    }
-
-    private async Task ImportarAsync(InputFileChangeEventArgs e)
-    {
-        try
-        {
-            using var leitor = new StreamReader(e.File.OpenReadStream(5 * 1024 * 1024));
-            var texto = await leitor.ReadToEndAsync();
-            var novos = ArmazenamentoService.LerCsv(texto);
-            if (novos.Count == 0)
-            {
-                Mensagem = "Nenhum colaborador encontrado no arquivo. Confira o cabeçalho.";
-                return;
-            }
-            // Remove o registro vazio inicial, se houver
-            Lista.RemoveAll(c => string.IsNullOrWhiteSpace(c.Nome) && c.Volume == 0);
-            Lista.AddRange(novos);
-            Atual = novos[0];
-            Mensagem = $"{novos.Count} colaborador(es) importado(s).";
-            await SalvarAsync();
-        }
-        catch (Exception ex)
-        {
-            Mensagem = "Não foi possível ler o arquivo: " + ex.Message;
-        }
-    }
-
-    private async Task ExportarAsync() =>
-        await JS.InvokeVoidAsync("insimatch.baixar", "insimatch-resultados.csv", ArmazenamentoService.GerarCsv(Lista));
-
-    private async Task BaixarModeloAsync() =>
-        await JS.InvokeVoidAsync("insimatch.baixar", "insimatch-modelo.csv", ArmazenamentoService.ModeloCsv());
+    private void AlternarApresentacao() => Apresentacao = !Apresentacao;
 
     private async Task TelaCheiaAsync()
     {
         Apresentacao = true;
         await JS.InvokeVoidAsync("insimatch.telaCheia");
     }
+
+    /// <summary>Barra de ferramentas compartilhada pelas três abas.</summary>
+    private RenderFragment Ferramentas => @<div class="ferramentas">
+        @if (Apresentacao)
+        {
+            <div class="seg-abas" style="--ativo:@AbaIdx; --n:@Abas.Length">
+                <span class="seg-indicador"></span>
+                @for (var i = 0; i < Abas.Length; i++)
+                {
+                    var idx = i;
+                    <button class="@(idx == AbaIdx ? "ativo" : "")" @onclick="() => MudarAbaAsync(idx)">@Abas[idx].Curto</button>
+                }
+            </div>
+        }
+        <div class="grupo-ferr">
+            <button class="ferr" title="Mudar a cor da página" @onclick="MudarTemaAsync">
+                <span class="bolinha"></span>
+                <span class="ferr-txt"><small>Cor</small>@Temas[TemaIdx].Nome</span>
+            </button>
+            <button class="ferr" title="Mudar o papel de parede" @onclick="MudarFundoAsync">
+                <svg class="ferr-ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3" /><path d="M3 16l5-5 4 4 3-3 6 6" /><circle cx="16" cy="9" r="1.6" /></svg>
+                <span class="ferr-txt"><small>Fundo</small>@Fundos[FundoIdx].Nome</span>
+            </button>
+            <button class="ferr" title="Alternar o modelo de apresentação" @onclick="MudarModeloAsync">
+                <svg class="ferr-ico" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="10" rx="2" /><rect x="13" y="3" width="8" height="6" rx="2" /><rect x="13" y="11" width="8" height="10" rx="2" /><rect x="3" y="15" width="8" height="6" rx="2" /></svg>
+                <span class="ferr-txt"><small>Modelo</small>@ModeloAtual.Nome</span>
+            </button>
+        </div>
+        <button class="btn primario" @onclick="AlternarApresentacao">
+            @(Apresentacao ? "✎ Editar" : "▶ Apresentar")
+        </button>
+        <button class="btn icone-btn" title="Tela cheia" @onclick="TelaCheiaAsync">⛶</button>
+    </div>;
 }

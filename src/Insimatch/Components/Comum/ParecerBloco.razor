@@ -1,0 +1,17 @@
+@* Parecer genérico das apresentações *@
+<article class="cartao parecer @Avaliacao.Classe(Status) @Classe">
+    <div class="aspas">“</div>
+    <p>@Texto</p>
+    <div class="parecer-assinatura">
+        <span>@Assinatura</span>
+        <span>@Periodo</span>
+    </div>
+</article>
+
+@code {
+    [Parameter] public string Texto { get; set; } = "";
+    [Parameter] public Status Status { get; set; } = Status.Neutro;
+    [Parameter] public string Assinatura { get; set; } = "insiTalent";
+    [Parameter] public string Periodo { get; set; } = "";
+    [Parameter] public string Classe { get; set; } = "";
+}

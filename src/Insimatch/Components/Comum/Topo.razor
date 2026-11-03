@@ -1,0 +1,47 @@
+@* Cabeçalho genérico das apresentações *@
+<header class="painel-topo">
+    <div class="pessoa">
+        <div class="avatar @Avaliacao.Classe(Status)">
+            @if (Icone is not null)
+            {
+                @Icone
+            }
+            else
+            {
+                @Sigla
+            }
+        </div>
+        <div>
+            <div class="rotulo-sup">@RotuloSup</div>
+            <h1>@Titulo</h1>
+            <div class="pessoa-info">
+                @for (var i = 0; i < Info.Count; i++)
+                {
+                    if (i > 0)
+                    {
+                        <span class="ponto">•</span>
+                    }
+                    <span>@Info[i]</span>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="selo @Avaliacao.Classe(Status)">
+        <span class="selo-luz"></span>
+        <div>
+            <div class="selo-rotulo">@SeloRotulo</div>
+            <div class="selo-valor">@SeloValor</div>
+        </div>
+    </div>
+</header>
+
+@code {
+    [Parameter] public string Sigla { get; set; } = "";
+    [Parameter] public RenderFragment? Icone { get; set; }
+    [Parameter] public string RotuloSup { get; set; } = "";
+    [Parameter] public string Titulo { get; set; } = "";
+    [Parameter] public IReadOnlyList<string> Info { get; set; } = Array.Empty<string>();
+    [Parameter] public Status Status { get; set; } = Status.Neutro;
+    [Parameter] public string SeloRotulo { get; set; } = "Resultado geral";
+    [Parameter] public string SeloValor { get; set; } = "";
+}

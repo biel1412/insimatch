@@ -1,0 +1,67 @@
+@* Modelo "Placar" genérico: tabela de indicadores + quadro de veredito *@
+<section class="painel modelo-placar">
+    @Superior
+
+    <div class="grade p-linha">
+        <article class="cartao neutro tabela-cartao">
+            <table class="placar">
+                <thead>
+                    <tr><th>Indicador</th><th>Realizado</th><th>Referência</th><th>Situação</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var l in Linhas)
+                    {
+                        if (l.Grupo is not null)
+                        {
+                            <tr class="grupo"><td colspan="4">@l.Grupo</td></tr>
+                            continue;
+                        }
+                        <tr>
+                            <td>@l.Indicador</td>
+                            <td class="num">@l.Realizado<small>@l.Sufixo</small></td>
+                            <td class="@(l.Referencia == "—" ? "mudo" : "")">@l.Referencia</td>
+                            <td>
+                                @if (l.Status is { } st)
+                                {
+                                    <span class="tag @Avaliacao.Classe(st)">@l.StatusRotulo</span>
+                                }
+                                else
+                                {
+                                    <span class="mudo">—</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </article>
+
+        <article class="cartao veredito @Avaliacao.Classe(Status)">
+            <div class="cartao-rotulo">@VereditoRotulo</div>
+            <div class="veredito-anel"><span>@VereditoValor</span></div>
+            <ul class="criterios">
+                @foreach (var c in Criterios)
+                {
+                    <li class="@(c.Atendido == true ? "ok" : "nao")">
+                        <b>@Marca(c.Atendido)</b>
+                        @c.Texto
+                    </li>
+                }
+            </ul>
+        </article>
+    </div>
+
+    @Inferior
+</section>
+
+@code {
+    [Parameter] public RenderFragment? Superior { get; set; }
+    [Parameter] public RenderFragment? Inferior { get; set; }
+    [Parameter] public IReadOnlyList<LinhaPlacar> Linhas { get; set; } = Array.Empty<LinhaPlacar>();
+    [Parameter] public IReadOnlyList<Criterio> Criterios { get; set; } = Array.Empty<Criterio>();
+    [Parameter] public Status Status { get; set; } = Status.Neutro;
+    [Parameter] public string VereditoRotulo { get; set; } = "Resultado geral";
+    [Parameter] public string VereditoValor { get; set; } = "";
+
+    private static string Marca(bool? atendido) => atendido == true ? "✓" : atendido == false ? "✕" : "—";
+}

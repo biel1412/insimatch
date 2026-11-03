@@ -1,0 +1,36 @@
+@* Modelo "Foco" do resultado individual *@
+<FocoLayout Indicadores="@Principais" Secundarios="@Outros">
+    <Superior><Cabecalho C="C" /></Superior>
+    <Inferior><ParecerCartao C="C" /></Inferior>
+</FocoLayout>
+
+@code {
+    [Parameter, EditorRequired] public Colaborador C { get; set; } = default!;
+
+    private IReadOnlyList<Indicador> Principais
+    {
+        get
+        {
+            var metas = new List<string>();
+            if (C.MetaPro > 0) metas.Add($"Pro {C.MetaPro:0.#}");
+            if (C.MetaPremium > 0) metas.Add($"Premium {C.MetaPremium:0.#}");
+            return new[]
+            {
+                new Indicador("Média diária", C.MediaDiaria.ToString("N1"), "/dia", Avaliacao.StatusVolume(C),
+                    Avaliacao.RotuloVolume(C), metas.Count > 0 ? "Metas por dia: " + string.Join(" · ", metas) : null),
+                new Indicador("Qualidade", C.Qualidade.ToString("N2"), "%", Avaliacao.StatusQualidade(C),
+                    Avaliacao.RotuloQualidade(C), $"ideal ≥ {Avaliacao.QualidadeIdeal:N2}%"),
+                new Indicador("Volume do mês", C.Volume.ToString("N0"), null, Status.Neutro, null,
+                    $"em {C.DiasConsiderados} dias trabalhados")
+            };
+        }
+    }
+
+    private IReadOnlyList<Indicador> Outros => new[]
+    {
+        new Indicador("Dias trabalhados", C.DiasConsiderados.ToString()),
+        new Indicador("Desvios internos", C.DesviosInternos.ToString()),
+        new Indicador("Desvios externos", C.DesviosExternos.ToString()),
+        new Indicador("Máx. de desvios p/ 99,94%", Avaliacao.DesviosPermitidos(C).ToString())
+    };
+}

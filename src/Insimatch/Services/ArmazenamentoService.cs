@@ -23,6 +23,22 @@ public class ArmazenamentoService(IJSRuntime js)
     public Task SalvarColaboradoresAsync(List<Colaborador> lista) =>
         js.InvokeVoidAsync("insimatch.gravar", ChaveColaboradores, JsonSerializer.Serialize(lista, Json)).AsTask();
 
+    /// <summary>Lê qualquer objeto salvo em JSON no navegador.</summary>
+    public async Task<T?> CarregarAsync<T>(string chave)
+    {
+        var txt = await js.InvokeAsync<string?>("insimatch.ler", chave);
+        if (string.IsNullOrWhiteSpace(txt)) return default;
+        try { return JsonSerializer.Deserialize<T>(txt, Json); }
+        catch { return default; }
+    }
+
+    public Task SalvarAsync<T>(string chave, T valor) =>
+        js.InvokeVoidAsync("insimatch.gravar", chave, JsonSerializer.Serialize(valor, Json)).AsTask();
+
+    public async Task<string?> LerTextoAsync(string chave) => await js.InvokeAsync<string?>("insimatch.ler", chave);
+
+    public Task GravarTextoAsync(string chave, string valor) => js.InvokeVoidAsync("insimatch.gravar", chave, valor).AsTask();
+
     // ---------- CSV (separador ";" para abrir direto no Excel em pt-BR) ----------
 
     private static readonly string[] Cabecalho =

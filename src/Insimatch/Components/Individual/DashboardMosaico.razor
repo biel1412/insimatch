@@ -1,0 +1,78 @@
+@* Modelo "Mosaico" do resultado individual: grade assimétrica estilo bento *@
+@{
+    var media = C.MediaDiaria;
+    var sVol = Avaliacao.StatusVolume(C);
+    var sQual = Avaliacao.StatusQualidade(C);
+    var sGeral = Avaliacao.Geral(C);
+    var nivel = Avaliacao.Nivel(C);
+    var volumeBem = nivel is NivelMeta.Proximo or NivelMeta.Pro or NivelMeta.Premium;
+}
+
+<section class="painel modelo-mosaico">
+    <Cabecalho C="C" />
+
+    <div class="mosaico">
+        <article class="cartao destaque m-media @Avaliacao.Classe(sVol)">
+            <div class="cartao-topo">
+                <span class="cartao-rotulo">Média diária <em>· volume ÷ dias trabalhados</em></span>
+                <span class="chip">@Avaliacao.RotuloVolume(C)</span>
+            </div>
+            <div class="numero gigante">@media.ToString("N1")<small>/dia</small></div>
+            <div class="metas-linhas">
+                @if (C.MetaPro > 0)
+                {
+                    <LinhaMeta Nome="Meta Pro" Meta="C.MetaPro" Realizado="media" Dias="C.DiasConsiderados" />
+                }
+                @if (C.MetaPremium > 0)
+                {
+                    <LinhaMeta Nome="Meta Premium" Meta="C.MetaPremium" Realizado="media" Dias="C.DiasConsiderados" />
+                }
+            </div>
+        </article>
+
+        <article class="cartao cartao-medidor m-qual @Avaliacao.Classe(sQual)">
+            <div class="cartao-topo">
+                <span class="cartao-rotulo">Qualidade</span>
+                <span class="chip">@Avaliacao.RotuloQualidade(C)</span>
+            </div>
+            <Medidor Valor="C.Qualidade" Meta="Avaliacao.QualidadeIdeal" StatusAtual="sQual" />
+        </article>
+
+        <article class="cartao m-geral @Avaliacao.Classe(sGeral)">
+            <div class="cartao-rotulo">Resultado geral</div>
+            <div class="m-geral-valor">@Avaliacao.RotuloGeral(sGeral)</div>
+            <div class="m-checks">
+                <span class="@(Avaliacao.QualidadeOk(C) ? "ok" : "")">@(Avaliacao.QualidadeOk(C) ? "✓" : "✕") Qualidade</span>
+                <span class="@(volumeBem ? "ok" : "")">@(volumeBem ? "✓" : "✕") Volume</span>
+            </div>
+        </article>
+
+        <article class="cartao neutro m-vol">
+            <div class="cartao-rotulo">Volume do mês</div>
+            <div class="numero">@C.Volume.ToString("N0")</div>
+        </article>
+
+        <article class="cartao neutro m-mini">
+            <div class="cartao-rotulo">Dias trabalhados</div>
+            <div class="numero">@C.DiasConsiderados</div>
+        </article>
+        <article class="cartao neutro m-mini">
+            <div class="cartao-rotulo">Desvios internos</div>
+            <div class="numero">@C.DesviosInternos</div>
+        </article>
+        <article class="cartao neutro m-mini">
+            <div class="cartao-rotulo">Desvios externos</div>
+            <div class="numero">@C.DesviosExternos</div>
+        </article>
+        <article class="cartao neutro m-mini">
+            <div class="cartao-rotulo">Máx. desvios p/ 99,94%</div>
+            <div class="numero">@Avaliacao.DesviosPermitidos(C)</div>
+        </article>
+
+        <div class="m-parecer"><ParecerCartao C="C" /></div>
+    </div>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public Colaborador C { get; set; } = default!;
+}

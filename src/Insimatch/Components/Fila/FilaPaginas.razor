@@ -1,0 +1,30 @@
+@* Desenho das páginas da fila: cada página tem 15 fluxos; a última pode estar parcial *@
+@{
+    var paginas = AvaliacaoFila.Paginas(Fluxos);
+    var mostradas = Math.Min(paginas, Maximo);
+}
+<div class="paginas">
+    @if (paginas == 0)
+    {
+        <div class="pagina vazia"><span>✓</span></div>
+    }
+    @for (var i = 0; i < mostradas; i++)
+    {
+        var restante = Fluxos - i * AvaliacaoFila.FluxosPorPagina;
+        var nessa = Math.Min(restante, AvaliacaoFila.FluxosPorPagina);
+        var pct = (nessa * 100.0 / AvaliacaoFila.FluxosPorPagina).ToString("0.#", CultureInfo.InvariantCulture);
+        <div class="pagina" title="Página @(i + 1): @nessa fluxo(s)">
+            <div class="pagina-fill" style="height:@(pct)%"></div>
+            <span>@(i + 1)</span>
+        </div>
+    }
+    @if (paginas > mostradas)
+    {
+        <div class="pagina mais"><span>+@(paginas - mostradas)</span></div>
+    }
+</div>
+
+@code {
+    [Parameter] public int Fluxos { get; set; }
+    [Parameter] public int Maximo { get; set; } = 10;
+}

@@ -1,0 +1,26 @@
+@* Modelo "Foco" da atualização de fila *@
+<FocoLayout Indicadores="@Principais" Secundarios="@Outros">
+    <Superior><FilaCabecalho F="F" /></Superior>
+    <Inferior><FilaParecer F="F" /></Inferior>
+</FocoLayout>
+
+@code {
+    [Parameter, EditorRequired] public AtualizacaoFila F { get; set; } = default!;
+
+    private IReadOnlyList<Indicador> Principais => new[]
+    {
+        new Indicador("Centralizada", F.Centralizada.ToString("N0"), " fluxos", AvaliacaoFila.StatusFila(F.Centralizada),
+            AvaliacaoFila.RotuloFila(F.Centralizada), AvaliacaoFila.PaginasTexto(F.Centralizada)),
+        new Indicador("Autorizar", F.Autorizar.ToString("N0"), " fluxos", AvaliacaoFila.StatusFila(F.Autorizar),
+            AvaliacaoFila.RotuloFila(F.Autorizar), AvaliacaoFila.PaginasTexto(F.Autorizar)),
+        new Indicador("Total", F.Total.ToString("N0"), " fluxos", AvaliacaoFila.Geral(F),
+            AvaliacaoFila.RotuloGeral(F), AvaliacaoFila.PaginasTexto(F.Total))
+    };
+
+    private IReadOnlyList<Indicador> Outros => new[]
+    {
+        new Indicador("Data dos fluxos", F.DiaAnterior.ToString("dd/MM/yyyy")),
+        new Indicador("Atualizado em", F.DataHora.ToString("dd/MM HH:mm")),
+        new Indicador("Fluxos por página", AvaliacaoFila.FluxosPorPagina.ToString())
+    };
+}

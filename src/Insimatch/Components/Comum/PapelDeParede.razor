@@ -1,0 +1,36 @@
+@* Papel de parede da página (independente da cor). Usa as cores do tema atual. *@
+<div class="papel papel-@Fundo" aria-hidden="true">
+    @switch (Fundo)
+    {
+        case "aurora":
+            <div class="blob b1"></div>
+            <div class="blob b2"></div>
+            <div class="blob b3"></div>
+            break;
+
+        case "ondas":
+            <svg class="ondas" viewBox="0 0 1440 900" preserveAspectRatio="none">
+                <path class="onda o1" d="M0 610 C 240 540 420 700 720 640 C 1010 580 1180 520 1440 590 L1440 900 L0 900 Z" />
+                <path class="onda o2" d="M0 700 C 260 640 470 780 760 720 C 1040 660 1230 640 1440 690 L1440 900 L0 900 Z" />
+                <path class="onda o3" d="M0 790 C 300 740 520 850 820 800 C 1080 760 1260 760 1440 790 L1440 900 L0 900 Z" />
+                <path class="onda-linha" d="M0 560 C 260 500 460 650 740 590 C 1030 530 1200 470 1440 540" />
+            </svg>
+            break;
+
+        case "geometrico":
+            <svg class="geo" width="100%" height="100%">
+                <defs>
+                    <pattern id="geo-tri" width="72" height="62.35" patternUnits="userSpaceOnUse">
+                        <path d="M0 0 L36 62.35 L72 0 M0 62.35 L36 0 L72 62.35 M0 31.18 H72" />
+                    </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#geo-tri)" />
+            </svg>
+            break;
+    }
+</div>
+
+@code {
+    /// <summary>brilho, aurora, ondas, grade, pontos, geometrico ou liso.</summary>
+    [Parameter] public string Fundo { get; set; } = "brilho";
+}
