@@ -1,20 +1,22 @@
-@* Desenho das páginas da fila: cada página tem 15 fluxos; a última pode estar parcial *@
+@* Páginas da fila (15 fluxos cada). A parte com data do dia anterior aparece destacada. *@
 @{
     var paginas = AvaliacaoFila.Paginas(Fluxos);
     var mostradas = Math.Min(paginas, Maximo);
+    var anterior = Math.Min(Destaque, Fluxos);
 }
 <div class="paginas">
     @if (paginas == 0)
     {
-        <div class="pagina vazia"><span>✓</span></div>
+        <div class="pagina vazia" title="Fila vazia"><span>✓</span></div>
     }
     @for (var i = 0; i < mostradas; i++)
     {
-        var restante = Fluxos - i * AvaliacaoFila.FluxosPorPagina;
-        var nessa = Math.Min(restante, AvaliacaoFila.FluxosPorPagina);
-        var pct = (nessa * 100.0 / AvaliacaoFila.FluxosPorPagina).ToString("0.#", CultureInfo.InvariantCulture);
-        <div class="pagina" title="Página @(i + 1): @nessa fluxo(s)">
-            <div class="pagina-fill" style="height:@(pct)%"></div>
+        var inicio = i * AvaliacaoFila.FluxosPorPagina;
+        var nessa = Math.Min(Fluxos - inicio, AvaliacaoFila.FluxosPorPagina);
+        var antNessa = Math.Clamp(anterior - inicio, 0, nessa);
+        <div class="pagina" title="Página @(i + 1): @nessa fluxos, @antNessa do dia anterior">
+            <div class="pagina-fill" style="height:@P(nessa)"></div>
+            <div class="pagina-anterior" style="height:@P(antNessa)"></div>
             <span>@(i + 1)</span>
         </div>
     }
@@ -23,8 +25,20 @@
         <div class="pagina mais"><span>+@(paginas - mostradas)</span></div>
     }
 </div>
+@if (paginas > 0)
+{
+    <div class="paginas-legenda">
+        <span><i class="leg-ant"></i>dia anterior</span>
+        <span><i class="leg-dia"></i>demais fluxos</span>
+    </div>
+}
 
 @code {
     [Parameter] public int Fluxos { get; set; }
-    [Parameter] public int Maximo { get; set; } = 10;
+    /// <summary>Quantos dos fluxos têm data do dia anterior (preenchidos primeiro, pois são os mais antigos).</summary>
+    [Parameter] public int Destaque { get; set; }
+    [Parameter] public int Maximo { get; set; } = 12;
+
+    private static string P(int n) =>
+        (n * 100.0 / AvaliacaoFila.FluxosPorPagina).ToString("0.#", CultureInfo.InvariantCulture) + "%";
 }

@@ -1,8 +1,8 @@
 @* Cabeçalho da atualização de fila *@
 @{ var st = AvaliacaoFila.Geral(F); }
 <Topo RotuloSup="Atualização de fila"
-      Titulo="Fluxos do dia anterior"
-      Info="@(new[] { $"Atualizado em {F.Rotulo}", $"Fluxos com data de {F.DiaAnterior:dd/MM}" })"
+      Titulo="Centralizada e Autorizar"
+      Info="@(new[] { $"Atualizado em {F.Rotulo}" })"
       Status="st"
       SeloRotulo="Situação das filas"
       SeloValor="@AvaliacaoFila.RotuloGeral(F)">

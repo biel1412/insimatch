@@ -9,18 +9,16 @@
 
     private IReadOnlyList<Indicador> Principais => new[]
     {
-        new Indicador("Centralizada", F.Centralizada.ToString("N0"), " fluxos", AvaliacaoFila.StatusFila(F.Centralizada),
-            AvaliacaoFila.RotuloFila(F.Centralizada), AvaliacaoFila.PaginasTexto(F.Centralizada)),
-        new Indicador("Autorizar", F.Autorizar.ToString("N0"), " fluxos", AvaliacaoFila.StatusFila(F.Autorizar),
-            AvaliacaoFila.RotuloFila(F.Autorizar), AvaliacaoFila.PaginasTexto(F.Autorizar)),
-        new Indicador("Total", F.Total.ToString("N0"), " fluxos", AvaliacaoFila.Geral(F),
-            AvaliacaoFila.RotuloGeral(F), AvaliacaoFila.PaginasOcupadasTexto(F))
+        new Indicador("Centralizada · dia anterior", F.Centralizada.ToString("N0"), null, AvaliacaoFila.StatusFila(F.Centralizada),
+            AvaliacaoFila.RotuloFila(F.Centralizada), $"de {AvaliacaoFila.Fluxos(F.CentralizadaTotal)} na fila"),
+        new Indicador("Autorizar · dia anterior", F.Autorizar.ToString("N0"), null, AvaliacaoFila.StatusFila(F.Autorizar),
+            AvaliacaoFila.RotuloFila(F.Autorizar), $"de {AvaliacaoFila.Fluxos(F.AutorizarTotal)} na fila")
     };
 
     private IReadOnlyList<Indicador> Outros => new[]
     {
-        new Indicador("Data dos fluxos", F.DiaAnterior.ToString("dd/MM/yyyy")),
-        new Indicador("Atualizado em", F.DataHora.ToString("dd/MM HH:mm")),
-        new Indicador("Fluxos por página", AvaliacaoFila.FluxosPorPagina.ToString())
+        new Indicador("Centralizada · na fila", F.CentralizadaTotal.ToString("N0"), $" ({AvaliacaoFila.PaginasTexto(F.CentralizadaTotal)})"),
+        new Indicador("Autorizar · na fila", F.AutorizarTotal.ToString("N0"), $" ({AvaliacaoFila.PaginasTexto(F.AutorizarTotal)})"),
+        new Indicador("Dia anterior · total", F.Total.ToString("N0"))
     };
 }

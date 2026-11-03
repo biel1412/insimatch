@@ -39,7 +39,9 @@ No modo apresentação, a troca de aba fica no próprio topo. Cor, fundo, modelo
 | **Resultado geral** | **Está bem** com qualidade na meta e volume pelo menos próximo da meta; **Excelente** com as duas metas atingidas. |
 
 ### Fila
-Conta os **fluxos com data do dia anterior** em cada fila; cada página tem **15 fluxos**.
+Para cada fila (Centralizada e Autorizar) você informa **o total de fluxos na fila** e, **manualmente**, quantos têm **data do dia anterior**, já que os dois ficam misturados na fila. Cada página tem **15 fluxos**.
+
+A situação considera os fluxos do dia anterior:
 
 | Situação | Fluxos do dia anterior |
 |---|---|

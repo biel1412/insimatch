@@ -11,21 +11,24 @@
 
     private IReadOnlyList<LinhaPlacar> Linhas => new[]
     {
-        new LinhaPlacar("", Grupo: $"Fluxos com data de {F.DiaAnterior:dd/MM/yyyy}"),
-        new LinhaPlacar("Centralizada", F.Centralizada.ToString("N0"), " fluxos", AvaliacaoFila.PaginasTexto(F.Centralizada),
+        new LinhaPlacar("", Grupo: "Centralizada"),
+        new LinhaPlacar("Fluxos na fila", F.CentralizadaTotal.ToString("N0"), null, AvaliacaoFila.PaginasTexto(F.CentralizadaTotal)),
+        new LinhaPlacar("Com data do dia anterior", F.Centralizada.ToString("N0"), null, AvaliacaoFila.PaginasTexto(F.Centralizada),
             AvaliacaoFila.StatusFila(F.Centralizada), AvaliacaoFila.RotuloFila(F.Centralizada)),
-        new LinhaPlacar("Autorizar", F.Autorizar.ToString("N0"), " fluxos", AvaliacaoFila.PaginasTexto(F.Autorizar),
+        new LinhaPlacar("", Grupo: "Autorizar"),
+        new LinhaPlacar("Fluxos na fila", F.AutorizarTotal.ToString("N0"), null, AvaliacaoFila.PaginasTexto(F.AutorizarTotal)),
+        new LinhaPlacar("Com data do dia anterior", F.Autorizar.ToString("N0"), null, AvaliacaoFila.PaginasTexto(F.Autorizar),
             AvaliacaoFila.StatusFila(F.Autorizar), AvaliacaoFila.RotuloFila(F.Autorizar)),
         new LinhaPlacar("", Grupo: "Consolidado"),
-        new LinhaPlacar("Total", F.Total.ToString("N0"), " fluxos", AvaliacaoFila.PaginasOcupadasTexto(F),
-            AvaliacaoFila.Geral(F), AvaliacaoFila.RotuloGeral(F)),
-        new LinhaPlacar("Atualização", F.DataHora.ToString("HH:mm"), null, F.DataHora.ToString("dd/MM/yyyy"))
+        new LinhaPlacar("Fluxos nas duas filas", F.TotalNaFila.ToString("N0")),
+        new LinhaPlacar("Com data do dia anterior", F.Total.ToString("N0"), null, "—",
+            AvaliacaoFila.Geral(F), AvaliacaoFila.RotuloGeral(F))
     };
 
     private IReadOnlyList<Criterio> Criterios => new[]
     {
-        new Criterio("Centralizada em dia ou sob controle (até 1 página)", AvaliacaoFila.StatusFila(F.Centralizada) is Status.Excelente or Status.Bom),
-        new Criterio("Autorizar em dia ou sob controle (até 1 página)", AvaliacaoFila.StatusFila(F.Autorizar) is Status.Excelente or Status.Bom),
+        new Criterio("Centralizada: até 1 página do dia anterior", AvaliacaoFila.StatusFila(F.Centralizada) is Status.Excelente or Status.Bom),
+        new Criterio("Autorizar: até 1 página do dia anterior", AvaliacaoFila.StatusFila(F.Autorizar) is Status.Excelente or Status.Bom),
         new Criterio("Nenhuma fila com acúmulo (acima de 3 páginas)", AvaliacaoFila.Geral(F) != Status.Critico)
     };
 }
