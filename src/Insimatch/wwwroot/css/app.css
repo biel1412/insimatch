@@ -69,7 +69,8 @@ button, input, textarea { font-family: inherit; }
     background: var(--fundo);
     transition: grid-template-columns .3s ease;
 }
-.app > .dock, .app > .lateral, .app > .principal { z-index: 1; }
+.app > .lateral, .app > .principal { z-index: 1; }
+.app > .dock { z-index: 6; }
 .principal { position: relative; }
 .app.modo-apresentacao { grid-template-columns: 0 0 1fr; }
 .app.modo-apresentacao .lateral,
