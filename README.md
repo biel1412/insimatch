@@ -13,6 +13,7 @@ Escrito em **C# com Blazor WebAssembly** e hospedado no **GitHub Pages**: abre d
 | **Individual** | Feedback mensal de um colaborador | Cartões · Gráficos · Placar · Foco · Mosaico |
 | **Time** | Resultado consolidado do time no mês | Cartões · Placar · Foco |
 | **Fila** | Atualização das filas Centralizada e Autorizar | Cartões · Placar · Foco |
+| **Cliente** | Painel configurável para qualquer cliente | Cartões · Placar · Foco |
 
 Na barra do topo:
 - **Cor:** Noturno, Oceano, Esmeralda, Aurora ou Claro.
@@ -51,6 +52,22 @@ A situação considera os fluxos do dia anterior:
 | Acúmulo | acima de 3 páginas |
 
 A situação geral é a pior das duas filas.
+
+### Cliente (configurável)
+A aba Cliente não tem indicadores fixos: você cria os **campos** que cada cliente precisar.
+
+| Configuração do campo | Opções |
+|---|---|
+| **Tipo** | Número inteiro · Número decimal · Valor (moeda) · Percentual · Texto · Data · Sim/Não |
+| **Formato** | Casas decimais (0 = sem vírgula, até 4), separador de milhar, símbolo da moeda, unidade (min, h, kg…) |
+| **Meta** | Opcional; “maior é melhor” ou “menor é melhor”; a partir de qual % da meta conta como “próximo da meta” |
+| **Visual** | Número em destaque · Barra de progresso · Anel (% da meta) · Medidor (percentuais) · Realizado × meta |
+| **Organização** | Grupo/seção, ordem (↑ ↓), destaque (cartão maior e modelo Foco) |
+
+- **Gráficos do painel:** barras, colunas ou rosca, comparando os campos escolhidos por **valor** ou por **% da meta** (útil para unidades diferentes).
+- **Parecer:** texto formal ou em tópicos por situação, com ou sem os campos sem meta; gerado automaticamente e editável.
+- **Clientes:** vários clientes; **Novo período** reaproveita campos, metas e gráficos com os valores em branco; **Exportar/Importar (.json)** leva a configuração para outro computador ou para a equipe; excluir um campo pode ser desfeito.
+- **Resultado geral:** considera todos os campos com meta (na meta, próximos e fora).
 
 Em todas as abas, o **parecer** é gerado em linguagem formal a partir dos números, e pode ser editado.
 
@@ -94,8 +111,9 @@ src/Insimatch/
 ├── Components/Individual/           # aba Individual e seus 5 modelos
 ├── Components/Time/                 # aba Time e seus modelos
 ├── Components/Fila/                 # aba Fila e seus modelos
+├── Components/Clientes/             # aba Cliente: editor de campos, visuais, gráficos e modelos
 ├── Components/Comum/                # cabeçalho, parecer, Foco, Placar, medidor, papel de parede
-├── Models/                          # dados e critérios (Colaborador, ResultadoTime, AtualizacaoFila)
+├── Models/                          # dados e critérios (Colaborador, ResultadoTime, AtualizacaoFila, Cliente)
 ├── Services/ArmazenamentoService.cs # localStorage e CSV
 └── wwwroot/                         # HTML, CSS e JS
 ```

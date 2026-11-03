@@ -946,3 +946,11 @@ button, input, textarea { font-family: inherit; }
 
 .placar td.num { white-space: nowrap; }
 .foco-faixa strong { white-space: nowrap; }
+@media (max-width: 600px) {
+    .painel-topo { padding: 18px; border-radius: 20px; }
+    .pessoa { gap: 14px; }
+    .avatar { width: 56px; height: 56px; border-radius: 18px; font-size: 20px; flex: none; }
+    .ico-avatar { width: 30px; height: 30px; }
+    .selo { width: 100%; }
+    .ferramentas { justify-content: flex-start; }
+}
