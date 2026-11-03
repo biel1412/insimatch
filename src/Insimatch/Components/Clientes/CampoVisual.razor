@@ -1,0 +1,117 @@
+@* Um campo do cliente, desenhado no visual escolhido *@
+@{
+    var st = AvaliacaoCliente.StatusCampo(C);
+    var at = (double)AvaliacaoCliente.Atingimento(C);
+    var v = VisualEfetivo;
+    var valor = AvaliacaoCliente.Valor(C);
+}
+
+<article class="cartao campo-v @Avaliacao.Classe(st) @(C.Destaque ? "destaque span-2" : "") @(C.Numerico ? "" : "info")">
+    <div class="cartao-topo">
+        <span class="cartao-rotulo">@(string.IsNullOrWhiteSpace(C.Nome) ? "Campo sem nome" : C.Nome)</span>
+        @if (C.TemMeta)
+        {
+            <span class="chip">@AvaliacaoCliente.RotuloCampo(C)</span>
+        }
+    </div>
+
+    @switch (v)
+    {
+        case "info":
+            <div class="cv-texto @(C.Tipo == TipoCampo.SimNao ? (C.Booleano ? "sim" : "nao") : "")">@valor</div>
+            break;
+
+        case "barra":
+            <div class="numero cv-num">@valor</div>
+            <div class="barra"><div style="width:@Pct(at / 100)"></div></div>
+            <Rodape C="C" At="at" />
+            break;
+
+        case "anel":
+            var pct = C.TemMeta ? at : (double)(C.Valor ?? 0);
+            var circ = 2 * Math.PI * 78;
+            <div class="cv-anel">
+                <div class="anel">
+                    <svg viewBox="0 0 200 200">
+                        <defs>
+                            <linearGradient id="cv-@C.Id" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" class="g1" /><stop offset="100%" class="g2" />
+                            </linearGradient>
+                        </defs>
+                        <circle cx="100" cy="100" r="78" class="anel-trilho" />
+                        <circle cx="100" cy="100" r="78" class="anel-valor" stroke="url(#cv-@C.Id)"
+                                stroke-dasharray="@F(circ * Math.Clamp(pct / 100, 0, 1)) @F(circ)" transform="rotate(-90 100 100)" />
+                    </svg>
+                    <div class="anel-texto">
+                        <strong>@pct.ToString("N0")<small>%</small></strong>
+                        <span>@(C.TemMeta ? "da meta" : "")</span>
+                    </div>
+                </div>
+                <div class="cv-anel-dados">
+                    <strong>@valor</strong>
+                    @if (C.Meta.HasValue)
+                    {
+                        <span>meta @AvaliacaoCliente.MetaTexto(C)</span>
+                    }
+                </div>
+            </div>
+            break;
+
+        case "medidor":
+            <Medidor Valor="C.Valor ?? 0" Meta="C.Meta ?? 0" StatusAtual="st" MostrarMeta="C.Meta.HasValue"
+                     RotuloMeta="@(C.Sentido == SentidoMeta.MenorMelhor ? "meta ≤" : "meta ≥")" Casas="Math.Clamp(C.Casas, 0, 3)" />
+            break;
+
+        case "comparativo":
+            var maxc = (double)Math.Max(Math.Abs(C.Valor ?? 0), Math.Abs(C.Meta ?? 0));
+            if (maxc <= 0) maxc = 1;
+            <div class="numero cv-num">@valor</div>
+            <div class="cv-comp">
+                <div class="cv-comp-linha">
+                    <span>Realizado</span>
+                    <div class="cv-comp-trilho"><div class="cv-comp-real" style="width:@Pct((double)Math.Abs(C.Valor ?? 0) / maxc)"></div></div>
+                    <b>@valor</b>
+                </div>
+                <div class="cv-comp-linha">
+                    <span>Meta</span>
+                    <div class="cv-comp-trilho"><div class="cv-comp-meta" style="width:@Pct((double)Math.Abs(C.Meta ?? 0) / maxc)"></div></div>
+                    <b>@AvaliacaoCliente.Numero(C, C.Meta ?? 0)</b>
+                </div>
+            </div>
+            <Rodape C="C" At="at" />
+            break;
+
+        default:
+            <div class="numero cv-num">@valor</div>
+            <Rodape C="C" At="at" />
+            break;
+    }
+</article>
+
+@code {
+    [Parameter, EditorRequired] public CampoCliente C { get; set; } = default!;
+
+    /// <summary>Visual efetivo: ajusta escolhas que não se aplicam ao tipo ou à falta de meta.</summary>
+    private string VisualEfetivo
+    {
+        get
+        {
+            if (!C.Numerico) return "info";
+            if (!C.Valor.HasValue) return "numero";
+            return C.Visual switch
+            {
+                VisualCampo.Medidor when C.Tipo == TipoCampo.Percentual => "medidor",
+                VisualCampo.Medidor => C.TemMeta ? "anel" : "numero",
+                VisualCampo.Anel when C.TemMeta || C.Tipo == TipoCampo.Percentual => "anel",
+                VisualCampo.Barra when C.TemMeta => "barra",
+                VisualCampo.Comparativo when C.TemMeta => "comparativo",
+                _ => "numero"
+            };
+        }
+    }
+
+    private static string Pct(double v) =>
+        (Math.Clamp(v, 0, 1) * 100).ToString("0.#", CultureInfo.InvariantCulture) + "%";
+
+    private static string F(double v) => v.ToString("0.##", CultureInfo.InvariantCulture);
+}

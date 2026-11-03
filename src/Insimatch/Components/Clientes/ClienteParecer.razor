@@ -1,0 +1,9 @@
+@* Parecer do cliente *@
+<ParecerBloco Texto="@(string.IsNullOrWhiteSpace(Cl.Parecer) ? AvaliacaoCliente.GerarParecer(Cl) : Cl.Parecer)"
+              Status="AvaliacaoCliente.Geral(Cl)"
+              Assinatura="@(string.IsNullOrWhiteSpace(Cl.Nome) ? "insiTalent" : Cl.Nome)"
+              Periodo="@Cl.Periodo" />
+
+@code {
+    [Parameter, EditorRequired] public Cliente Cl { get; set; } = default!;
+}

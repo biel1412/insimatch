@@ -1,0 +1,17 @@
+@* Rodapé de um campo: meta e atingimento *@
+@if (C.TemMeta)
+{
+    <div class="rodape">
+        <span>@At.ToString("N0")% da meta</span>
+        <span>meta @AvaliacaoCliente.MetaTexto(C)</span>
+    </div>
+}
+else if (C.Meta.HasValue)
+{
+    <div class="rodape"><span>meta @AvaliacaoCliente.MetaTexto(C)</span></div>
+}
+
+@code {
+    [Parameter, EditorRequired] public CampoCliente C { get; set; } = default!;
+    [Parameter] public double At { get; set; }
+}

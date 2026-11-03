@@ -10,7 +10,10 @@ namespace Insimatch.Services;
 public class ArmazenamentoService(IJSRuntime js)
 {
     private const string ChaveColaboradores = "insimatch.colaboradores";
-    private static readonly JsonSerializerOptions Json = new() { WriteIndented = false };
+    private static readonly JsonSerializerOptions Json = new() { WriteIndented = false, Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() } };
+
+    /// <summary>JSON legível para exportar/importar a configuração de um cliente.</summary>
+    public static readonly JsonSerializerOptions JsonExportacao = new() { WriteIndented = true, Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() } };
 
     public async Task<List<Colaborador>> CarregarColaboradoresAsync()
     {

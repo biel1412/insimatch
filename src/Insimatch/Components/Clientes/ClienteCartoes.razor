@@ -1,0 +1,69 @@
+@* Modelo "Cartões" do cliente: resumo, grupos de campos, análises e parecer *@
+@{
+    var comMeta = AvaliacaoCliente.ComMeta(Cl).ToList();
+    var naMeta = comMeta.Count(c => AvaliacaoCliente.StatusCampo(c) == Status.Excelente);
+    var proximos = comMeta.Count(c => AvaliacaoCliente.StatusCampo(c) == Status.Atencao);
+    var fora = comMeta.Count(c => AvaliacaoCliente.StatusCampo(c) == Status.Critico);
+    var grupos = AvaliacaoCliente.Grupos(Cl);
+    var n = 0;
+}
+
+<section class="painel modelo-cliente">
+    <ClienteCabecalho Cl="Cl" />
+
+    @if (comMeta.Count > 0)
+    {
+        <div class="resumo-metas">
+            <div class="rm-total">
+                <strong>@naMeta<small>/@comMeta.Count</small></strong>
+                <span>indicadores na meta</span>
+            </div>
+            <div class="rm-barra">
+                <span class="st-excelente" style="flex:@naMeta"></span>
+                <span class="st-atencao" style="flex:@proximos"></span>
+                <span class="st-critico" style="flex:@fora"></span>
+            </div>
+            <div class="rm-legenda">
+                <span class="st-excelente"><i></i>Na meta @naMeta</span>
+                <span class="st-atencao"><i></i>Próximos @proximos</span>
+                <span class="st-critico"><i></i>Fora @fora</span>
+            </div>
+        </div>
+    }
+
+    @if (Cl.Campos.Count == 0)
+    {
+        <div class="cartao neutro gp-vazio grande">Adicione campos no editor para montar o painel deste cliente.</div>
+    }
+
+    @foreach (var (grupo, campos) in grupos)
+    {
+        n++;
+        <div class="secao-titulo"><span>@n.ToString("00")</span> @grupo</div>
+        <div class="cv-grade">
+            @foreach (var c in campos)
+            {
+                <CampoVisual @key="c.Id" C="c" />
+            }
+        </div>
+    }
+
+    @if (Cl.Graficos.Count > 0)
+    {
+        n++;
+        <div class="secao-titulo"><span>@n.ToString("00")</span> Análises</div>
+        <div class="gp-grade">
+            @foreach (var g in Cl.Graficos)
+            {
+                <GraficoPainel @key="g.Id" Cl="Cl" G="g" />
+            }
+        </div>
+    }
+
+    <div class="secao-titulo"><span>@((n + 1).ToString("00"))</span> Parecer</div>
+    <ClienteParecer Cl="Cl" />
+</section>
+
+@code {
+    [Parameter, EditorRequired] public Cliente Cl { get; set; } = default!;
+}

@@ -1,0 +1,129 @@
+@* Gráfico do painel do cliente: compara vários campos *@
+@{
+    var porMeta = G.Medida == MedidaGrafico.PercentualMeta;
+    var itens = G.Campos
+        .Select(id => Cl.Campos.FirstOrDefault(c => c.Id == id))
+        .Where(c => c is { Numerico: true, Valor: not null } && (!porMeta || c.TemMeta))
+        .Select(c => c!)
+        .ToList();
+    double Val(CampoCliente c) => porMeta ? (double)AvaliacaoCliente.Atingimento(c) : (double)c.Valor!.Value;
+    string Rot(CampoCliente c) => porMeta ? AvaliacaoCliente.Atingimento(c).ToString("N1") + "%" : AvaliacaoCliente.Valor(c);
+    var max = itens.Count == 0 ? 1 : itens.Max(c => Math.Abs(Val(c)));
+    if (G.MostrarMeta)
+    {
+        if (porMeta) max = Math.Max(max, 100);
+        else if (itens.Any(c => c.Meta.HasValue)) max = Math.Max(max, itens.Where(c => c.Meta.HasValue).Max(c => (double)Math.Abs(c.Meta!.Value)));
+    }
+    max = max <= 0 ? 1 : max * 1.08;
+}
+
+<article class="cartao neutro grafico-painel">
+    <div class="cartao-topo">
+        <span class="cartao-rotulo">@G.Titulo</span>
+        <span class="mudo gp-medida">@(porMeta ? "% da meta" : "valores")</span>
+    </div>
+
+    @if (itens.Count == 0)
+    {
+        <div class="gp-vazio">Selecione campos numéricos @(porMeta ? "com meta " : "")para este gráfico.</div>
+    }
+    else if (G.Tipo == TipoGrafico.Barras)
+    {
+        <div class="gp-barras">
+            @foreach (var c in itens)
+            {
+                var st = AvaliacaoCliente.StatusCampo(c);
+                <div class="gp-linha @Avaliacao.Classe(st)">
+                    <span class="gp-nome">@c.Nome</span>
+                    <div class="gp-trilho">
+                        <div class="gp-fill" style="width:@Pct(Math.Abs(Val(c)) / max)"></div>
+                        @if (G.MostrarMeta && porMeta)
+                        {
+                            <span class="gp-meta" style="left:@Pct(100 / max)"></span>
+                        }
+                        else if (G.MostrarMeta && c.Meta.HasValue)
+                        {
+                            <span class="gp-meta" style="left:@Pct((double)Math.Abs(c.Meta.Value) / max)"></span>
+                        }
+                    </div>
+                    <b>@Rot(c)</b>
+                </div>
+            }
+        </div>
+    }
+    else if (G.Tipo == TipoGrafico.Colunas)
+    {
+        <div class="gp-colunas">
+            @foreach (var c in itens)
+            {
+                var st = AvaliacaoCliente.StatusCampo(c);
+                <div class="gp-coluna @Avaliacao.Classe(st)">
+                    <b>@Rot(c)</b>
+                    <div class="gp-col-area">
+                        <div class="gp-col" style="height:@Pct(Math.Abs(Val(c)) / max)"></div>
+                        @if (G.MostrarMeta && porMeta)
+                        {
+                            <span class="gp-col-meta" title="100% da meta" style="bottom:@Pct(100 / max)"></span>
+                        }
+                        else if (G.MostrarMeta && c.Meta.HasValue)
+                        {
+                            <span class="gp-col-meta" title="meta" style="bottom:@Pct((double)Math.Abs(c.Meta.Value) / max)"></span>
+                        }
+                    </div>
+                    <span class="gp-nome">@c.Nome</span>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        var positivos = itens.Where(c => Val(c) > 0).ToList();
+        var soma = positivos.Sum(c => Val(c));
+        var circ = 2 * Math.PI * 70;
+        var acumulado = 0.0;
+        <div class="gp-rosca">
+            <svg viewBox="0 0 200 200">
+                <circle cx="100" cy="100" r="70" class="gp-rosca-trilho" />
+                @for (var i = 0; i < positivos.Count; i++)
+                {
+                    var frac = soma > 0 ? Val(positivos[i]) / soma : 0;
+                    var len = circ * frac;
+                    <circle cx="100" cy="100" r="70" class="gp-seg" style="stroke:@Cor(i)"
+                            stroke-dasharray="@F(Math.Max(len - 2, 0)) @F(circ)" stroke-dashoffset="@F(-acumulado)"
+                            transform="rotate(-90 100 100)" />
+                    acumulado += len;
+                }
+            </svg>
+            <ul class="gp-legenda">
+                @for (var i = 0; i < positivos.Count; i++)
+                {
+                    var c = positivos[i];
+                    <li>
+                        <i style="background:@Cor(i)"></i>
+                        <span>@c.Nome</span>
+                        <b>@Rot(c)</b>
+                        <small>@((soma > 0 ? Val(c) / soma * 100 : 0).ToString("N1"))%</small>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+</article>
+
+@code {
+    [Parameter, EditorRequired] public Cliente Cl { get; set; } = default!;
+    [Parameter, EditorRequired] public GraficoCliente G { get; set; } = default!;
+
+    private static readonly string[] Paleta =
+    {
+        "var(--acento)", "var(--acento-2)", "var(--azul)", "var(--amarelo)", "var(--verde)", "var(--vermelho)",
+        "color-mix(in srgb, var(--acento) 55%, var(--acento-2))", "color-mix(in srgb, var(--azul) 50%, var(--verde))"
+    };
+
+    private static string Cor(int i) => Paleta[i % Paleta.Length];
+
+    private static string Pct(double v) =>
+        (Math.Clamp(v, 0, 1) * 100).ToString("0.#", CultureInfo.InvariantCulture) + "%";
+
+    private static string F(double v) => v.ToString("0.##", CultureInfo.InvariantCulture);
+}

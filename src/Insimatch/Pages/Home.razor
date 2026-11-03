@@ -2,7 +2,7 @@
 @inject ArmazenamentoService Armazenamento
 @inject IJSRuntime JS
 
-<div class="app @(Apresentacao ? "modo-apresentacao" : "")" data-tema="@Temas[TemaIdx].Id" data-fundo="@Fundos[FundoIdx].Id">
+<div class="app @(Apresentacao ? "modo-apresentacao" : "")" data-tema="@Temas[TemaIdx].Id" data-fundo="@Fundos[FundoIdx].Id" data-aba="@Abas[AbaIdx].Id">
     <PapelDeParede Fundo="@Fundos[FundoIdx].Id" />
 
     @* Menu principal: dock vertical com indicador deslizante *@
@@ -24,6 +24,10 @@
                         else if (aba.Id == "time")
                         {
                             <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" /><circle cx="17" cy="9.5" r="2.4" /><path d="M2.8 19c.6-3.3 3.2-5.2 6.2-5.2s5.6 1.9 6.2 5.2" /><path d="M15.2 14.3c2.6-.3 5 1.2 5.8 4.7" /></svg>
+                        }
+                        else if (aba.Id == "cliente")
+                        {
+                            <svg viewBox="0 0 24 24"><rect x="3.5" y="7" width="17" height="12.5" rx="2.5" /><path d="M8.5 7V5.5A1.5 1.5 0 0 1 10 4h4a1.5 1.5 0 0 1 1.5 1.5V7" /><path d="M3.5 12.5h17" /><path d="M10.5 12.5v1.5h3v-1.5" /></svg>
                         }
                         else
                         {
@@ -47,6 +51,9 @@
         {
             case "time":
                 <TimeAba @key="@("time")" Apresentacao="Apresentacao" Modelo="@ModeloAtual.Id" Ferramentas="Ferramentas" />
+                break;
+            case "cliente":
+                <ClienteAba @key="@("cliente")" Apresentacao="Apresentacao" Modelo="@ModeloAtual.Id" Ferramentas="Ferramentas" />
                 break;
             case "fila":
                 <FilaAba @key="@("fila")" Apresentacao="Apresentacao" Modelo="@ModeloAtual.Id" Ferramentas="Ferramentas" />
@@ -73,6 +80,10 @@
             new("cartoes", "Cartões"), new("placar", "Placar"), new("foco", "Foco")
         }),
         new("fila", "Atualização de fila", "Fila", new Opcao[]
+        {
+            new("cartoes", "Cartões"), new("placar", "Placar"), new("foco", "Foco")
+        }),
+        new("cliente", "Resultado do cliente", "Cliente", new Opcao[]
         {
             new("cartoes", "Cartões"), new("placar", "Placar"), new("foco", "Foco")
         })

@@ -1,0 +1,39 @@
+@* Modelo "Foco" do cliente: campos em destaque bem grandes *@
+<FocoLayout Indicadores="@Principais" Secundarios="@Outros">
+    <Superior><ClienteCabecalho Cl="Cl" /></Superior>
+    <Inferior><ClienteParecer Cl="Cl" /></Inferior>
+</FocoLayout>
+
+@code {
+    [Parameter, EditorRequired] public Cliente Cl { get; set; } = default!;
+
+    /// <summary>Campos marcados como destaque; sem destaque, os primeiros com meta.</summary>
+    private List<CampoCliente> Escolhidos
+    {
+        get
+        {
+            var d = Cl.Campos.Where(c => c.Destaque).Take(4).ToList();
+            if (d.Count == 0) d = Cl.Campos.Where(c => c.TemMeta).Take(3).ToList();
+            if (d.Count == 0) d = Cl.Campos.Where(c => c.Numerico).Take(3).ToList();
+            return d;
+        }
+    }
+
+    private static Indicador ParaIndicador(CampoCliente c) => new(
+        c.Nome, AvaliacaoCliente.Valor(c), null,
+        AvaliacaoCliente.StatusCampo(c),
+        c.TemMeta ? AvaliacaoCliente.RotuloCampo(c) : null,
+        c.TemMeta ? $"meta {AvaliacaoCliente.MetaTexto(c)} · {AvaliacaoCliente.Atingimento(c):N0}%" : (string.IsNullOrWhiteSpace(c.Grupo) ? null : c.Grupo));
+
+    private IReadOnlyList<Indicador> Principais => Escolhidos.Select(ParaIndicador).ToList();
+
+    private IReadOnlyList<Indicador> Outros
+    {
+        get
+        {
+            var ids = Escolhidos.Select(c => c.Id).ToHashSet();
+            return Cl.Campos.Where(c => !ids.Contains(c.Id)).Take(6)
+                .Select(c => new Indicador(c.Nome, AvaliacaoCliente.Valor(c))).ToList();
+        }
+    }
+}

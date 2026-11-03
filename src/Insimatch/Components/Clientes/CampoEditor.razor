@@ -1,0 +1,200 @@
+@* Editor de um campo livre do cliente (recolhível) *@
+@{ var st = AvaliacaoCliente.StatusCampo(C); }
+
+<div class="campo-card @(Aberto ? "aberto" : "") @Avaliacao.Classe(st)">
+    <button class="campo-cab" @onclick="AlternarAsync" aria-expanded="@(Aberto ? "true" : "false")">
+        <span class="campo-ico">@AvaliacaoCliente.IconeTipo(C.Tipo)</span>
+        <span class="campo-cab-txt">
+            <strong>@(string.IsNullOrWhiteSpace(C.Nome) ? "Campo sem nome" : C.Nome)</strong>
+            <small>@AvaliacaoCliente.Valor(C)@(C.Meta.HasValue && C.Numerico ? " · meta " + AvaliacaoCliente.MetaTexto(C) : "")</small>
+        </span>
+        @if (C.TemMeta)
+        {
+            <span class="campo-st" title="@AvaliacaoCliente.RotuloCampo(C)"></span>
+        }
+        <span class="campo-chev">▾</span>
+    </button>
+
+    @if (Aberto)
+    {
+        <div class="campo-corpo">
+            <div class="form-2">
+                <label>Nome do campo
+                    <input @bind="C.Nome" @bind:event="oninput" @bind:after="Mudou" placeholder="Ex.: Volume processado" />
+                </label>
+                <label>Grupo / seção
+                    <input @bind="C.Grupo" @bind:event="oninput" @bind:after="Mudou" list="@ListaGrupos" placeholder="Ex.: Operação" />
+                </label>
+            </div>
+
+            <div class="form-2">
+                <label>Tipo de dado
+                    <select @bind="C.Tipo" @bind:after="TipoMudouAsync">
+                        @foreach (var t in Enum.GetValues<TipoCampo>())
+                        {
+                            <option value="@t">@AvaliacaoCliente.NomeTipo(t)</option>
+                        }
+                    </select>
+                </label>
+                @if (C.Numerico && C.Tipo != TipoCampo.Inteiro)
+                {
+                    <label>Casas decimais
+                        <select @bind="C.Casas" @bind:after="Mudou">
+                            @for (var i = 0; i <= 4; i++)
+                            {
+                                <option value="@i">@(i == 0 ? "0 — sem vírgula" : $"{i} — 0,{new string('0', i)}")</option>
+                            }
+                        </select>
+                    </label>
+                }
+                else if (C.Numerico)
+                {
+                    <label>Unidade (opcional)
+                        <input @bind="C.Unidade" @bind:event="oninput" @bind:after="Mudou" placeholder="Ex.: itens, h, un." />
+                    </label>
+                }
+            </div>
+
+            @if (C.Numerico)
+            {
+                <div class="form-2">
+                    @if (C.Tipo == TipoCampo.Moeda)
+                    {
+                        <label>Símbolo da moeda
+                            <input @bind="C.Simbolo" @bind:event="oninput" @bind:after="Mudou" placeholder="R$" />
+                        </label>
+                    }
+                    else if (C.Tipo == TipoCampo.Decimal)
+                    {
+                        <label>Unidade (opcional)
+                            <input @bind="C.Unidade" @bind:event="oninput" @bind:after="Mudou" placeholder="Ex.: min, kg, h" />
+                        </label>
+                    }
+                    <label class="interruptor">
+                        <input type="checkbox" @bind="C.SeparadorMilhar" @bind:after="Mudou" />
+                        <span>Separador de milhar <em>@(C.SeparadorMilhar ? "1.234" : "1234")</em></span>
+                    </label>
+                </div>
+
+                <div class="form-2">
+                    <label>Valor
+                        <input type="number" step="@Passo" @bind="C.Valor" @bind:event="onchange" @bind:after="NormalizarAsync" placeholder="—" />
+                    </label>
+                    <label>Meta (opcional)
+                        <input type="number" step="@Passo" @bind="C.Meta" @bind:event="onchange" @bind:after="NormalizarAsync" placeholder="sem meta" />
+                    </label>
+                </div>
+
+                @if (C.Meta.HasValue)
+                {
+                    <div class="form-2">
+                        <label>Melhor quando
+                            <select @bind="C.Sentido" @bind:after="Mudou">
+                                <option value="@SentidoMeta.MaiorMelhor">Maior ou igual à meta</option>
+                                <option value="@SentidoMeta.MenorMelhor">Menor ou igual à meta</option>
+                            </select>
+                        </label>
+                        <label>“Próximo da meta” a partir de
+                            <span class="campo-sufixo">
+                                <input type="number" min="0" max="100" step="1" @bind="C.Tolerancia" @bind:event="onchange" @bind:after="NormalizarAsync" />
+                                <em>% da meta</em>
+                            </span>
+                        </label>
+                    </div>
+                }
+
+                <div class="previa-valor">
+                    Exibição: <strong>@AvaliacaoCliente.Valor(C)</strong>
+                    @if (C.TemMeta)
+                    {
+                        <span class="tag @Avaliacao.Classe(st)">@AvaliacaoCliente.RotuloCampo(C) · @AvaliacaoCliente.Atingimento(C).ToString("N0")%</span>
+                    }
+                </div>
+            }
+            else if (C.Tipo == TipoCampo.Texto)
+            {
+                <label>Valor
+                    <input @bind="C.Texto" @bind:event="oninput" @bind:after="Mudou" placeholder="Texto livre" />
+                </label>
+            }
+            else if (C.Tipo == TipoCampo.Data)
+            {
+                <label>Data
+                    <input type="date" @bind="C.Data" @bind:after="Mudou" />
+                </label>
+            }
+            else
+            {
+                <label class="interruptor">
+                    <input type="checkbox" @bind="C.Booleano" @bind:after="Mudou" />
+                    <span>@(C.Booleano ? "Sim" : "Não")</span>
+                </label>
+            }
+
+            <div class="form-2">
+                @if (C.Numerico)
+                {
+                    <label>Visual no painel
+                        <select @bind="C.Visual" @bind:after="Mudou">
+                            @foreach (var v in Enum.GetValues<VisualCampo>())
+                            {
+                                if (v == VisualCampo.Medidor && C.Tipo != TipoCampo.Percentual) continue;
+                                <option value="@v">@AvaliacaoCliente.NomeVisual(v)</option>
+                            }
+                        </select>
+                    </label>
+                }
+                <label class="interruptor">
+                    <input type="checkbox" @bind="C.Destaque" @bind:after="Mudou" />
+                    <span>Destaque <em>cartão maior / modelo Foco</em></span>
+                </label>
+            </div>
+            @if (C.Numerico && !C.Meta.HasValue && C.Visual is VisualCampo.Barra or VisualCampo.Comparativo)
+            {
+                <div class="dica">Este visual usa a meta; sem meta, o campo aparece como número.</div>
+            }
+
+            <div class="campo-acoes">
+                <button class="btn" title="Subir" disabled="@Primeiro" @onclick="() => OnMover.InvokeAsync(-1)">↑</button>
+                <button class="btn" title="Descer" disabled="@Ultimo" @onclick="() => OnMover.InvokeAsync(1)">↓</button>
+                <button class="btn" @onclick="() => OnDuplicar.InvokeAsync()">Duplicar</button>
+                <button class="btn perigo" @onclick="() => OnExcluir.InvokeAsync()">Excluir</button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public CampoCliente C { get; set; } = default!;
+    [Parameter] public bool Aberto { get; set; }
+    [Parameter] public bool Primeiro { get; set; }
+    [Parameter] public bool Ultimo { get; set; }
+    [Parameter] public string ListaGrupos { get; set; } = "";
+    [Parameter] public EventCallback OnAlternar { get; set; }
+    [Parameter] public EventCallback OnMudou { get; set; }
+    [Parameter] public EventCallback<int> OnMover { get; set; }
+    [Parameter] public EventCallback OnDuplicar { get; set; }
+    [Parameter] public EventCallback OnExcluir { get; set; }
+
+    private string Passo => C.Tipo == TipoCampo.Inteiro || C.Casas <= 0
+        ? "1"
+        : "0." + new string('0', Math.Clamp(C.Casas, 1, 6) - 1) + "1";
+
+    private Task AlternarAsync() => OnAlternar.InvokeAsync();
+    private Task Mudou() => OnMudou.InvokeAsync();
+
+    private async Task NormalizarAsync()
+    {
+        AvaliacaoCliente.Normalizar(C);
+        await OnMudou.InvokeAsync();
+    }
+
+    private async Task TipoMudouAsync()
+    {
+        C.Visual = AvaliacaoCliente.VisualPadrao(C.Tipo);
+        if (C.Tipo == TipoCampo.Inteiro) C.Casas = 0;
+        else if (C.Tipo is TipoCampo.Moeda or TipoCampo.Percentual && C.Casas == 0) C.Casas = 2;
+        AvaliacaoCliente.Normalizar(C);
+        await OnMudou.InvokeAsync();
+    }
+}

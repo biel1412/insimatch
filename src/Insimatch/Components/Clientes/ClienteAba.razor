@@ -1,0 +1,508 @@
+@* Aba "Cliente" — painel totalmente configurável para qualquer cliente *@
+@inject ArmazenamentoService Armazenamento
+@inject IJSRuntime JS
+
+<PageTitle>insiTalent · @(Atual?.Nome is { Length: > 0 } n ? n : "Cliente")</PageTitle>
+
+<aside class="lateral lateral-cliente">
+    <div class="marca">
+        <div class="marca-logo">insi<span>Talent</span></div>
+        <div class="marca-sub">Resultado do cliente</div>
+    </div>
+
+    <div class="abas abas-4">
+        <button class="@(Aba == "campos" ? "ativa" : "")" @onclick='() => { Aba = "campos"; }'>Campos</button>
+        <button class="@(Aba == "graficos" ? "ativa" : "")" @onclick='() => { Aba = "graficos"; }'>Gráficos</button>
+        <button class="@(Aba == "parecer" ? "ativa" : "")" @onclick='() => { Aba = "parecer"; }'>Parecer</button>
+        <button class="@(Aba == "clientes" ? "ativa" : "")" @onclick='() => { Aba = "clientes"; }'>Clientes (@Lista.Count)</button>
+    </div>
+
+    @if (Atual is null)
+    {
+        <div class="vazio">Carregando…</div>
+    }
+    else if (Aba == "campos")
+    {
+        <div class="form">
+            <label>Nome do cliente
+                <input @bind="Atual.Nome" @bind:event="oninput" @bind:after="SalvarAsync" placeholder="Ex.: Empresa X" />
+            </label>
+            <div class="form-2">
+                <label>Período
+                    <input @bind="Atual.Periodo" @bind:event="oninput" @bind:after="SalvarAsync" placeholder="Ex.: Outubro de 2026" />
+                </label>
+                <label>Descrição (opcional)
+                    <input @bind="Atual.Descricao" @bind:event="oninput" @bind:after="SalvarAsync" placeholder="Ex.: Operação de cobrança" />
+                </label>
+            </div>
+
+            <div class="form-grupo">
+                Campos (@Atual.Campos.Count)
+                @if (Atual.Campos.Count > 0)
+                {
+                    <button class="link" @onclick="AlternarTodos">@(Abertos.Count > 0 ? "Recolher todos" : "Expandir todos")</button>
+                }
+            </div>
+
+            <datalist id="grupos-@Atual.Id">
+                @foreach (var g in Atual.Campos.Select(c => c.Grupo).Where(g => !string.IsNullOrWhiteSpace(g)).Distinct())
+                {
+                    <option value="@g"></option>
+                }
+            </datalist>
+
+            <div class="campos-lista">
+                @for (var i = 0; i < Atual.Campos.Count; i++)
+                {
+                    var idx = i;
+                    var c = Atual.Campos[i];
+                    <CampoEditor @key="c.Id" C="c" Aberto="Abertos.Contains(c.Id)" ListaGrupos="@($"grupos-{Atual.Id}")"
+                                 Primeiro="idx == 0" Ultimo="idx == Atual.Campos.Count - 1"
+                                 OnAlternar="() => Alternar(c.Id)" OnMudou="SalvarAsync"
+                                 OnMover="d => MoverCampoAsync(idx, d)" OnDuplicar="() => DuplicarCampoAsync(idx)"
+                                 OnExcluir="() => ExcluirCampoAsync(idx)" />
+                }
+            </div>
+
+            @if (Excluido is not null)
+            {
+                <div class="desfazer">
+                    Campo “@(string.IsNullOrWhiteSpace(Excluido.Value.Campo.Nome) ? "sem nome" : Excluido.Value.Campo.Nome)” excluído.
+                    <button class="link" @onclick="DesfazerAsync">Desfazer</button>
+                </div>
+            }
+
+            <div class="form-grupo">Adicionar campo</div>
+            <div class="tipos-grade">
+                @foreach (var t in Enum.GetValues<TipoCampo>())
+                {
+                    <button class="tipo-btn" @onclick="() => AdicionarCampoAsync(t)">
+                        <span>@AvaliacaoCliente.IconeTipo(t)</span>@AvaliacaoCliente.NomeTipo(t)
+                    </button>
+                }
+            </div>
+        </div>
+    }
+    else if (Aba == "graficos")
+    {
+        var numericos = Atual.Campos.Where(c => c.Numerico).ToList();
+        <div class="form">
+            <p class="dica">Gráficos comparam vários campos numéricos. Use “% da meta” para comparar indicadores de unidades diferentes.</p>
+            @for (var i = 0; i < Atual.Graficos.Count; i++)
+            {
+                var idx = i;
+                var g = Atual.Graficos[i];
+                <div class="campo-card aberto">
+                    <div class="campo-corpo">
+                        <label>Título
+                            <input @bind="g.Titulo" @bind:event="oninput" @bind:after="SalvarAsync" />
+                        </label>
+                        <div class="form-2">
+                            <label>Tipo
+                                <select @bind="g.Tipo" @bind:after="SalvarAsync">
+                                    @foreach (var t in Enum.GetValues<TipoGrafico>())
+                                    {
+                                        <option value="@t">@AvaliacaoCliente.NomeGrafico(t)</option>
+                                    }
+                                </select>
+                            </label>
+                            <label>Medida
+                                <select @bind="g.Medida" @bind:after="SalvarAsync">
+                                    <option value="@MedidaGrafico.PercentualMeta">% da meta</option>
+                                    <option value="@MedidaGrafico.Valor">Valor real</option>
+                                </select>
+                            </label>
+                        </div>
+                        <label class="interruptor">
+                            <input type="checkbox" @bind="g.MostrarMeta" @bind:after="SalvarAsync" />
+                            <span>Marcar a meta no gráfico</span>
+                        </label>
+                        <div class="checklist">
+                            @if (numericos.Count == 0)
+                            {
+                                <span class="dica">Nenhum campo numérico ainda.</span>
+                            }
+                            @foreach (var c in numericos)
+                            {
+                                var id = c.Id;
+                                var semMeta = g.Medida == MedidaGrafico.PercentualMeta && !c.TemMeta;
+                                <label class="check @(semMeta ? "desab" : "")" title="@(semMeta ? "Sem meta: não aparece em “% da meta”" : "")">
+                                    <input type="checkbox" checked="@g.Campos.Contains(id)" @onchange="e => MarcarCampoAsync(g, id, e)" />
+                                    <span>@(string.IsNullOrWhiteSpace(c.Nome) ? "Campo sem nome" : c.Nome)</span>
+                                </label>
+                            }
+                        </div>
+                        <div class="campo-acoes">
+                            <button class="btn" disabled="@(idx == 0)" @onclick="() => MoverGraficoAsync(idx, -1)">↑</button>
+                            <button class="btn" disabled="@(idx == Atual.Graficos.Count - 1)" @onclick="() => MoverGraficoAsync(idx, 1)">↓</button>
+                            <button class="btn perigo" @onclick="() => ExcluirGraficoAsync(idx)">Excluir</button>
+                        </div>
+                    </div>
+                </div>
+            }
+            <div class="acoes">
+                <button class="btn" @onclick="AdicionarGraficoAsync">+ Adicionar gráfico</button>
+            </div>
+        </div>
+    }
+    else if (Aba == "parecer")
+    {
+        <div class="form">
+            <div class="form-2">
+                <label>Formato
+                    <select @bind="Atual.Tom" @bind:after="SalvarAsync">
+                        <option value="@TomParecer.Formal">Texto formal</option>
+                        <option value="@TomParecer.Topicos">Tópicos por situação</option>
+                    </select>
+                </label>
+                <label class="interruptor">
+                    <input type="checkbox" @bind="Atual.ParecerIncluiSemMeta" @bind:after="SalvarAsync" />
+                    <span>Incluir campos sem meta</span>
+                </label>
+            </div>
+            <div class="form-grupo">
+                Parecer
+                <button class="link" @onclick="GerarParecerAsync">✨ Gerar parecer</button>
+            </div>
+            <textarea rows="14" @bind="Atual.Parecer" @bind:event="oninput" @bind:after="SalvarAsync"
+                      placeholder="Vazio = parecer automático, sempre atualizado com os campos. Clique em “Gerar parecer” para criar o texto e editá-lo."></textarea>
+            <div class="acoes">
+                @if (!string.IsNullOrWhiteSpace(Atual.Parecer))
+                {
+                    <button class="btn" @onclick="LimparParecerAsync">Voltar ao automático</button>
+                }
+            </div>
+            <p class="dica">
+                @(string.IsNullOrWhiteSpace(Atual.Parecer)
+                    ? "O painel está mostrando o parecer automático."
+                    : "O painel está mostrando o texto editado acima. Ele não muda sozinho quando os números mudam.")
+            </p>
+        </div>
+    }
+    else
+    {
+        <div class="form">
+            <ul class="lista">
+                @foreach (var cl in Lista)
+                {
+                    var st = AvaliacaoCliente.Geral(cl);
+                    <li class="@(cl.Id == Atual.Id ? "sel" : "")" @onclick="() => Selecionar(cl)">
+                        <span class="mini-avatar @Avaliacao.Classe(st)">@cl.Iniciais</span>
+                        <span class="lista-txt">
+                            <strong>@(string.IsNullOrWhiteSpace(cl.Nome) ? "(sem nome)" : cl.Nome)</strong>
+                            <small>@cl.Periodo · @cl.Campos.Count campo(s) · @AvaliacaoCliente.RotuloGeral(cl)</small>
+                        </span>
+                    </li>
+                }
+            </ul>
+
+            <div class="acoes">
+                <button class="btn" @onclick="NovoClienteAsync">+ Novo cliente</button>
+                <button class="btn" title="Mesmos campos e gráficos, com os valores em branco" @onclick="NovoPeriodoAsync">+ Novo período</button>
+                <button class="btn" @onclick="DuplicarClienteAsync">Duplicar</button>
+                <button class="btn perigo" @onclick="ExcluirClienteAsync">@(ConfirmarExclusao ? "Confirmar exclusão" : "Excluir")</button>
+            </div>
+            <p class="dica">“Novo período” reaproveita a estrutura do cliente selecionado (campos, metas, gráficos) com os valores em branco.</p>
+
+            <div class="form-grupo">Importar / exportar</div>
+            <div class="acoes">
+                <button class="btn" @onclick="ExportarAsync">Exportar cliente (.json)</button>
+                <label class="btn arquivo">
+                    Importar cliente (.json)
+                    <InputFile OnChange="ImportarAsync" accept=".json,application/json" />
+                </label>
+            </div>
+            @if (!string.IsNullOrEmpty(Mensagem))
+            {
+                <div class="calculado">@Mensagem</div>
+            }
+            <p class="dica">Use exportar/importar para levar a configuração de um cliente para outro computador ou compartilhar com a equipe. Os dados ficam salvos apenas neste navegador.</p>
+        </div>
+    }
+</aside>
+
+<main class="principal">
+    <div class="barra-topo">
+        @if (Lista.Count > 1)
+        {
+            <div class="navegacao">
+                <button class="icone" title="Anterior" @onclick="() => Mover(-1)">‹</button>
+                <span>@(IndiceAtual + 1) de @Lista.Count</span>
+                <button class="icone" title="Próximo" @onclick="() => Mover(1)">›</button>
+            </div>
+        }
+        <div class="espaco"></div>
+        @Ferramentas
+    </div>
+
+    @if (Atual is not null)
+    {
+        @switch (Modelo)
+        {
+            case "placar":
+                <ClientePlacar Cl="Atual" />
+                break;
+            case "foco":
+                <ClienteFoco Cl="Atual" />
+                break;
+            default:
+                <ClienteCartoes Cl="Atual" />
+                break;
+        }
+    }
+</main>
+
+@code {
+    [Parameter] public bool Apresentacao { get; set; }
+    [Parameter] public string Modelo { get; set; } = "cartoes";
+    [Parameter] public RenderFragment? Ferramentas { get; set; }
+
+    private const string Chave = "insitalent.clientes";
+    private List<Cliente> Lista = new();
+    private Cliente? Atual;
+    private string Aba = "campos";
+    private string Mensagem = "";
+    private bool ConfirmarExclusao;
+    private readonly HashSet<string> Abertos = new();
+    private (CampoCliente Campo, int Indice)? Excluido;
+
+    private int IndiceAtual => Atual is null ? 0 : Math.Max(0, Lista.IndexOf(Atual));
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        Lista = await Armazenamento.CarregarAsync<List<Cliente>>(Chave) ?? new();
+        if (Lista.Count == 0)
+        {
+            Lista.Add(AvaliacaoCliente.Exemplo());
+            await SalvarAsync();
+        }
+        Atual = Lista[0];
+        StateHasChanged();
+    }
+
+    private Task SalvarAsync() => Armazenamento.SalvarAsync(Chave, Lista);
+
+    private void Selecionar(Cliente c)
+    {
+        Atual = c;
+        Abertos.Clear();
+        Excluido = null;
+        ConfirmarExclusao = false;
+    }
+
+    private void Mover(int passo)
+    {
+        if (Lista.Count == 0) return;
+        Selecionar(Lista[(IndiceAtual + passo + Lista.Count) % Lista.Count]);
+    }
+
+    // ---------- Campos ----------
+
+    private void Alternar(string id)
+    {
+        if (!Abertos.Remove(id)) Abertos.Add(id);
+    }
+
+    private void AlternarTodos()
+    {
+        if (Atual is null) return;
+        if (Abertos.Count > 0) Abertos.Clear();
+        else foreach (var c in Atual.Campos) Abertos.Add(c.Id);
+    }
+
+    private async Task AdicionarCampoAsync(TipoCampo tipo)
+    {
+        if (Atual is null) return;
+        var campo = new CampoCliente
+        {
+            Tipo = tipo,
+            Casas = tipo switch { TipoCampo.Moeda or TipoCampo.Percentual => 2, TipoCampo.Decimal => 1, _ => 0 },
+            Visual = AvaliacaoCliente.VisualPadrao(tipo),
+            Grupo = Atual.Campos.LastOrDefault()?.Grupo ?? ""
+        };
+        Atual.Campos.Add(campo);
+        Abertos.Clear();
+        Abertos.Add(campo.Id);
+        Excluido = null;
+        await SalvarAsync();
+    }
+
+    private async Task MoverCampoAsync(int idx, int delta)
+    {
+        if (Atual is null) return;
+        var novo = idx + delta;
+        if (novo < 0 || novo >= Atual.Campos.Count) return;
+        (Atual.Campos[idx], Atual.Campos[novo]) = (Atual.Campos[novo], Atual.Campos[idx]);
+        await SalvarAsync();
+    }
+
+    private async Task DuplicarCampoAsync(int idx)
+    {
+        if (Atual is null) return;
+        var orig = Atual.Campos[idx];
+        var copia = System.Text.Json.JsonSerializer.Deserialize<CampoCliente>(System.Text.Json.JsonSerializer.Serialize(orig))!;
+        copia.Id = Guid.NewGuid().ToString("N")[..10];
+        copia.Nome = orig.Nome + " (cópia)";
+        Atual.Campos.Insert(idx + 1, copia);
+        Abertos.Clear();
+        Abertos.Add(copia.Id);
+        await SalvarAsync();
+    }
+
+    private async Task ExcluirCampoAsync(int idx)
+    {
+        if (Atual is null) return;
+        var campo = Atual.Campos[idx];
+        Atual.Campos.RemoveAt(idx);
+        Abertos.Remove(campo.Id);
+        Excluido = (campo, idx);
+        await SalvarAsync();
+    }
+
+    private async Task DesfazerAsync()
+    {
+        if (Atual is null || Excluido is null) return;
+        var (campo, idx) = Excluido.Value;
+        Atual.Campos.Insert(Math.Clamp(idx, 0, Atual.Campos.Count), campo);
+        Abertos.Add(campo.Id);
+        Excluido = null;
+        await SalvarAsync();
+    }
+
+    // ---------- Gráficos ----------
+
+    private async Task AdicionarGraficoAsync()
+    {
+        if (Atual is null) return;
+        var g = new GraficoCliente
+        {
+            Titulo = Atual.Graficos.Count == 0 ? "Atingimento das metas" : "Novo gráfico",
+            Campos = Atual.Campos.Where(c => c.TemMeta).Select(c => c.Id).ToList()
+        };
+        if (g.Campos.Count == 0)
+        {
+            g.Medida = MedidaGrafico.Valor;
+            g.Campos = Atual.Campos.Where(c => c.Numerico).Select(c => c.Id).ToList();
+        }
+        Atual.Graficos.Add(g);
+        await SalvarAsync();
+    }
+
+    private async Task MarcarCampoAsync(GraficoCliente g, string id, ChangeEventArgs e)
+    {
+        var marcado = e.Value is true || string.Equals(e.Value?.ToString(), "true", StringComparison.OrdinalIgnoreCase);
+        if (marcado && !g.Campos.Contains(id)) g.Campos.Add(id);
+        if (!marcado) g.Campos.Remove(id);
+        await SalvarAsync();
+    }
+
+    private async Task MoverGraficoAsync(int idx, int delta)
+    {
+        if (Atual is null) return;
+        var novo = idx + delta;
+        if (novo < 0 || novo >= Atual.Graficos.Count) return;
+        (Atual.Graficos[idx], Atual.Graficos[novo]) = (Atual.Graficos[novo], Atual.Graficos[idx]);
+        await SalvarAsync();
+    }
+
+    private async Task ExcluirGraficoAsync(int idx)
+    {
+        if (Atual is null) return;
+        Atual.Graficos.RemoveAt(idx);
+        await SalvarAsync();
+    }
+
+    // ---------- Parecer ----------
+
+    private async Task GerarParecerAsync()
+    {
+        if (Atual is null) return;
+        Atual.Parecer = AvaliacaoCliente.GerarParecer(Atual);
+        await SalvarAsync();
+    }
+
+    private async Task LimparParecerAsync()
+    {
+        if (Atual is null) return;
+        Atual.Parecer = "";
+        await SalvarAsync();
+    }
+
+    // ---------- Clientes ----------
+
+    private async Task NovoClienteAsync()
+    {
+        var c = new Cliente();
+        Lista.Add(c);
+        Selecionar(c);
+        Aba = "campos";
+        await SalvarAsync();
+    }
+
+    private async Task NovoPeriodoAsync()
+    {
+        if (Atual is null) return;
+        var c = Atual.NovoPeriodo();
+        c.Periodo = "";
+        Lista.Insert(Lista.IndexOf(Atual) + 1, c);
+        Selecionar(c);
+        Aba = "campos";
+        await SalvarAsync();
+    }
+
+    private async Task DuplicarClienteAsync()
+    {
+        if (Atual is null) return;
+        var c = Atual.Clonar();
+        c.Id = Guid.NewGuid().ToString("N");
+        c.Nome = Atual.Nome + " (cópia)";
+        Lista.Insert(Lista.IndexOf(Atual) + 1, c);
+        Selecionar(c);
+        await SalvarAsync();
+    }
+
+    private async Task ExcluirClienteAsync()
+    {
+        if (Atual is null) return;
+        if (!ConfirmarExclusao)
+        {
+            ConfirmarExclusao = true;
+            return;
+        }
+        var i = Lista.IndexOf(Atual);
+        Lista.Remove(Atual);
+        if (Lista.Count == 0) Lista.Add(new Cliente());
+        Selecionar(Lista[Math.Clamp(i, 0, Lista.Count - 1)]);
+        await SalvarAsync();
+    }
+
+    private async Task ExportarAsync()
+    {
+        if (Atual is null) return;
+        var json = System.Text.Json.JsonSerializer.Serialize(Atual, ArmazenamentoService.JsonExportacao);
+        var nome = string.IsNullOrWhiteSpace(Atual.Nome) ? "cliente" : Atual.Nome.Trim().Replace(' ', '-').ToLowerInvariant();
+        await JS.InvokeVoidAsync("insimatch.baixar", $"insitalent-{nome}.json", json, "application/json;charset=utf-8");
+    }
+
+    private async Task ImportarAsync(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            using var leitor = new StreamReader(e.File.OpenReadStream(2 * 1024 * 1024));
+            var texto = (await leitor.ReadToEndAsync()).TrimStart('﻿');
+            var c = System.Text.Json.JsonSerializer.Deserialize<Cliente>(texto, ArmazenamentoService.JsonExportacao);
+            if (c is null) { Mensagem = "Arquivo vazio ou inválido."; return; }
+            c.Id = Guid.NewGuid().ToString("N");
+            foreach (var campo in c.Campos) AvaliacaoCliente.Normalizar(campo);
+            Lista.Add(c);
+            Selecionar(c);
+            Mensagem = $"Cliente “{c.Nome}” importado com {c.Campos.Count} campo(s).";
+            await SalvarAsync();
+        }
+        catch (Exception ex)
+        {
+            Mensagem = "Não foi possível importar: " + ex.Message;
+        }
+    }
+}

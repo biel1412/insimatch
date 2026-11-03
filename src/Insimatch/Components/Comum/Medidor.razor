@@ -12,16 +12,20 @@
                 stroke-dasharray="@F(Arco) @F(Circ)" transform="rotate(135 100 100)" />
         <circle cx="100" cy="100" r="@R" class="valor" stroke="url(#grad-@IdUnico)"
                 stroke-dasharray="@F(Arco * Fracao(Valor)) @F(Circ)" transform="rotate(135 100 100)" />
-        @{
+        @if (MostrarMeta)
+        {
             var ang = (135 + 270 * Fracao(Meta)) * Math.PI / 180;
             var x1 = 100 + (R - 16) * Math.Cos(ang); var y1 = 100 + (R - 16) * Math.Sin(ang);
             var x2 = 100 + (R + 16) * Math.Cos(ang); var y2 = 100 + (R + 16) * Math.Sin(ang);
+            <line x1="@F(x1)" y1="@F(y1)" x2="@F(x2)" y2="@F(y2)" class="marca-meta" />
         }
-        <line x1="@F(x1)" y1="@F(y1)" x2="@F(x2)" y2="@F(y2)" class="marca-meta" />
     </svg>
     <div class="medidor-texto">
-        <div class="medidor-valor">@Valor.ToString("N2")<small>%</small></div>
-        <div class="medidor-meta">ideal ≥ @Meta.ToString("N2")%</div>
+        <div class="medidor-valor">@Valor.ToString("N" + Casas)<small>%</small></div>
+        @if (MostrarMeta)
+        {
+            <div class="medidor-meta">@RotuloMeta @Meta.ToString("N" + Casas)%</div>
+        }
     </div>
     <div class="medidor-escala"><span>@Minimo.ToString("N0")%</span><span>100%</span></div>
 </div>
@@ -30,6 +34,9 @@
     [Parameter] public decimal Valor { get; set; }
     [Parameter] public decimal Meta { get; set; }
     [Parameter] public Status StatusAtual { get; set; }
+    [Parameter] public bool MostrarMeta { get; set; } = true;
+    [Parameter] public string RotuloMeta { get; set; } = "ideal ≥";
+    [Parameter] public int Casas { get; set; } = 2;
 
     private const double R = 80;
     private static readonly double Circ = 2 * Math.PI * R;

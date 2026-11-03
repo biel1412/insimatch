@@ -1,0 +1,60 @@
+@* Modelo "Placar" do cliente *@
+@{ var st = AvaliacaoCliente.Geral(Cl); }
+<PlacarLayout Linhas="@Linhas" Criterios="@Criterios" Status="st" VereditoValor="@AvaliacaoCliente.RotuloGeral(Cl)">
+    <Superior><ClienteCabecalho Cl="Cl" /></Superior>
+    <Inferior>
+        @if (Cl.Graficos.Count > 0)
+        {
+            <div class="gp-grade placar-graficos">
+                @foreach (var g in Cl.Graficos)
+                {
+                    <GraficoPainel @key="g.Id" Cl="Cl" G="g" />
+                }
+            </div>
+        }
+        <ClienteParecer Cl="Cl" />
+    </Inferior>
+</PlacarLayout>
+
+@code {
+    [Parameter, EditorRequired] public Cliente Cl { get; set; } = default!;
+
+    private IReadOnlyList<LinhaPlacar> Linhas
+    {
+        get
+        {
+            var l = new List<LinhaPlacar>();
+            foreach (var (grupo, campos) in AvaliacaoCliente.Grupos(Cl))
+            {
+                l.Add(new LinhaPlacar("", Grupo: grupo));
+                foreach (var c in campos)
+                {
+                    var tem = c.TemMeta;
+                    l.Add(new LinhaPlacar(c.Nome, AvaliacaoCliente.Valor(c), null,
+                        c.Meta.HasValue && c.Numerico ? AvaliacaoCliente.MetaTexto(c) : "—",
+                        tem ? AvaliacaoCliente.StatusCampo(c) : null,
+                        tem ? $"{AvaliacaoCliente.RotuloCampo(c)} · {AvaliacaoCliente.Atingimento(c):N0}%" : null));
+                }
+            }
+            return l;
+        }
+    }
+
+    private IReadOnlyList<Criterio> Criterios
+    {
+        get
+        {
+            var comMeta = AvaliacaoCliente.ComMeta(Cl).ToList();
+            if (comMeta.Count == 0) return new[] { new Criterio("Nenhum indicador com meta definida", null) };
+            var naMeta = comMeta.Count(c => AvaliacaoCliente.StatusCampo(c) == Status.Excelente);
+            var proximos = comMeta.Count(c => AvaliacaoCliente.StatusCampo(c) == Status.Atencao);
+            var fora = comMeta.Count(c => AvaliacaoCliente.StatusCampo(c) == Status.Critico);
+            return new[]
+            {
+                new Criterio($"{naMeta} de {comMeta.Count} indicadores na meta", naMeta == comMeta.Count),
+                new Criterio(proximos == 0 ? "Nenhum indicador apenas próximo da meta" : $"{proximos} indicador(es) próximo(s) da meta", proximos == 0),
+                new Criterio(fora == 0 ? "Nenhum indicador fora da meta" : $"{fora} indicador(es) fora da meta", fora == 0)
+            };
+        }
+    }
+}
