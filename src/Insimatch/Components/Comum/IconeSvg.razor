@@ -1,0 +1,7 @@
+@* Desenha um ícone da biblioteca *@
+<svg viewBox="0 0 24 24" class="@Classe" aria-hidden="true">@((MarkupString)Icones.Obter(Id).Svg)</svg>
+
+@code {
+    [Parameter] public string? Id { get; set; }
+    [Parameter] public string Classe { get; set; } = "";
+}

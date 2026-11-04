@@ -1,6 +1,6 @@
 # insiTalent
 
-Painel para apresentar resultados na tela compartilhada do Microsoft Teams: **resultado individual**, **resultado do time** e **atualização de fila**.
+Painel para apresentar resultados na tela compartilhada do Microsoft Teams: **resultado individual**, **resultado do time**, **resultado do cliente** e abas criadas por você.
 
 Escrito em **C# com Blazor WebAssembly** e hospedado no **GitHub Pages**: abre direto no navegador, sem instalar nada.
 
@@ -12,8 +12,11 @@ Escrito em **C# com Blazor WebAssembly** e hospedado no **GitHub Pages**: abre d
 |---|---|---|
 | **Individual** | Feedback mensal de um colaborador | Cartões · Gráficos · Placar · Foco · Mosaico |
 | **Time** | Resultado consolidado do time no mês | Cartões · Placar · Foco |
-| **Fila** | Atualização das filas Centralizada e Autorizar | Cartões · Placar · Foco |
 | **Cliente** | Painel configurável para qualquer cliente | Cartões · Placar · Foco |
+| **Suas abas** | Abas criadas por você no botão **+ Nova** do menu | Cartões · Placar · Foco |
+
+### Abas personalizadas
+No menu lateral, **+ Nova** cria uma aba com o nome que você quiser, um ícone (há 24 disponíveis) e o nome de cada registro (ex.: projeto, unidade, contrato). Ela pode começar em branco ou com um exemplo. Cada aba funciona como a aba Cliente: campos livres, metas, gráficos e parecer. O botão **⚙** no topo do editor da aba permite renomear, trocar o ícone ou excluir a aba (com confirmação).
 
 Na barra do topo:
 - **Cor:** Noturno, Oceano, Esmeralda, Aurora ou Claro.
@@ -38,20 +41,6 @@ No modo apresentação, a troca de aba fica no próprio topo. Cor, fundo, modelo
 | **Volume** | Volume atingido ÷ meta de volume. Meta atingida ≥ 100%; próximo da meta ≥ 90%. |
 | **Qualidade** | Qualidade do mês comparada com a meta de qualidade (padrão 99,94%, editável). |
 | **Resultado geral** | **Está bem** com qualidade na meta e volume pelo menos próximo da meta; **Excelente** com as duas metas atingidas. |
-
-### Fila
-Para cada fila (Centralizada e Autorizar) você informa **o total de fluxos na fila** e, **manualmente**, quantos têm **data do dia anterior**, já que os dois ficam misturados na fila. Cada página tem **15 fluxos**.
-
-A situação considera os fluxos do dia anterior:
-
-| Situação | Fluxos do dia anterior |
-|---|---|
-| Em dia | 0 |
-| Sob controle | até 1 página (15) |
-| Atenção | até 3 páginas (45) |
-| Acúmulo | acima de 3 páginas |
-
-A situação geral é a pior das duas filas.
 
 ### Cliente (configurável)
 A aba Cliente não tem indicadores fixos: você cria os **campos** que cada cliente precisar.
@@ -110,10 +99,9 @@ src/Insimatch/
 ├── Pages/Home.razor                 # dock, barra de ferramentas, cor, fundo e modelo
 ├── Components/Individual/           # aba Individual e seus 5 modelos
 ├── Components/Time/                 # aba Time e seus modelos
-├── Components/Fila/                 # aba Fila e seus modelos
 ├── Components/Clientes/             # aba Cliente: editor de campos, visuais, gráficos e modelos
 ├── Components/Comum/                # cabeçalho, parecer, Foco, Placar, medidor, papel de parede
-├── Models/                          # dados e critérios (Colaborador, ResultadoTime, AtualizacaoFila, Cliente)
+├── Models/                          # dados e critérios (Colaborador, ResultadoTime, Cliente, AbaPersonalizada, Icones)
 ├── Services/ArmazenamentoService.cs # localStorage e CSV
 └── wwwroot/                         # HTML, CSS e JS
 ```

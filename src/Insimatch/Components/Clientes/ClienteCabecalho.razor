@@ -1,14 +1,16 @@
 @* Cabeçalho do resultado do cliente *@
 @{ var st = AvaliacaoCliente.Geral(Cl); }
 <Topo Sigla="@Cl.Iniciais"
-      RotuloSup="Resultado do cliente"
-      Titulo="@(string.IsNullOrWhiteSpace(Cl.Nome) ? "Nome do cliente" : Cl.Nome)"
+      RotuloSup="@Ctx.RotuloSup"
+      Titulo="@(string.IsNullOrWhiteSpace(Cl.Nome) ? (Ctx.Generico ? "Sem nome" : "Nome do cliente") : Cl.Nome)"
       Info="@Info"
       Status="st"
       SeloValor="@AvaliacaoCliente.RotuloGeral(Cl)" />
 
 @code {
     [Parameter, EditorRequired] public Cliente Cl { get; set; } = default!;
+    [CascadingParameter] public ContextoPainel? Contexto { get; set; }
+    private ContextoPainel Ctx => Contexto ?? ContextoPainel.Cliente;
 
     private IReadOnlyList<string> Info =>
         new[] { Cl.Periodo, Cl.Descricao }.Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();

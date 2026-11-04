@@ -2,19 +2,26 @@
 @inject ArmazenamentoService Armazenamento
 @inject IJSRuntime JS
 
-<PageTitle>insiTalent · @(Atual?.Nome is { Length: > 0 } n ? n : "Cliente")</PageTitle>
+<PageTitle>insiTalent · @(Atual?.Nome is { Length: > 0 } n ? n : Contexto.RotuloSup)</PageTitle>
 
+<CascadingValue Value="Contexto">
 <aside class="lateral lateral-cliente">
-    <div class="marca">
-        <div class="marca-logo">insi<span>Talent</span></div>
-        <div class="marca-sub">Resultado do cliente</div>
+    <div class="marca marca-com-acao">
+        <div>
+            <div class="marca-logo">insi<span>Talent</span></div>
+            <div class="marca-sub">@Contexto.RotuloSup</div>
+        </div>
+        @if (OnConfigurar.HasDelegate)
+        {
+            <button class="btn icone-btn" title="Configurar esta aba (nome, ícone, excluir)" @onclick="() => OnConfigurar.InvokeAsync()">⚙</button>
+        }
     </div>
 
     <div class="abas abas-4">
         <button class="@(Aba == "campos" ? "ativa" : "")" @onclick='() => { Aba = "campos"; }'>Campos</button>
         <button class="@(Aba == "graficos" ? "ativa" : "")" @onclick='() => { Aba = "graficos"; }'>Gráficos</button>
         <button class="@(Aba == "parecer" ? "ativa" : "")" @onclick='() => { Aba = "parecer"; }'>Parecer</button>
-        <button class="@(Aba == "clientes" ? "ativa" : "")" @onclick='() => { Aba = "clientes"; }'>Clientes (@Lista.Count)</button>
+        <button class="@(Aba == "clientes" ? "ativa" : "")" @onclick='() => { Aba = "clientes"; }'>@Contexto.ListaRotulo(Lista.Count)</button>
     </div>
 
     @if (Atual is null)
@@ -24,8 +31,8 @@
     else if (Aba == "campos")
     {
         <div class="form">
-            <label>Nome do cliente
-                <input @bind="Atual.Nome" @bind:event="oninput" @bind:after="SalvarAsync" placeholder="Ex.: Empresa X" />
+            <label>@Contexto.NomeRotulo
+                <input @bind="Atual.Nome" @bind:event="oninput" @bind:after="SalvarAsync" placeholder="@(Contexto.Generico ? $"Nome do {Contexto.Singular}" : "Ex.: Empresa X")" />
             </label>
             <div class="form-2">
                 <label>Período
@@ -197,18 +204,18 @@
             </ul>
 
             <div class="acoes">
-                <button class="btn" @onclick="NovoClienteAsync">+ Novo cliente</button>
+                <button class="btn" @onclick="NovoClienteAsync">@Contexto.Novo</button>
                 <button class="btn" title="Mesmos campos e gráficos, com os valores em branco" @onclick="NovoPeriodoAsync">+ Novo período</button>
                 <button class="btn" @onclick="DuplicarClienteAsync">Duplicar</button>
                 <button class="btn perigo" @onclick="ExcluirClienteAsync">@(ConfirmarExclusao ? "Confirmar exclusão" : "Excluir")</button>
             </div>
-            <p class="dica">“Novo período” reaproveita a estrutura do cliente selecionado (campos, metas, gráficos) com os valores em branco.</p>
+            <p class="dica">“Novo período” reaproveita a estrutura do item selecionado (campos, metas, gráficos) com os valores em branco.</p>
 
             <div class="form-grupo">Importar / exportar</div>
             <div class="acoes">
-                <button class="btn" @onclick="ExportarAsync">Exportar cliente (.json)</button>
+                <button class="btn" @onclick="ExportarAsync">Exportar (.json)</button>
                 <label class="btn arquivo">
-                    Importar cliente (.json)
+                    Importar (.json)
                     <InputFile OnChange="ImportarAsync" accept=".json,application/json" />
                 </label>
             </div>
@@ -216,7 +223,7 @@
             {
                 <div class="calculado">@Mensagem</div>
             }
-            <p class="dica">Use exportar/importar para levar a configuração de um cliente para outro computador ou compartilhar com a equipe. Os dados ficam salvos apenas neste navegador.</p>
+            <p class="dica">Use exportar/importar para levar a configuração para outro computador ou compartilhar com a equipe. Também é possível importar aqui um arquivo exportado de outra aba. Os dados ficam salvos apenas neste navegador.</p>
         </div>
     }
 </aside>
@@ -251,13 +258,19 @@
         }
     }
 </main>
+</CascadingValue>
 
 @code {
     [Parameter] public bool Apresentacao { get; set; }
     [Parameter] public string Modelo { get; set; } = "cartoes";
     [Parameter] public RenderFragment? Ferramentas { get; set; }
 
-    private const string Chave = "insitalent.clientes";
+    /// <summary>Onde os dados desta aba ficam salvos no navegador.</summary>
+    [Parameter] public string Chave { get; set; } = "insitalent.clientes";
+    [Parameter] public ContextoPainel Contexto { get; set; } = ContextoPainel.Cliente;
+    /// <summary>Se a aba começar vazia, cria o exemplo (true) ou um registro em branco (false).</summary>
+    [Parameter] public bool SementeExemplo { get; set; } = true;
+    [Parameter] public EventCallback OnConfigurar { get; set; }
     private List<Cliente> Lista = new();
     private Cliente? Atual;
     private string Aba = "campos";
@@ -274,7 +287,7 @@
         Lista = await Armazenamento.CarregarAsync<List<Cliente>>(Chave) ?? new();
         if (Lista.Count == 0)
         {
-            Lista.Add(AvaliacaoCliente.Exemplo());
+            Lista.Add(SementeExemplo ? AvaliacaoCliente.Exemplo() : new Cliente());
             await SalvarAsync();
         }
         Atual = Lista[0];
@@ -418,7 +431,7 @@
     private async Task GerarParecerAsync()
     {
         if (Atual is null) return;
-        Atual.Parecer = AvaliacaoCliente.GerarParecer(Atual);
+        Atual.Parecer = AvaliacaoCliente.GerarParecer(Atual, Contexto);
         await SalvarAsync();
     }
 
@@ -481,7 +494,7 @@
     {
         if (Atual is null) return;
         var json = System.Text.Json.JsonSerializer.Serialize(Atual, ArmazenamentoService.JsonExportacao);
-        var nome = string.IsNullOrWhiteSpace(Atual.Nome) ? "cliente" : Atual.Nome.Trim().Replace(' ', '-').ToLowerInvariant();
+        var nome = string.IsNullOrWhiteSpace(Atual.Nome) ? Contexto.Singular : Atual.Nome.Trim().Replace(' ', '-').ToLowerInvariant();
         await JS.InvokeVoidAsync("insimatch.baixar", $"insitalent-{nome}.json", json, "application/json;charset=utf-8");
     }
 
@@ -497,7 +510,7 @@
             foreach (var campo in c.Campos) AvaliacaoCliente.Normalizar(campo);
             Lista.Add(c);
             Selecionar(c);
-            Mensagem = $"Cliente “{c.Nome}” importado com {c.Campos.Count} campo(s).";
+            Mensagem = $"“{c.Nome}” importado com {c.Campos.Count} campo(s).";
             await SalvarAsync();
         }
         catch (Exception ex)

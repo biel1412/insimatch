@@ -1,0 +1,123 @@
+@* Diálogo para criar, editar ou excluir uma aba personalizada *@
+<div class="dialogo-fundo" @onclick="Fechar">
+    <div class="dialogo" role="dialog" aria-modal="true" aria-labelledby="dlg-titulo" @onclick:stopPropagation="true">
+        <div class="dialogo-topo">
+            <div class="dialogo-previa">
+                <span class="dock-ico"><IconeSvg Id="@Form.Icone" /></span>
+            </div>
+            <div>
+                <h2 id="dlg-titulo">@(Editando ? "Configurar aba" : "Nova aba")</h2>
+                <p>@(Editando ? "Altere o nome, o ícone ou exclua a aba." : "Crie uma aba flexível: você define os campos, metas, gráficos e parecer.")</p>
+            </div>
+            <button class="dialogo-x" title="Fechar" @onclick="Fechar">✕</button>
+        </div>
+
+        <div class="form">
+            <div class="form-2">
+                <label>Nome da aba
+                    <input @bind="Form.Nome" @bind:event="oninput" placeholder="Ex.: Projetos, Unidades, Contratos" maxlength="40" autofocus />
+                </label>
+                <label>Cada registro é um(a)
+                    <input @bind="Form.Singular" @bind:event="oninput" placeholder="Ex.: projeto, unidade" maxlength="30" />
+                </label>
+            </div>
+
+            <div class="form-grupo">Ícone</div>
+            <div class="icones-grade" role="radiogroup" aria-label="Ícone da aba">
+                @foreach (var ic in Icones.Todos)
+                {
+                    var id = ic.Id;
+                    <button class="icone-opcao @(Form.Icone == id ? "sel" : "")" title="@ic.Nome" role="radio"
+                            aria-checked="@(Form.Icone == id ? "true" : "false")" @onclick="() => { Form.Icone = id; }">
+                        <IconeSvg Id="@id" />
+                    </button>
+                }
+            </div>
+
+            @if (!Editando)
+            {
+                <div class="form-grupo">Começar com</div>
+                <div class="opcoes-inicio">
+                    <button class="opcao-inicio @(!Form.ComExemplo ? "sel" : "")" @onclick="() => { Form.ComExemplo = false; }">
+                        <strong>Em branco</strong>
+                        <span>Você cria os campos do zero.</span>
+                    </button>
+                    <button class="opcao-inicio @(Form.ComExemplo ? "sel" : "")" @onclick="() => { Form.ComExemplo = true; }">
+                        <strong>Exemplo pronto</strong>
+                        <span>Campos de exemplo para adaptar.</span>
+                    </button>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(Erro))
+            {
+                <div class="aviso">@Erro</div>
+            }
+
+            <div class="dialogo-acoes">
+                @if (Editando)
+                {
+                    <button class="btn perigo" @onclick="ExcluirAsync">
+                        @(Confirmar ? "Confirmar: excluir aba e seus dados" : "Excluir aba")
+                    </button>
+                }
+                <div class="espaco"></div>
+                <button class="btn" @onclick="Fechar">Cancelar</button>
+                <button class="btn primario" @onclick="SalvarAsync">@(Editando ? "Salvar" : "Criar aba")</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    /// <summary>Aba sendo editada; null para criar uma nova.</summary>
+    [Parameter] public AbaPersonalizada? Aba { get; set; }
+    [Parameter] public EventCallback<FormAba> OnSalvar { get; set; }
+    [Parameter] public EventCallback OnExcluir { get; set; }
+    [Parameter] public EventCallback OnFechar { get; set; }
+
+    private FormAba Form = new();
+    private bool Editando => Aba is not null;
+    private bool Confirmar;
+    private string Erro = "";
+
+    private bool Iniciado;
+    private AbaPersonalizada? AbaAnterior;
+
+    protected override void OnParametersSet()
+    {
+        // Só reinicia o formulário quando abre ou troca de aba (não a cada renderização do pai)
+        if (Iniciado && ReferenceEquals(AbaAnterior, Aba)) return;
+        Iniciado = true;
+        AbaAnterior = Aba;
+        Form = Aba is null
+            ? new FormAba()
+            : new FormAba { Nome = Aba.Nome, Icone = Aba.Icone, Singular = Aba.Singular };
+        Confirmar = false;
+        Erro = "";
+    }
+
+    private Task Fechar() => OnFechar.InvokeAsync();
+
+    private async Task SalvarAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Form.Nome))
+        {
+            Erro = "Dê um nome para a aba.";
+            return;
+        }
+        Form.Nome = Form.Nome.Trim();
+        Form.Singular = string.IsNullOrWhiteSpace(Form.Singular) ? "registro" : Form.Singular.Trim().ToLowerInvariant();
+        await OnSalvar.InvokeAsync(Form);
+    }
+
+    private async Task ExcluirAsync()
+    {
+        if (!Confirmar)
+        {
+            Confirmar = true;
+            return;
+        }
+        await OnExcluir.InvokeAsync();
+    }
+}

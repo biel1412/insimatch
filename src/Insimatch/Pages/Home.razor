@@ -2,52 +2,46 @@
 @inject ArmazenamentoService Armazenamento
 @inject IJSRuntime JS
 
-<div class="app @(Apresentacao ? "modo-apresentacao" : "")" data-tema="@Temas[TemaIdx].Id" data-fundo="@Fundos[FundoIdx].Id" data-aba="@Abas[AbaIdx].Id">
+<div class="app @(Apresentacao ? "modo-apresentacao" : "")" data-tema="@Temas[TemaIdx].Id" data-fundo="@Fundos[FundoIdx].Id"
+     data-aba="@(AbaAtual.Personalizada is null ? AbaAtual.Id : "cliente")">
     <PapelDeParede Fundo="@Fundos[FundoIdx].Id" />
 
     @* Menu principal: dock vertical com indicador deslizante *@
-    <nav class="dock" style="--ativo:@AbaIdx" aria-label="Funções">
+    <nav class="dock" style="--ativo:@AbaIdx" aria-label="Abas">
         <div class="dock-logo" title="insiTalent">i<span>T</span></div>
         <div class="dock-itens">
             <span class="dock-indicador"></span>
-            @for (var i = 0; i < Abas.Length; i++)
+            @foreach (var aba in Abas)
             {
-                var idx = i;
-                var aba = Abas[i];
-                <button class="dock-item @(idx == AbaIdx ? "ativo" : "")" data-tip="@aba.Nome"
-                        aria-current="@(idx == AbaIdx ? "page" : null)" @onclick="() => MudarAbaAsync(idx)">
-                    <span class="dock-ico">
-                        @if (aba.Id == "individual")
-                        {
-                            <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6" /><path d="M4.8 20c.8-4 3.7-6.2 7.2-6.2s6.4 2.2 7.2 6.2" /></svg>
-                        }
-                        else if (aba.Id == "time")
-                        {
-                            <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" /><circle cx="17" cy="9.5" r="2.4" /><path d="M2.8 19c.6-3.3 3.2-5.2 6.2-5.2s5.6 1.9 6.2 5.2" /><path d="M15.2 14.3c2.6-.3 5 1.2 5.8 4.7" /></svg>
-                        }
-                        else if (aba.Id == "cliente")
-                        {
-                            <svg viewBox="0 0 24 24"><rect x="3.5" y="7" width="17" height="12.5" rx="2.5" /><path d="M8.5 7V5.5A1.5 1.5 0 0 1 10 4h4a1.5 1.5 0 0 1 1.5 1.5V7" /><path d="M3.5 12.5h17" /><path d="M10.5 12.5v1.5h3v-1.5" /></svg>
-                        }
-                        else
-                        {
-                            <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="4" rx="1.5" /><rect x="4" y="10" width="16" height="4" rx="1.5" /><rect x="4" y="16" width="10" height="4" rx="1.5" /></svg>
-                        }
-                    </span>
+                var id = aba.Id;
+                var ativo = id == AbaAtual.Id;
+                <button class="dock-item @(ativo ? "ativo" : "")" data-tip="@aba.Nome"
+                        aria-current="@(ativo ? "page" : null)" @onclick="() => MudarAbaAsync(id)">
+                    <span class="dock-ico"><IconeSvg Id="@aba.Icone" /></span>
                     <span class="dock-txt">@aba.Curto</span>
                 </button>
             }
+            <button class="dock-item dock-mais" data-tip="Nova aba" aria-label="Nova aba" @onclick="AbrirCriacao">
+                <span class="dock-ico"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg></span>
+                <span class="dock-txt">Nova</span>
+            </button>
         </div>
-        <div class="dock-rodape">@(AbaIdx + 1)/@Abas.Length</div>
+        <div class="dock-rodape">@(AbaIdx + 1)/@Abas.Count</div>
     </nav>
 
     @if (!Pronto)
     {
         <div class="vazio">Carregando…</div>
     }
+    else if (AbaAtual.Personalizada is { } p)
+    {
+        <ClienteAba @key="p.Id" Chave="@p.ChaveDados" Contexto="@(new ContextoPainel(p.Nome, p.Singular, true))"
+                    SementeExemplo="false" OnConfigurar="() => AbrirEdicao(p)"
+                    Apresentacao="Apresentacao" Modelo="@ModeloAtual.Id" Ferramentas="Ferramentas" />
+    }
     else
     {
-        @switch (Abas[AbaIdx].Id)
+        @switch (AbaAtual.Id)
         {
             case "time":
                 <TimeAba @key="@("time")" Apresentacao="Apresentacao" Modelo="@ModeloAtual.Id" Ferramentas="Ferramentas" />
@@ -55,38 +49,35 @@
             case "cliente":
                 <ClienteAba @key="@("cliente")" Apresentacao="Apresentacao" Modelo="@ModeloAtual.Id" Ferramentas="Ferramentas" />
                 break;
-            case "fila":
-                <FilaAba @key="@("fila")" Apresentacao="Apresentacao" Modelo="@ModeloAtual.Id" Ferramentas="Ferramentas" />
-                break;
             default:
                 <IndividualAba @key="@("individual")" Apresentacao="Apresentacao" Modelo="@ModeloAtual.Id" Ferramentas="Ferramentas" />
                 break;
         }
     }
+
+    @if (DialogoAberto)
+    {
+        <AbaDialogo Aba="Editando" OnSalvar="SalvarAbaAsync" OnExcluir="ExcluirAbaAsync" OnFechar="FecharDialogo" />
+    }
 </div>
 
 @code {
-    private record Aba(string Id, string Nome, string Curto, Opcao[] Modelos);
+    private record Aba(string Id, string Nome, string Curto, string Icone, Opcao[] Modelos, AbaPersonalizada? Personalizada = null);
 
-    private static readonly Aba[] Abas =
+    private static readonly Opcao[] ModelosPainel =
     {
-        new("individual", "Resultado individual", "Individual", new Opcao[]
+        new("cartoes", "Cartões"), new("placar", "Placar"), new("foco", "Foco")
+    };
+
+    private static readonly Aba[] Fixas =
+    {
+        new("individual", "Resultado individual", "Individual", "pessoa", new Opcao[]
         {
             new("cartoes", "Cartões"), new("graficos", "Gráficos"), new("placar", "Placar"),
             new("foco", "Foco"), new("mosaico", "Mosaico")
         }),
-        new("time", "Resultado do time", "Time", new Opcao[]
-        {
-            new("cartoes", "Cartões"), new("placar", "Placar"), new("foco", "Foco")
-        }),
-        new("fila", "Atualização de fila", "Fila", new Opcao[]
-        {
-            new("cartoes", "Cartões"), new("placar", "Placar"), new("foco", "Foco")
-        }),
-        new("cliente", "Resultado do cliente", "Cliente", new Opcao[]
-        {
-            new("cartoes", "Cartões"), new("placar", "Placar"), new("foco", "Foco")
-        })
+        new("time", "Resultado do time", "Time", "pessoas", ModelosPainel),
+        new("cliente", "Resultado do cliente", "Cliente", "maleta", ModelosPainel)
     };
 
     private static readonly Opcao[] Temas =
@@ -101,14 +92,34 @@
         new("pontos", "Pontos"), new("geometrico", "Geométrico"), new("liso", "Liso")
     };
 
+    private const string ChaveAbas = "insitalent.abas";
+
     private bool Pronto;
     private bool Apresentacao;
-    private int AbaIdx;
+    private string AbaId = "individual";
     private int TemaIdx;
     private int FundoIdx;
-    private readonly int[] ModeloIdx = new int[Abas.Length];
+    private readonly Dictionary<string, int> ModeloIdx = new();
+    private List<AbaPersonalizada> Personalizadas = new();
 
-    private Opcao ModeloAtual => Abas[AbaIdx].Modelos[ModeloIdx[AbaIdx]];
+    private bool DialogoAberto;
+    private AbaPersonalizada? Editando;
+
+    private List<Aba> Abas => Fixas
+        .Concat(Personalizadas.Select(p => new Aba(p.Id, p.Nome, p.Nome, p.Icone, ModelosPainel, p)))
+        .ToList();
+
+    private int AbaIdx => Math.Max(0, Abas.FindIndex(a => a.Id == AbaId));
+    private Aba AbaAtual => Abas[AbaIdx];
+
+    private Opcao ModeloAtual
+    {
+        get
+        {
+            var modelos = AbaAtual.Modelos;
+            return modelos[Math.Clamp(ModeloIdx.GetValueOrDefault(AbaAtual.Id), 0, modelos.Length - 1)];
+        }
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -116,17 +127,17 @@
 
         TemaIdx = Indice(Temas, await Armazenamento.LerTextoAsync("insimatch.tema"));
         FundoIdx = Indice(Fundos, await Armazenamento.LerTextoAsync("insitalent.fundo"));
-        AbaIdx = Math.Max(0, Array.FindIndex(Abas, a => a.Id == "individual"));
-        var abaSalva = await Armazenamento.LerTextoAsync("insitalent.aba");
-        var achou = Array.FindIndex(Abas, a => a.Id == abaSalva);
-        if (achou >= 0) AbaIdx = achou;
+        Personalizadas = await Armazenamento.CarregarAsync<List<AbaPersonalizada>>(ChaveAbas) ?? new();
 
-        for (var i = 0; i < Abas.Length; i++)
+        var abaSalva = await Armazenamento.LerTextoAsync("insitalent.aba");
+        if (Abas.Any(a => a.Id == abaSalva)) AbaId = abaSalva!;
+
+        foreach (var aba in Abas)
         {
-            var salvo = await Armazenamento.LerTextoAsync($"insitalent.modelo.{Abas[i].Id}");
-            // compatibilidade com a versão anterior (só havia o individual)
-            if (salvo is null && Abas[i].Id == "individual") salvo = await Armazenamento.LerTextoAsync("insimatch.visual");
-            ModeloIdx[i] = Indice(Abas[i].Modelos, salvo);
+            var salvo = await Armazenamento.LerTextoAsync($"insitalent.modelo.{aba.Id}");
+            // compatibilidade com a primeira versão (só havia o individual)
+            if (salvo is null && aba.Id == "individual") salvo = await Armazenamento.LerTextoAsync("insimatch.visual");
+            ModeloIdx[aba.Id] = Indice(aba.Modelos, salvo);
         }
 
         Pronto = true;
@@ -135,10 +146,10 @@
 
     private static int Indice(Opcao[] opcoes, string? id) => Math.Max(0, Array.FindIndex(opcoes, o => o.Id == id));
 
-    private async Task MudarAbaAsync(int idx)
+    private async Task MudarAbaAsync(string id)
     {
-        AbaIdx = idx;
-        await Armazenamento.GravarTextoAsync("insitalent.aba", Abas[idx].Id);
+        AbaId = id;
+        await Armazenamento.GravarTextoAsync("insitalent.aba", id);
     }
 
     private async Task MudarTemaAsync()
@@ -155,9 +166,9 @@
 
     private async Task MudarModeloAsync()
     {
-        var modelos = Abas[AbaIdx].Modelos;
-        ModeloIdx[AbaIdx] = (ModeloIdx[AbaIdx] + 1) % modelos.Length;
-        await Armazenamento.GravarTextoAsync($"insitalent.modelo.{Abas[AbaIdx].Id}", ModeloAtual.Id);
+        var aba = AbaAtual;
+        ModeloIdx[aba.Id] = (ModeloIdx.GetValueOrDefault(aba.Id) + 1) % aba.Modelos.Length;
+        await Armazenamento.GravarTextoAsync($"insitalent.modelo.{aba.Id}", ModeloAtual.Id);
     }
 
     private void AlternarApresentacao() => Apresentacao = !Apresentacao;
@@ -168,16 +179,68 @@
         await JS.InvokeVoidAsync("insimatch.telaCheia");
     }
 
-    /// <summary>Barra de ferramentas compartilhada pelas três abas.</summary>
+    // ---------- Abas personalizadas ----------
+
+    private void AbrirCriacao()
+    {
+        Editando = null;
+        DialogoAberto = true;
+    }
+
+    private void AbrirEdicao(AbaPersonalizada p)
+    {
+        Editando = p;
+        DialogoAberto = true;
+    }
+
+    private void FecharDialogo() => DialogoAberto = false;
+
+    private async Task SalvarAbaAsync(FormAba f)
+    {
+        if (Editando is { } e)
+        {
+            e.Nome = f.Nome;
+            e.Icone = f.Icone;
+            e.Singular = f.Singular;
+        }
+        else
+        {
+            var nova = new AbaPersonalizada { Nome = f.Nome, Icone = f.Icone, Singular = f.Singular };
+            if (f.ComExemplo)
+            {
+                var exemplo = AvaliacaoCliente.Exemplo();
+                exemplo.Nome = "Exemplo";
+                await Armazenamento.SalvarAsync(nova.ChaveDados, new List<Cliente> { exemplo });
+            }
+            Personalizadas.Add(nova);
+            AbaId = nova.Id;
+            await Armazenamento.GravarTextoAsync("insitalent.aba", nova.Id);
+        }
+        await Armazenamento.SalvarAsync(ChaveAbas, Personalizadas);
+        DialogoAberto = false;
+    }
+
+    private async Task ExcluirAbaAsync()
+    {
+        if (Editando is not { } e) return;
+        Personalizadas.Remove(e);
+        await Armazenamento.SalvarAsync(ChaveAbas, Personalizadas);
+        await JS.InvokeVoidAsync("insimatch.remover", e.ChaveDados);
+        await JS.InvokeVoidAsync("insimatch.remover", $"insitalent.modelo.{e.Id}");
+        if (AbaId == e.Id) await MudarAbaAsync("individual");
+        DialogoAberto = false;
+    }
+
+    /// <summary>Barra de ferramentas compartilhada por todas as abas.</summary>
     private RenderFragment Ferramentas => @<div class="ferramentas">
         @if (Apresentacao)
         {
-            <div class="seg-abas" style="--ativo:@AbaIdx; --n:@Abas.Length">
+            <div class="seg-abas" style="--ativo:@AbaIdx; --n:@Abas.Count">
                 <span class="seg-indicador"></span>
-                @for (var i = 0; i < Abas.Length; i++)
+                @foreach (var aba in Abas)
                 {
-                    var idx = i;
-                    <button class="@(idx == AbaIdx ? "ativo" : "")" @onclick="() => MudarAbaAsync(idx)">@Abas[idx].Curto</button>
+                    var id = aba.Id;
+                    <button class="@(id == AbaAtual.Id ? "ativo" : "")" title="@aba.Nome" @onclick="() => MudarAbaAsync(id)">@aba.Curto</button>
                 }
             </div>
         }
