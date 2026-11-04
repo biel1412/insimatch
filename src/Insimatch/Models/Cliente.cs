@@ -229,9 +229,12 @@ public static class AvaliacaoCliente
           .Select(g => (g.Key, g.ToList()))
           .ToList();
 
-    public static string GerarParecer(Cliente cl)
+    public static string GerarParecer(Cliente cl, ContextoPainel? ctx = null)
     {
-        var nome = string.IsNullOrWhiteSpace(cl.Nome) ? "do cliente" : $"do cliente {cl.Nome.Trim()}";
+        ctx ??= ContextoPainel.Cliente;
+        var nome = ctx.Generico
+            ? (string.IsNullOrWhiteSpace(cl.Nome) ? $"do(a) {ctx.Singular}" : $"de {cl.Nome.Trim()}")
+            : (string.IsNullOrWhiteSpace(cl.Nome) ? "do cliente" : $"do cliente {cl.Nome.Trim()}");
         var periodo = string.IsNullOrWhiteSpace(cl.Periodo) ? "o período" : cl.Periodo.Trim().ToLowerInvariant();
         var comMeta = ComMeta(cl).ToList();
         var semMeta = cl.Campos.Where(c => !c.TemMeta && ValorPreenchido(c)).ToList();

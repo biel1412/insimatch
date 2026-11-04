@@ -1,6 +1,6 @@
 # insiTalent
 
-Painel para apresentar resultados na tela compartilhada do Microsoft Teams: **resultado individual**, **resultado do time** e **atualização de fila**.
+Painel para apresentar resultados na tela compartilhada do Microsoft Teams: **resultado individual**, **resultado do time**, **resultado do cliente** e abas criadas por você.
 
 Escrito em **C# com Blazor WebAssembly** e hospedado no **GitHub Pages**: abre direto no navegador, sem instalar nada.
 
@@ -12,7 +12,11 @@ Escrito em **C# com Blazor WebAssembly** e hospedado no **GitHub Pages**: abre d
 |---|---|---|
 | **Individual** | Feedback mensal de um colaborador | Cartões · Gráficos · Placar · Foco · Mosaico |
 | **Time** | Resultado consolidado do time no mês | Cartões · Placar · Foco |
-| **Fila** | Atualização das filas Centralizada e Autorizar | Cartões · Placar · Foco |
+| **Cliente** | Painel configurável para qualquer cliente | Cartões · Placar · Foco |
+| **Suas abas** | Abas criadas por você no botão **+ Nova** do menu | Cartões · Placar · Foco |
+
+### Abas personalizadas
+No menu lateral, **+ Nova** cria uma aba com o nome que você quiser, um ícone (há 24 disponíveis) e o nome de cada registro (ex.: projeto, unidade, contrato). Ela pode começar em branco ou com um exemplo. Cada aba funciona como a aba Cliente: campos livres, metas, gráficos e parecer. O botão **⚙** no topo do editor da aba permite renomear, trocar o ícone ou excluir a aba (com confirmação).
 
 Na barra do topo:
 - **Cor:** Noturno, Oceano, Esmeralda, Aurora ou Claro.
@@ -38,19 +42,21 @@ No modo apresentação, a troca de aba fica no próprio topo. Cor, fundo, modelo
 | **Qualidade** | Qualidade do mês comparada com a meta de qualidade (padrão 99,94%, editável). |
 | **Resultado geral** | **Está bem** com qualidade na meta e volume pelo menos próximo da meta; **Excelente** com as duas metas atingidas. |
 
-### Fila
-Para cada fila (Centralizada e Autorizar) você informa **o total de fluxos na fila** e, **manualmente**, quantos têm **data do dia anterior**, já que os dois ficam misturados na fila. Cada página tem **15 fluxos**.
+### Cliente (configurável)
+A aba Cliente não tem indicadores fixos: você cria os **campos** que cada cliente precisar.
 
-A situação considera os fluxos do dia anterior:
-
-| Situação | Fluxos do dia anterior |
+| Configuração do campo | Opções |
 |---|---|
-| Em dia | 0 |
-| Sob controle | até 1 página (15) |
-| Atenção | até 3 páginas (45) |
-| Acúmulo | acima de 3 páginas |
+| **Tipo** | Número inteiro · Número decimal · Valor (moeda) · Percentual · Texto · Data · Sim/Não |
+| **Formato** | Casas decimais (0 = sem vírgula, até 4), separador de milhar, símbolo da moeda, unidade (min, h, kg…) |
+| **Meta** | Opcional; “maior é melhor” ou “menor é melhor”; a partir de qual % da meta conta como “próximo da meta” |
+| **Visual** | Número em destaque · Barra de progresso · Anel (% da meta) · Medidor (percentuais) · Realizado × meta |
+| **Organização** | Grupo/seção, ordem (↑ ↓), destaque (cartão maior e modelo Foco) |
 
-A situação geral é a pior das duas filas.
+- **Gráficos do painel:** barras, colunas ou rosca, comparando os campos escolhidos por **valor** ou por **% da meta** (útil para unidades diferentes).
+- **Parecer:** texto formal ou em tópicos por situação, com ou sem os campos sem meta; gerado automaticamente e editável.
+- **Clientes:** vários clientes; **Novo período** reaproveita campos, metas e gráficos com os valores em branco; **Exportar/Importar (.json)** leva a configuração para outro computador ou para a equipe; excluir um campo pode ser desfeito.
+- **Resultado geral:** considera todos os campos com meta (na meta, próximos e fora).
 
 Em todas as abas, o **parecer** é gerado em linguagem formal a partir dos números, e pode ser editado.
 
@@ -93,9 +99,9 @@ src/Insimatch/
 ├── Pages/Home.razor                 # dock, barra de ferramentas, cor, fundo e modelo
 ├── Components/Individual/           # aba Individual e seus 5 modelos
 ├── Components/Time/                 # aba Time e seus modelos
-├── Components/Fila/                 # aba Fila e seus modelos
+├── Components/Clientes/             # aba Cliente: editor de campos, visuais, gráficos e modelos
 ├── Components/Comum/                # cabeçalho, parecer, Foco, Placar, medidor, papel de parede
-├── Models/                          # dados e critérios (Colaborador, ResultadoTime, AtualizacaoFila)
+├── Models/                          # dados e critérios (Colaborador, ResultadoTime, Cliente, AbaPersonalizada, Icones)
 ├── Services/ArmazenamentoService.cs # localStorage e CSV
 └── wwwroot/                         # HTML, CSS e JS
 ```

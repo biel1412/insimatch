@@ -5,6 +5,9 @@ window.insimatch = {
     gravar: function (chave, valor) {
         try { window.localStorage.setItem(chave, valor); } catch (e) { /* armazenamento indisponível */ }
     },
+    remover: function (chave) {
+        try { window.localStorage.removeItem(chave); } catch (e) { /* armazenamento indisponível */ }
+    },
     baixar: function (nomeArquivo, conteudo, tipo) {
         const blob = new Blob(["﻿" + conteudo], { type: tipo || "text/csv;charset=utf-8" });
         const url = URL.createObjectURL(blob);

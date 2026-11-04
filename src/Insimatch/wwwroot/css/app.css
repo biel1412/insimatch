@@ -946,3 +946,78 @@ button, input, textarea { font-family: inherit; }
 
 .placar td.num { white-space: nowrap; }
 .foco-faixa strong { white-space: nowrap; }
+@media (max-width: 600px) {
+    .painel-topo { padding: 18px; border-radius: 20px; }
+    .pessoa { gap: 14px; }
+    .avatar { width: 56px; height: 56px; border-radius: 18px; font-size: 20px; flex: none; }
+    .ico-avatar { width: 30px; height: 30px; }
+    .selo { width: 100%; }
+    .ferramentas { justify-content: flex-start; }
+}
+
+/* ================= Abas personalizadas ================= */
+.dock-itens { scrollbar-width: none; }
+.dock-itens::-webkit-scrollbar { display: none; }
+.dock-txt { max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dock-mais { color: var(--texto-3); border: 1.5px dashed color-mix(in srgb, var(--texto) 18%, transparent); height: 58px; margin-top: 4px; }
+.dock-mais:hover { color: var(--texto); border-color: var(--acento); background: color-mix(in srgb, var(--acento) 10%, transparent); }
+.dock-mais svg { stroke-width: 2 !important; }
+
+.marca-com-acao { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.marca-com-acao .btn { font-size: 16px; padding: 8px 11px; }
+
+.dialogo-fundo {
+    position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 20px;
+    background: color-mix(in srgb, #000 55%, transparent); backdrop-filter: blur(6px);
+    animation: aparecer .18s ease;
+}
+.dialogo {
+    width: min(620px, 100%); max-height: calc(100vh - 40px); overflow-y: auto; padding: 24px;
+    border-radius: 24px; background: color-mix(in srgb, var(--fundo) 92%, var(--texto) 4%);
+    border: 1px solid var(--vidro-borda); box-shadow: 0 30px 80px -20px rgba(0,0,0,.6);
+    animation: subir .25s cubic-bezier(.2,.9,.25,1.1);
+}
+@keyframes aparecer { from { opacity: 0; } to { opacity: 1; } }
+@keyframes subir { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
+.dialogo-topo { display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center; margin-bottom: 20px; }
+.dialogo-topo h2 { margin: 0; font-size: 22px; letter-spacing: -0.01em; }
+.dialogo-topo p { margin: 4px 0 0; color: var(--texto-2); font-size: 14px; }
+.dialogo-previa {
+    width: 58px; height: 58px; border-radius: 18px; display: grid; place-items: center; color: #fff;
+    background: linear-gradient(140deg, var(--acento), var(--acento-2)); box-shadow: 0 12px 30px -12px var(--acento);
+}
+.dialogo-previa svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; display: block; }
+.dialogo-x {
+    align-self: start; width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--vidro-borda);
+    background: transparent; color: var(--texto-2); cursor: pointer; font-size: 14px;
+}
+.dialogo-x:hover { background: var(--hover); color: var(--texto); }
+.icones-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); gap: 8px; }
+.icone-opcao {
+    aspect-ratio: 1; border-radius: 13px; border: 1px solid var(--vidro-borda); background: var(--vidro);
+    color: var(--texto-2); display: grid; place-items: center; cursor: pointer; transition: all .15s;
+}
+.icone-opcao svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.icone-opcao:hover { color: var(--texto); border-color: color-mix(in srgb, var(--acento) 50%, transparent); }
+.icone-opcao.sel {
+    color: var(--texto); border-color: var(--acento);
+    background: color-mix(in srgb, var(--acento) 22%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--acento) 20%, transparent);
+}
+.opcoes-inicio { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.opcao-inicio {
+    text-align: left; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--vidro-borda); background: var(--vidro);
+    color: var(--texto); cursor: pointer; display: flex; flex-direction: column; gap: 4px; transition: all .15s;
+}
+.opcao-inicio strong { font-size: 14px; }
+.opcao-inicio span { font-size: 12px; color: var(--texto-3); }
+.opcao-inicio.sel { border-color: var(--acento); background: color-mix(in srgb, var(--acento) 14%, transparent); }
+.dialogo-acoes { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+
+@media (max-width: 860px) {
+    .dock-itens { max-height: none; overflow-x: auto; overflow-y: visible; max-width: calc(100vw - 40px); }
+    .dock { max-width: calc(100vw - 24px); }
+}
+@media (max-width: 600px) {
+    .opcoes-inicio { grid-template-columns: 1fr; }
+    .dialogo { padding: 18px; border-radius: 20px; }
+}
