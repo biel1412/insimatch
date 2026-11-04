@@ -232,15 +232,16 @@ public static class AvaliacaoCliente
     public static string GerarParecer(Cliente cl, ContextoPainel? ctx = null)
     {
         ctx ??= ContextoPainel.Cliente;
+        // Com espaço inicial; vazio quando uma aba personalizada ainda não tem nome no registro
         var nome = ctx.Generico
-            ? (string.IsNullOrWhiteSpace(cl.Nome) ? $"do(a) {ctx.Singular}" : $"de {cl.Nome.Trim()}")
-            : (string.IsNullOrWhiteSpace(cl.Nome) ? "do cliente" : $"do cliente {cl.Nome.Trim()}");
+            ? (string.IsNullOrWhiteSpace(cl.Nome) ? "" : $" de {cl.Nome.Trim()}")
+            : (string.IsNullOrWhiteSpace(cl.Nome) ? " do cliente" : $" do cliente {cl.Nome.Trim()}");
         var periodo = string.IsNullOrWhiteSpace(cl.Periodo) ? "o período" : cl.Periodo.Trim().ToLowerInvariant();
         var comMeta = ComMeta(cl).ToList();
         var semMeta = cl.Campos.Where(c => !c.TemMeta && ValorPreenchido(c)).ToList();
 
         if (comMeta.Count == 0 && semMeta.Count == 0)
-            return $"Em análise aos indicadores {nome} referentes a {periodo}, não constam dados preenchidos para a emissão de parecer.";
+            return $"Em análise aos indicadores{nome} referentes a {periodo}, não constam dados preenchidos para a emissão de parecer.";
 
         var geral = Geral(cl);
         var naMeta = comMeta.Where(c => StatusCampo(c) == Status.Excelente).ToList();
@@ -259,7 +260,7 @@ public static class AvaliacaoCliente
             return $"{c.Nome} registrou {Valor(c)}, {rel} {MetaExtenso(c)} ({at}% de atingimento)";
         }
 
-        var abertura = $"Em análise aos indicadores {nome} referentes a {periodo}, verifica-se " + geral switch
+        var abertura = $"Em análise aos indicadores{nome} referentes a {periodo}, verifica-se " + geral switch
         {
             Status.Excelente => "resultado excelente",
             Status.Bom => "resultado satisfatório",
