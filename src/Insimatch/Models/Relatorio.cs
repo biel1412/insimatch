@@ -1,0 +1,184 @@
+namespace Insimatch.Models;
+
+public record RelKpi(string Rotulo, string Valor, string? Detalhe = null, Status Status = Status.Neutro);
+
+public record RelLinha(string Indicador, string Realizado, string Referencia = "—", Status? Status = null,
+                       string? StatusRotulo = null, decimal? Atingimento = null);
+
+public record RelSecao(string Titulo, List<RelLinha> Linhas);
+
+public record RelBarra(string Nome, decimal Percentual, Status Status);
+
+/// <summary>Conteúdo de um relatório, montado a partir da apresentação aberta.</summary>
+public class RelatorioDados
+{
+    public string Tipo { get; set; } = "";
+    public string Titulo { get; set; } = "";
+    public string Sigla { get; set; } = "";
+    public List<string> Info { get; set; } = new();
+    public Status Status { get; set; } = Status.Neutro;
+    public string StatusRotulo { get; set; } = "";
+    public string Resumo { get; set; } = "";
+    public List<RelKpi> Kpis { get; set; } = new();
+    public List<RelSecao> Secoes { get; set; } = new();
+    public List<RelBarra> Barras { get; set; } = new();
+    public string Parecer { get; set; } = "";
+    public DateTime GeradoEm { get; set; } = DateTime.Now;
+
+    public string NomeArquivo
+    {
+        get
+        {
+            var baseNome = string.IsNullOrWhiteSpace(Titulo) ? Tipo : Titulo;
+            var limpo = new string(baseNome.ToLowerInvariant().Select(ch => char.IsLetterOrDigit(ch) ? ch : '-').ToArray()).Trim('-');
+            return $"relatorio-{(limpo.Length == 0 ? "insitalent" : limpo)}-{GeradoEm:yyyy-MM-dd}.html";
+        }
+    }
+}
+
+/// <summary>Cada aba informa aqui como montar o relatório do que está aberto.</summary>
+public class RelatorioHost
+{
+    public Func<RelatorioDados?>? Gerar { get; set; }
+}
+
+public static class Relatorios
+{
+    // ---------- Individual ----------
+    public static RelatorioDados De(Colaborador c)
+    {
+        var media = c.MediaDiaria;
+        var sVol = Avaliacao.StatusVolume(c);
+        var sQual = Avaliacao.StatusQualidade(c);
+        var geral = Avaliacao.Geral(c);
+        var permitidos = Avaliacao.DesviosPermitidos(c);
+        var r = new RelatorioDados
+        {
+            Tipo = "Resultado individual",
+            Titulo = string.IsNullOrWhiteSpace(c.Nome) ? "Colaborador" : c.Nome,
+            Sigla = c.Iniciais,
+            Info = new[] { c.Equipe, c.MesPorExtenso }.Where(x => !string.IsNullOrWhiteSpace(x)).ToList(),
+            Status = geral,
+            StatusRotulo = Avaliacao.RotuloGeral(geral),
+            Resumo = $"Volume: {Avaliacao.RotuloVolume(c).ToLowerInvariant()} · Qualidade: {Avaliacao.RotuloQualidade(c).ToLowerInvariant()}",
+            Parecer = c.Parecer
+        };
+        r.Kpis.Add(new("Média diária", $"{media:N1}/dia", MetasTexto(c.MetaPro, c.MetaPremium, "/dia"), sVol));
+        r.Kpis.Add(new("Qualidade", $"{c.Qualidade:N2}%", $"ideal ≥ {Avaliacao.QualidadeIdeal:N2}%", sQual));
+        r.Kpis.Add(new("Volume do mês", c.Volume.ToString("N0"), $"{c.DiasConsiderados} dias trabalhados"));
+        r.Kpis.Add(new("Desvios", c.TotalDesvios.ToString(), $"máx. {permitidos} para 99,94%",
+            c.Volume > 0 ? (c.TotalDesvios <= permitidos ? Status.Excelente : Status.Critico) : Status.Neutro));
+
+        var prod = new List<RelLinha>
+        {
+            new("Média diária", $"{media:N1}/dia", MetasTexto(c.MetaPro, c.MetaPremium, "/dia") ?? "—", sVol, Avaliacao.RotuloVolume(c),
+                c.MetaPro > 0 ? media / c.MetaPro * 100 : null),
+            new("Volume do mês", c.Volume.ToString("N0"),
+                MetasTexto(c.MetaPro * c.DiasConsiderados, c.MetaPremium * c.DiasConsiderados, "") ?? "—"),
+            new("Dias trabalhados", c.DiasConsiderados.ToString())
+        };
+        var qual = new List<RelLinha>
+        {
+            new("Qualidade", $"{c.Qualidade:N2}%", $"≥ {Avaliacao.QualidadeIdeal:N2}%", sQual, Avaliacao.RotuloQualidade(c)),
+            new("Desvios internos", c.DesviosInternos.ToString()),
+            new("Desvios externos", c.DesviosExternos.ToString()),
+            new("Total de desvios", c.TotalDesvios.ToString(), $"máx. {permitidos}",
+                c.Volume > 0 ? (c.TotalDesvios <= permitidos ? Status.Excelente : Status.Critico) : null,
+                c.Volume > 0 ? (c.TotalDesvios <= permitidos ? "Dentro do limite" : "Acima do limite") : null)
+        };
+        r.Secoes.Add(new("Produção", prod));
+        r.Secoes.Add(new("Qualidade", qual));
+
+        if (c.MetaPro > 0) r.Barras.Add(new("Média × meta Pro", media / c.MetaPro * 100, media >= c.MetaPro ? Status.Excelente : Status.Atencao));
+        if (c.MetaPremium > 0) r.Barras.Add(new("Média × meta Premium", media / c.MetaPremium * 100, media >= c.MetaPremium ? Status.Excelente : Status.Atencao));
+        return r;
+    }
+
+    // ---------- Time ----------
+    public static RelatorioDados De(ResultadoTime t)
+    {
+        var sVol = AvaliacaoTime.StatusVolume(t);
+        var sQual = AvaliacaoTime.StatusQualidade(t);
+        var geral = AvaliacaoTime.Geral(t);
+        var r = new RelatorioDados
+        {
+            Tipo = "Resultado do time",
+            Titulo = string.IsNullOrWhiteSpace(t.Nome) ? "Time" : t.Nome,
+            Sigla = t.Iniciais,
+            Info = new() { t.MesPorExtenso },
+            Status = geral,
+            StatusRotulo = Avaliacao.RotuloGeral(geral),
+            Resumo = $"Volume: {AvaliacaoTime.RotuloVolume(t).ToLowerInvariant()} · Qualidade: {AvaliacaoTime.RotuloQualidade(t).ToLowerInvariant()}",
+            Parecer = t.Parecer
+        };
+        r.Kpis.Add(new("Atingimento do volume", $"{t.Atingimento:N1}%", $"{t.VolumeAtingido:N0} de {t.MetaVolume:N0}", sVol));
+        r.Kpis.Add(new("Qualidade do mês", $"{t.Qualidade:N2}%", $"meta ≥ {t.MetaQualidade:N2}%", sQual));
+        r.Kpis.Add(new("Diferença para a meta", (t.Diferenca >= 0 ? "+" : "") + t.Diferenca.ToString("N0"), "itens"));
+        r.Kpis.Add(new("Total de desvios", t.TotalDesvios.ToString(), $"{t.DesviosInternos} internos · {t.DesviosExternos} externos"));
+
+        r.Secoes.Add(new("Volume", new()
+        {
+            new("Volume atingido", t.VolumeAtingido.ToString("N0"), t.MetaVolume > 0 ? $"meta {t.MetaVolume:N0}" : "—",
+                sVol, AvaliacaoTime.RotuloVolume(t), t.MetaVolume > 0 ? t.Atingimento : null),
+            new("Diferença para a meta", (t.Diferenca >= 0 ? "+" : "") + t.Diferenca.ToString("N0"))
+        }));
+        r.Secoes.Add(new("Qualidade", new()
+        {
+            new("Qualidade do mês", $"{t.Qualidade:N2}%", $"≥ {t.MetaQualidade:N2}%", sQual, AvaliacaoTime.RotuloQualidade(t)),
+            new("Desvios internos", t.DesviosInternos.ToString()),
+            new("Desvios externos", t.DesviosExternos.ToString()),
+            new("Total de desvios", t.TotalDesvios.ToString())
+        }));
+        if (t.MetaVolume > 0) r.Barras.Add(new("Volume × meta", t.Atingimento, sVol));
+        return r;
+    }
+
+    // ---------- Cliente e abas personalizadas ----------
+    public static RelatorioDados De(Cliente cl, ContextoPainel? ctx = null)
+    {
+        ctx ??= ContextoPainel.Cliente;
+        var geral = AvaliacaoCliente.Geral(cl);
+        var comMeta = AvaliacaoCliente.ComMeta(cl).ToList();
+        var naMeta = comMeta.Count(c => AvaliacaoCliente.StatusCampo(c) == Status.Excelente);
+        var r = new RelatorioDados
+        {
+            Tipo = ctx.RotuloSup,
+            Titulo = string.IsNullOrWhiteSpace(cl.Nome) ? ctx.RotuloSup : cl.Nome,
+            Sigla = cl.Iniciais,
+            Info = new[] { cl.Periodo, cl.Descricao }.Where(x => !string.IsNullOrWhiteSpace(x)).ToList(),
+            Status = geral,
+            StatusRotulo = AvaliacaoCliente.RotuloGeral(cl),
+            Resumo = comMeta.Count == 0 ? $"{cl.Campos.Count} indicador(es) registrado(s), sem metas definidas" : $"{naMeta} de {comMeta.Count} indicadores com meta atendidos",
+            Parecer = cl.Parecer
+        };
+
+        var kpis = cl.Campos.Where(c => c.Destaque).ToList();
+        if (kpis.Count == 0) kpis = comMeta;
+        if (kpis.Count == 0) kpis = cl.Campos.Where(c => c.Numerico).ToList();
+        foreach (var c in kpis.Take(4))
+            r.Kpis.Add(new(c.Nome, AvaliacaoCliente.Valor(c),
+                c.TemMeta ? $"meta {AvaliacaoCliente.MetaTexto(c)} · {AvaliacaoCliente.Atingimento(c):N0}%" : (string.IsNullOrWhiteSpace(c.Grupo) ? null : c.Grupo),
+                AvaliacaoCliente.StatusCampo(c)));
+
+        foreach (var (grupo, campos) in AvaliacaoCliente.Grupos(cl))
+            r.Secoes.Add(new(grupo, campos.Select(c => new RelLinha(
+                c.Nome, AvaliacaoCliente.Valor(c),
+                c.Meta.HasValue && c.Numerico ? AvaliacaoCliente.MetaTexto(c) : "—",
+                c.TemMeta ? AvaliacaoCliente.StatusCampo(c) : null,
+                c.TemMeta ? AvaliacaoCliente.RotuloCampo(c) : null,
+                c.TemMeta ? AvaliacaoCliente.Atingimento(c) : null)).ToList()));
+
+        foreach (var c in comMeta)
+            r.Barras.Add(new(c.Nome, AvaliacaoCliente.Atingimento(c), AvaliacaoCliente.StatusCampo(c)));
+        return r;
+    }
+
+    private static string? MetasTexto(decimal pro, decimal premium, string sufixo)
+    {
+        var fmt = sufixo.Length > 0 ? "0.#" : "N0";
+        var l = new List<string>();
+        if (pro > 0) l.Add($"Pro {pro.ToString(fmt)}{sufixo}");
+        if (premium > 0) l.Add($"Premium {premium.ToString(fmt)}{sufixo}");
+        return l.Count == 0 ? null : string.Join(" · ", l);
+    }
+}

@@ -1,0 +1,142 @@
+@* Relatório da apresentação aberta: folha em formato de documento, pronta para imprimir/PDF ou baixar *@
+@inject IJSRuntime JS
+
+<div class="rel-modal" role="dialog" aria-modal="true" aria-label="Relatório">
+    <div class="rel-barra">
+        <div class="rel-barra-titulo">
+            <strong>Relatório</strong>
+            <span>@D.Tipo · @D.Titulo</span>
+        </div>
+        <div class="espaco"></div>
+        <button class="btn primario" @onclick="ImprimirAsync">⎙ Imprimir / salvar PDF</button>
+        <button class="btn" @onclick="BaixarAsync">⇩ Baixar (.html)</button>
+        <button class="btn" @onclick="() => OnFechar.InvokeAsync()">Fechar</button>
+    </div>
+
+    <div class="rel-rolagem">
+        <article class="rel-folha" id="rel-folha">
+            <header class="rel-capa">
+                <div class="rel-marca">insi<span>Talent</span></div>
+                <div class="rel-tipo">Relatório · @D.Tipo</div>
+                <div class="rel-cab">
+                    <div class="rel-sigla">@(string.IsNullOrWhiteSpace(D.Sigla) || D.Sigla == "?" ? "iT" : D.Sigla)</div>
+                    <div>
+                        <h1>@D.Titulo</h1>
+                        @if (D.Info.Count > 0)
+                        {
+                            <div class="rel-info">@string.Join("  •  ", D.Info)</div>
+                        }
+                    </div>
+                </div>
+                <div class="rel-gerado">Gerado em @D.GeradoEm.ToString("dd/MM/yyyy 'às' HH:mm")</div>
+            </header>
+
+            <section class="rel-veredito @Avaliacao.Classe(D.Status)">
+                <div class="rel-veredito-selo">
+                    <span class="rel-luz"></span>
+                    <div>
+                        <small>Resultado geral</small>
+                        <strong>@D.StatusRotulo</strong>
+                    </div>
+                </div>
+                <p>@D.Resumo</p>
+            </section>
+
+            @if (D.Kpis.Count > 0)
+            {
+                <section class="rel-kpis" style="--n:@Math.Min(D.Kpis.Count, 4)">
+                    @foreach (var k in D.Kpis)
+                    {
+                        <div class="rel-kpi @Avaliacao.Classe(k.Status)">
+                            <small>@k.Rotulo</small>
+                            <strong>@k.Valor</strong>
+                            @if (!string.IsNullOrEmpty(k.Detalhe))
+                            {
+                                <span>@k.Detalhe</span>
+                            }
+                        </div>
+                    }
+                </section>
+            }
+
+            @foreach (var s in D.Secoes)
+            {
+                <section class="rel-secao">
+                    <h2>@s.Titulo</h2>
+                    <table class="rel-tabela">
+                        <thead>
+                            <tr><th>Indicador</th><th>Realizado</th><th>Referência</th><th>Situação</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var l in s.Linhas)
+                            {
+                                <tr>
+                                    <td>@l.Indicador</td>
+                                    <td class="rel-num">@l.Realizado</td>
+                                    <td class="rel-ref">@l.Referencia</td>
+                                    <td>
+                                        @if (l.Status is { } st)
+                                        {
+                                            <span class="rel-pill @Avaliacao.Classe(st)">@l.StatusRotulo@(l.Atingimento is { } at ? $" · {at:N0}%" : "")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="rel-ref">—</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </section>
+            }
+
+            @if (D.Barras.Count > 0)
+            {
+                var max = (double)Math.Max(120m, D.Barras.Max(b => b.Percentual)) * 1.05;
+                <section class="rel-secao rel-quebra-evitar">
+                    <h2>Atingimento das metas</h2>
+                    <div class="rel-barras">
+                        @foreach (var b in D.Barras)
+                        {
+                            <div class="rel-barra-linha @Avaliacao.Classe(b.Status)">
+                                <span class="rel-barra-nome">@b.Nome</span>
+                                <div class="rel-trilho">
+                                    <div class="rel-fill" style="width:@Pct((double)b.Percentual / max)"></div>
+                                    <span class="rel-100" style="left:@Pct(100 / max)"></span>
+                                </div>
+                                <b>@b.Percentual.ToString("N1")%</b>
+                            </div>
+                        }
+                    </div>
+                    <div class="rel-legenda-100">A linha marca 100% da meta.</div>
+                </section>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(D.Parecer))
+            {
+                <section class="rel-secao rel-quebra-evitar">
+                    <h2>Parecer</h2>
+                    <div class="rel-parecer">@D.Parecer</div>
+                </section>
+            }
+
+            <footer class="rel-rodape">
+                <span>insiTalent · relatório gerado a partir dos dados informados</span>
+                <span>@D.GeradoEm.ToString("dd/MM/yyyy HH:mm")</span>
+            </footer>
+        </article>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public RelatorioDados D { get; set; } = default!;
+    [Parameter] public EventCallback OnFechar { get; set; }
+
+    private Task ImprimirAsync() => JS.InvokeVoidAsync("insimatch.imprimir").AsTask();
+
+    private Task BaixarAsync() => JS.InvokeVoidAsync("insimatch.baixarRelatorio", "rel-folha", D.NomeArquivo, $"Relatório · {D.Titulo}").AsTask();
+
+    private static string Pct(double v) =>
+        (Math.Clamp(v, 0, 1) * 100).ToString("0.#", CultureInfo.InvariantCulture) + "%";
+}

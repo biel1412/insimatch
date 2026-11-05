@@ -80,6 +80,7 @@ public static class AvaliacaoTime
         var f = new FatosParecer
         {
             Sujeito = string.IsNullOrWhiteSpace(t.Nome) ? "o time" : $"o time {t.Nome.Trim()}",
+            Nome = string.IsNullOrWhiteSpace(t.Nome) ? "Time" : $"Time {t.Nome.Trim()}",
             Vocativo = "Pessoal",
             Periodo = t.MesPorExtenso.ToLowerInvariant(),
             Status = Geral(t)

@@ -1,0 +1,27 @@
+@* Linha com texto e interruptor liga/desliga *@
+<label class="cfg-item @(Desabilitado ? "desab" : "")">
+    <span class="cfg-txt">
+        <strong>@Texto</strong>
+        @if (!string.IsNullOrEmpty(Dica))
+        {
+            <small>@Dica</small>
+        }
+    </span>
+    <span class="interruptor">
+        <input type="checkbox" checked="@Valor" disabled="@Desabilitado" @onchange="MudouAsync" />
+    </span>
+</label>
+
+@code {
+    [Parameter] public string Texto { get; set; } = "";
+    [Parameter] public string? Dica { get; set; }
+    [Parameter] public bool Valor { get; set; }
+    [Parameter] public EventCallback<bool> ValorChanged { get; set; }
+    [Parameter] public bool Desabilitado { get; set; }
+
+    private async Task MudouAsync(ChangeEventArgs e)
+    {
+        var v = e.Value is true || string.Equals(e.Value?.ToString(), "true", StringComparison.OrdinalIgnoreCase);
+        await ValorChanged.InvokeAsync(v);
+    }
+}

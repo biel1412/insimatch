@@ -242,6 +242,7 @@ public static class AvaliacaoCliente
             Sujeito = string.IsNullOrWhiteSpace(nome)
                 ? (ctx.Generico ? $"o(a) {ctx.Singular}" : "o cliente")
                 : (ctx.Generico ? nome : $"o cliente {nome}"),
+            Nome = nome,
             Vocativo = null,
             Periodo = string.IsNullOrWhiteSpace(cl.Periodo) ? "o período" : cl.Periodo.Trim().ToLowerInvariant(),
             Status = Geral(cl)

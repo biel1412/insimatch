@@ -1,0 +1,87 @@
+@* Configurações: o que mostrar ou ocultar na interface *@
+<div class="dialogo-fundo" @onclick="Fechar">
+    <div class="dialogo dialogo-config" role="dialog" aria-modal="true" aria-labelledby="cfg-titulo" @onclick:stopPropagation="true">
+        <div class="dialogo-topo">
+            <div class="dialogo-previa">
+                <span class="dock-ico"><IconeSvg Id="engrenagem" /></span>
+            </div>
+            <div>
+                <h2 id="cfg-titulo">Configurações</h2>
+                <p>Escolha o que aparece na tela. As escolhas ficam salvas neste navegador.</p>
+            </div>
+            <button class="dialogo-x" title="Fechar" @onclick="Fechar">✕</button>
+        </div>
+
+        <div class="form">
+            <div class="form-grupo">Barra de ferramentas</div>
+            <div class="cfg-lista">
+                <Interruptor Texto="Cor da página" Dica="Seletor de cores" @bind-Valor="C.MostrarCor" />
+                <Interruptor Texto="Papel de parede" Dica="Seletor de fundos" @bind-Valor="C.MostrarFundo" />
+                <Interruptor Texto="Movimento" Dica="Ao ocultar, o movimento do fundo fica desligado" @bind-Valor="C.MostrarMovimento" />
+                <Interruptor Texto="Modelo de apresentação" Dica="Cartões, Placar, Foco…" @bind-Valor="C.MostrarModelo" />
+                <Interruptor Texto="Gerar relatório" Dica="Relatório para imprimir, salvar em PDF ou baixar" @bind-Valor="C.MostrarRelatorio" />
+                <Interruptor Texto="Tela cheia" @bind-Valor="C.MostrarTelaCheia" />
+            </div>
+
+            <div class="form-grupo">Abas fixas</div>
+            <div class="cfg-lista">
+                @foreach (var (id, nome) in Fixas)
+                {
+                    var visivel = !C.AbasOcultas.Contains(id);
+                    var ultima = visivel && TotalVisiveis <= 1;
+                    <Interruptor Texto="@nome" Dica="@(ultima ? "Pelo menos uma aba precisa ficar visível" : null)" Desabilitado="ultima"
+                                 Valor="visivel" ValorChanged="v => AlternarAba(id, v)" />
+                }
+            </div>
+            <p class="dica">Ocultar uma aba só a tira do menu: os dados continuam salvos e voltam quando você a mostrar de novo.</p>
+
+            <div class="form-grupo">Menu</div>
+            <div class="cfg-lista">
+                <Interruptor Texto="Botão “+ Nova” aba" Dica="Criar abas personalizadas" @bind-Valor="C.MostrarNovaAba" />
+                <Interruptor Texto="Troca de abas no modo apresentação" Dica="Seletor de abas no topo durante a apresentação" @bind-Valor="C.MostrarTrocaAbasApresentacao" />
+            </div>
+
+            <div class="dialogo-acoes">
+                <button class="btn" @onclick="Restaurar">Restaurar padrão</button>
+                <div class="espaco"></div>
+                <button class="btn" @onclick="Fechar">Cancelar</button>
+                <button class="btn primario" @onclick="SalvarAsync">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Configuracoes Atual { get; set; } = default!;
+    /// <summary>Quantas abas personalizadas existem (contam para "pelo menos uma visível").</summary>
+    [Parameter] public int Personalizadas { get; set; }
+    [Parameter] public EventCallback<Configuracoes> OnSalvar { get; set; }
+    [Parameter] public EventCallback OnFechar { get; set; }
+
+    private static readonly (string Id, string Nome)[] Fixas =
+    {
+        ("individual", "Individual"), ("time", "Time"), ("cliente", "Cliente")
+    };
+
+    private Configuracoes C = new();
+    private bool Iniciado;
+
+    private int TotalVisiveis => Fixas.Count(f => !C.AbasOcultas.Contains(f.Id)) + Personalizadas;
+
+    protected override void OnParametersSet()
+    {
+        if (Iniciado) return;
+        Iniciado = true;
+        C = Atual.Copia();
+    }
+
+    private void AlternarAba(string id, bool visivel)
+    {
+        if (visivel) C.AbasOcultas.Remove(id);
+        else if (TotalVisiveis > 1 && !C.AbasOcultas.Contains(id)) C.AbasOcultas.Add(id);
+    }
+
+    private void Restaurar() => C = new Configuracoes();
+    private Task Fechar() => OnFechar.InvokeAsync();
+    private Task SalvarAsync() => OnSalvar.InvokeAsync(C);
+}
