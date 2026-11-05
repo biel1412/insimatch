@@ -1,5 +1,5 @@
 @* Parecer do time *@
-<ParecerBloco Texto="@(string.IsNullOrWhiteSpace(T.Parecer) ? AvaliacaoTime.GerarParecer(T) : T.Parecer)"
+<ParecerBloco Texto="@T.Parecer"
               Status="AvaliacaoTime.Geral(T)"
               Assinatura="@(string.IsNullOrWhiteSpace(T.Nome) ? "insiTalent" : T.Nome)"
               Periodo="@T.MesPorExtenso" />

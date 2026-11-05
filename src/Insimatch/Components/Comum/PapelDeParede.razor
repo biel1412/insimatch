@@ -1,4 +1,5 @@
-@* Papel de parede da página (independente da cor). Usa as cores do tema atual. *@
+@* Papel de parede da página (independente da cor). Usa as cores do tema atual.
+   As animações ficam pausadas quando o "Movimento" está desligado. *@
 <div class="papel papel-@Fundo" aria-hidden="true">
     @switch (Fundo)
     {
@@ -8,12 +9,18 @@
             <div class="blob b3"></div>
             break;
 
+        case "fluido":
+            <div class="gota g1"></div>
+            <div class="gota g2"></div>
+            <div class="gota g3"></div>
+            break;
+
         case "ondas":
-            <svg class="ondas" viewBox="0 0 1440 900" preserveAspectRatio="none">
-                <path class="onda o1" d="M0 610 C 240 540 420 700 720 640 C 1010 580 1180 520 1440 590 L1440 900 L0 900 Z" />
-                <path class="onda o2" d="M0 700 C 260 640 470 780 760 720 C 1040 660 1230 640 1440 690 L1440 900 L0 900 Z" />
-                <path class="onda o3" d="M0 790 C 300 740 520 850 820 800 C 1080 760 1260 760 1440 790 L1440 900 L0 900 Z" />
-                <path class="onda-linha" d="M0 560 C 260 500 460 650 740 590 C 1030 530 1200 470 1440 540" />
+            <svg class="ondas" viewBox="0 0 2880 900" preserveAspectRatio="none">
+                <path class="onda o1" d="M0 610 C 240 540 420 700 720 640 C 1010 580 1180 520 1440 590 C 1680 540 1860 700 2160 640 C 2450 580 2620 520 2880 590 L2880 900 L0 900 Z" />
+                <path class="onda o2" d="M0 700 C 260 640 470 780 760 720 C 1040 660 1230 640 1440 690 C 1700 640 1910 780 2200 720 C 2480 660 2670 640 2880 690 L2880 900 L0 900 Z" />
+                <path class="onda o3" d="M0 790 C 300 740 520 850 820 800 C 1080 760 1260 760 1440 790 C 1740 740 1960 850 2260 800 C 2520 760 2700 760 2880 790 L2880 900 L0 900 Z" />
+                <path class="onda-linha" d="M0 560 C 260 500 460 650 740 590 C 1030 530 1200 470 1440 540 C 1700 500 1900 650 2180 590 C 2470 530 2640 470 2880 540" />
             </svg>
             break;
 
@@ -27,10 +34,81 @@
                 <rect width="100%" height="100%" fill="url(#geo-tri)" />
             </svg>
             break;
+
+        case "hexagonos":
+            <svg class="hex">
+                <defs>
+                    <pattern id="hex-pad" width="56" height="97" patternUnits="userSpaceOnUse">
+                        <path d="M28 0 L56 16.2 L56 48.5 L28 64.7 L0 48.5 L0 16.2 Z M28 64.7 L28 97 M0 97 L0 80.8 M56 97 L56 80.8" />
+                    </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#hex-pad)" />
+            </svg>
+            break;
+
+        case "topografia":
+            <svg class="topo" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+                <g class="topo-g1">
+                    @for (var i = 1; i <= 14; i++)
+                    {
+                        <ellipse cx="1220" cy="180" rx="@(i * 48)" ry="@(i * 31)" transform="rotate(@(i * 4) 1220 180)" />
+                    }
+                </g>
+                <g class="topo-g2">
+                    @for (var i = 1; i <= 12; i++)
+                    {
+                        <ellipse cx="260" cy="860" rx="@(i * 42)" ry="@(i * 29)" transform="rotate(@(-i * 5) 260 860)" />
+                    }
+                </g>
+            </svg>
+            break;
+
+        case "bokeh":
+            @foreach (var b in Bokeh)
+            {
+                <span class="bolha" style="@b"></span>
+            }
+            break;
+
+        case "particulas":
+            @foreach (var p in Particulas)
+            {
+                <span class="particula" style="@p"></span>
+            }
+            break;
+
+        case "estrelas":
+            @foreach (var e in Estrelas)
+            {
+                <span class="estrela" style="@e"></span>
+            }
+            <span class="cadente c1"></span>
+            <span class="cadente c2"></span>
+            break;
     }
 </div>
 
 @code {
-    /// <summary>brilho, aurora, ondas, grade, pontos, geometrico ou liso.</summary>
+    /// <summary>Id do papel de parede (ver lista em Home).</summary>
     [Parameter] public string Fundo { get; set; } = "brilho";
+
+    // Declarado antes dos arrays que o usam (inicialização estática segue a ordem do código)
+    private static readonly string[] CoresBokeh = { "var(--acento)", "var(--acento-2)", "var(--azul)" };
+
+    // Posições fixas (mesma semente), para o fundo não mudar a cada renderização
+    private static readonly string[] Particulas = Gerar(42, 46, r =>
+        $"left:{r.Next(0, 100)}%;--t:{r.Next(5, 12)}px;animation-duration:{r.Next(14, 34)}s;animation-delay:-{r.Next(0, 34)}s;opacity:{0.25 + r.NextDouble() * 0.5:0.00}".Replace(',', '.'));
+
+    private static readonly string[] Estrelas = Gerar(7, 110, r =>
+        $"left:{r.Next(0, 1000) / 10.0:0.0}%;top:{r.Next(0, 1000) / 10.0:0.0}%;--t:{1 + r.Next(0, 3)}px;animation-duration:{r.Next(2, 7)}s;animation-delay:-{r.Next(0, 7)}s".Replace(',', '.'));
+
+    private static readonly string[] Bokeh = Gerar(11, 14, r =>
+        $"left:{r.Next(-5, 95)}%;top:{r.Next(-5, 95)}%;--t:{r.Next(60, 260)}px;animation-duration:{r.Next(18, 40)}s;animation-delay:-{r.Next(0, 40)}s".Replace(',', '.')
+        + ";--cb:" + CoresBokeh[r.Next(0, CoresBokeh.Length)]);
+
+    private static string[] Gerar(int semente, int n, Func<Random, string> f)
+    {
+        var r = new Random(semente);
+        return Enumerable.Range(0, n).Select(_ => f(r)).ToArray();
+    }
 }

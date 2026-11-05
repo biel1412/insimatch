@@ -1,0 +1,33 @@
+@* Lista de modelos de parecer gerados a partir dos números; o usuário escolhe um *@
+<div class="sugestoes">
+    <div class="sugestoes-topo">
+        <strong>Escolha um modelo</strong>
+        <button class="link" @onclick="() => OnFechar.InvokeAsync()">Fechar</button>
+    </div>
+    <p class="dica">Os textos usam os números atuais. Depois de escolher, você pode editar à vontade.</p>
+    @for (var i = 0; i < Opcoes.Count; i++)
+    {
+        var idx = i;
+        var s = Opcoes[i];
+        var aberto = Expandido == idx;
+        <div class="sugestao @(aberto ? "aberta" : "")">
+            <div class="sugestao-cab">
+                <div>
+                    <strong>@s.Titulo</strong>
+                    <small>@s.Descricao</small>
+                </div>
+                <button class="btn primario btn-pequeno" @onclick="() => OnEscolher.InvokeAsync(s.Texto)">Usar</button>
+            </div>
+            <p class="sugestao-previa" @onclick="() => Alternar(idx)" title="@(aberto ? "Recolher" : "Ver texto completo")">@s.Texto</p>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<Sugestao> Opcoes { get; set; } = Array.Empty<Sugestao>();
+    [Parameter] public EventCallback<string> OnEscolher { get; set; }
+    [Parameter] public EventCallback OnFechar { get; set; }
+
+    private int Expandido = -1;
+    private void Alternar(int i) => Expandido = Expandido == i ? -1 : i;
+}

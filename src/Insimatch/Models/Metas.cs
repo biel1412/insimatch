@@ -88,6 +88,64 @@ public static class Avaliacao
         _ => "Abaixo do esperado"
     };
 
+    /// <summary>Os 7 modelos de sugestão de parecer para o colaborador.</summary>
+    public static List<Sugestao> ListarSugestoes(Colaborador c) => Sugestoes.Gerar(Fatos(c), GerarParecer(c));
+
+    public static FatosParecer Fatos(Colaborador c)
+    {
+        var nome = c.Nome?.Trim() ?? "";
+        var f = new FatosParecer
+        {
+            Sujeito = string.IsNullOrWhiteSpace(nome) ? "o(a) colaborador(a)" : nome,
+            Vocativo = string.IsNullOrWhiteSpace(nome) ? "Olá" : nome.Split(' ')[0],
+            Periodo = c.MesPorExtenso.ToLowerInvariant(),
+            Status = Geral(c)
+        };
+        var media = c.MediaDiaria;
+        f.Chaves.Add($"{media:N1}/dia");
+        if (c.Volume > 0) f.Chaves.Add($"{c.Qualidade:N2}% de qualidade");
+
+        switch (Nivel(c))
+        {
+            case NivelMeta.Premium:
+                f.Positivos.Add($"a média de {media:N1} itens/dia, acima da meta Premium ({c.MetaPremium:0.#}/dia)");
+                break;
+            case NivelMeta.Pro:
+                f.Positivos.Add($"a média de {media:N1} itens/dia, acima da meta Pro ({c.MetaPro:0.#}/dia)");
+                if (c.MetaPremium > 0)
+                {
+                    f.Atencao.Add($"faltaram {c.MetaPremium - media:N1} itens/dia para a meta Premium");
+                    f.Acoes.Add($"buscar mais {c.MetaPremium - media:N1} itens por dia para alcançar a meta Premium");
+                }
+                break;
+            case NivelMeta.Proximo or NivelMeta.Abaixo:
+                var meta = c.MetaPro > 0 ? c.MetaPro : c.MetaPremium;
+                var nomeMeta = c.MetaPro > 0 ? "Pro" : "Premium";
+                f.Atencao.Add($"a média de {media:N1} itens/dia, {meta - media:N1} abaixo da meta {nomeMeta} ({meta:0.#}/dia)");
+                f.Acoes.Add($"elevar a média diária em {meta - media:N1} itens para atingir a meta {nomeMeta}");
+                break;
+            default:
+                f.Neutros.Add($"média de {media:N1} itens/dia");
+                break;
+        }
+        f.Neutros.Add($"{c.Volume:N0} itens em {c.DiasConsiderados} dias trabalhados");
+
+        if (c.Volume > 0)
+        {
+            if (QualidadeOk(c))
+                f.Positivos.Add($"a qualidade de {c.Qualidade:N2}%, dentro do ideal de {QualidadeIdeal:N2}%");
+            else
+            {
+                f.Atencao.Add($"a qualidade de {c.Qualidade:N2}%, abaixo do ideal de {QualidadeIdeal:N2}%");
+                f.Acoes.Add($"revisar as causas dos desvios para manter no máximo {Plural(DesviosPermitidos(c), "desvio", "desvios", "nenhum desvio")} no período");
+            }
+            if (c.TotalDesvios == 0) f.Positivos.Add("nenhum desvio registrado");
+            else f.Neutros.Add($"{Plural(c.DesviosInternos, "desvio interno", "desvios internos", "nenhum desvio interno")} e {Plural(c.DesviosExternos, "desvio externo", "desvios externos", "nenhum desvio externo")}");
+        }
+        if (f.Acoes.Count == 0) f.Acoes.Add("manter o ritmo e a qualidade atuais");
+        return f;
+    }
+
     /// <summary>Gera um parecer formal com base nos números.</summary>
     public static string GerarParecer(Colaborador c)
     {

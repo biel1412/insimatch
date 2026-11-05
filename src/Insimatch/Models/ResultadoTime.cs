@@ -72,6 +72,50 @@ public static class AvaliacaoTime
         return Status.Critico;
     }
 
+    /// <summary>Os 7 modelos de sugestão de parecer para o time.</summary>
+    public static List<Sugestao> ListarSugestoes(ResultadoTime t) => Sugestoes.Gerar(Fatos(t), GerarParecer(t));
+
+    public static FatosParecer Fatos(ResultadoTime t)
+    {
+        var f = new FatosParecer
+        {
+            Sujeito = string.IsNullOrWhiteSpace(t.Nome) ? "o time" : $"o time {t.Nome.Trim()}",
+            Vocativo = "Pessoal",
+            Periodo = t.MesPorExtenso.ToLowerInvariant(),
+            Status = Geral(t)
+        };
+        if (TemMetaVolume(t)) f.Chaves.Add($"{t.Atingimento:N0}% da meta de volume");
+        if (t.Qualidade > 0) f.Chaves.Add($"{t.Qualidade:N2}% de qualidade");
+
+        if (!TemMetaVolume(t))
+            f.Neutros.Add($"volume de {t.VolumeAtingido:N0} itens, sem meta definida");
+        else if (VolumeOk(t))
+            f.Positivos.Add($"o volume de {t.VolumeAtingido:N0} itens, {t.Atingimento:N1}% da meta de {t.MetaVolume:N0}");
+        else
+        {
+            f.Atencao.Add($"o volume de {t.VolumeAtingido:N0} itens, {t.Atingimento:N1}% da meta (faltaram {-t.Diferenca:N0})");
+            f.Acoes.Add(VolumeProximo(t)
+                ? $"recuperar os {-t.Diferenca:N0} itens restantes para atingir a meta de volume"
+                : $"definir ações para reduzir a diferença de {-t.Diferenca:N0} itens frente à meta de volume");
+        }
+
+        if (t.Qualidade > 0)
+        {
+            if (QualidadeOk(t))
+                f.Positivos.Add($"a qualidade de {t.Qualidade:N2}%, dentro da meta de {t.MetaQualidade:N2}%");
+            else
+            {
+                f.Atencao.Add($"a qualidade de {t.Qualidade:N2}%, abaixo da meta de {t.MetaQualidade:N2}%");
+                f.Acoes.Add($"reduzir os desvios para retornar à meta de qualidade de {t.MetaQualidade:N2}%");
+            }
+        }
+        f.Neutros.Add(t.TotalDesvios == 0
+            ? "nenhum desvio interno ou externo"
+            : $"{Plural(t.DesviosInternos, "desvio interno", "desvios internos", "nenhum desvio interno")} e {Plural(t.DesviosExternos, "desvio externo", "desvios externos", "nenhum desvio externo")}");
+        if (f.Acoes.Count == 0) f.Acoes.Add("manter as práticas que levaram ao resultado");
+        return f;
+    }
+
     public static string GerarParecer(ResultadoTime t)
     {
         var nome = string.IsNullOrWhiteSpace(t.Nome) ? "do time" : $"do time {t.Nome.Trim()}";
