@@ -254,6 +254,13 @@
     [Parameter] public bool Apresentacao { get; set; }
     [Parameter] public string Modelo { get; set; } = "cartoes";
     [Parameter] public RenderFragment? Ferramentas { get; set; }
+    [CascadingParameter] public RelatorioHost? Relatorio { get; set; }
+
+    protected override void OnInitialized()
+    {
+        // Diz à barra de ferramentas como gerar o relatório do que está aberto nesta aba
+        if (Relatorio is not null) Relatorio.Gerar = () => Atual is null ? null : Relatorios.De(Atual, Contexto);
+    }
 
     /// <summary>Onde os dados desta aba ficam salvos no navegador.</summary>
     [Parameter] public string Chave { get; set; } = "insitalent.clientes";

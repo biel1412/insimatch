@@ -141,6 +141,13 @@
     [Parameter] public bool Apresentacao { get; set; }
     [Parameter] public string Modelo { get; set; } = "cartoes";
     [Parameter] public RenderFragment? Ferramentas { get; set; }
+    [CascadingParameter] public RelatorioHost? Relatorio { get; set; }
+
+    protected override void OnInitialized()
+    {
+        // Diz à barra de ferramentas como gerar o relatório do que está aberto nesta aba
+        if (Relatorio is not null) Relatorio.Gerar = () => Atual is null ? null : Relatorios.De(Atual);
+    }
 
     private const string Chave = "insitalent.times";
     private List<ResultadoTime> Lista = new();
