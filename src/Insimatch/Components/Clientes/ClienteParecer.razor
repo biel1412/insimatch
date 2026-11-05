@@ -1,5 +1,5 @@
 @* Parecer do cliente *@
-<ParecerBloco Texto="@(string.IsNullOrWhiteSpace(Cl.Parecer) ? AvaliacaoCliente.GerarParecer(Cl, Contexto) : Cl.Parecer)"
+<ParecerBloco Texto="@Cl.Parecer"
               Status="AvaliacaoCliente.Geral(Cl)"
               Assinatura="@(string.IsNullOrWhiteSpace(Cl.Nome) ? "insiTalent" : Cl.Nome)"
               Periodo="@Cl.Periodo" />

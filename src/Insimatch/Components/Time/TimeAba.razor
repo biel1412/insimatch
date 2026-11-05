@@ -58,10 +58,18 @@
 
             <div class="form-grupo">
                 Parecer do time
-                <button class="link" @onclick="GerarParecerAsync">✨ Gerar parecer formal</button>
+                <button class="link" @onclick="() => { MostrarSugestoes = !MostrarSugestoes; }">✨ Gerar sugestão</button>
             </div>
+            @if (MostrarSugestoes)
+            {
+                <SugestoesParecer Opcoes="@AvaliacaoTime.ListarSugestoes(Atual)" OnEscolher="UsarSugestaoAsync" OnFechar="() => { MostrarSugestoes = false; }" />
+            }
             <textarea rows="7" @bind="Atual.Parecer" @bind:event="oninput" @bind:after="SalvarAsync"
-                      placeholder="Clique em “Gerar parecer formal” para criar o texto com base no resultado e ajuste o que quiser. Se ficar vazio, o painel mostra o parecer automático."></textarea>
+                      placeholder="Clique em “Gerar sugestão” para escolher um modelo, ou escreva o seu. Vazio = sem parecer na apresentação."></textarea>
+            @if (!string.IsNullOrWhiteSpace(Atual.Parecer))
+            {
+                <button class="link alinhar-dir" @onclick="LimparParecerAsync">Limpar parecer</button>
+            }
 
             <div class="acoes">
                 <button class="btn" @onclick="NovoAsync">+ Novo</button>
@@ -215,10 +223,20 @@
         await SalvarAsync();
     }
 
-    private async Task GerarParecerAsync()
+    private bool MostrarSugestoes;
+
+    private async Task UsarSugestaoAsync(string texto)
     {
         if (Atual is null) return;
-        Atual.Parecer = AvaliacaoTime.GerarParecer(Atual);
+        Atual.Parecer = texto;
+        MostrarSugestoes = false;
+        await SalvarAsync();
+    }
+
+    private async Task LimparParecerAsync()
+    {
+        if (Atual is null) return;
+        Atual.Parecer = "";
         await SalvarAsync();
     }
 }

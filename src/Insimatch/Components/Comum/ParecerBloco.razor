@@ -1,12 +1,26 @@
-@* Parecer genérico das apresentações *@
-<article class="cartao parecer @Avaliacao.Classe(Status) @Classe">
-    <div class="aspas">“</div>
-    <p>@Texto</p>
-    <div class="parecer-assinatura">
-        <span>@Assinatura</span>
-        <span>@Periodo</span>
+@* Parecer das apresentações. Só aparece quando foi gerado/escrito no editor. *@
+@if (!string.IsNullOrWhiteSpace(Texto))
+{
+    <article class="cartao parecer @Avaliacao.Classe(Status) @Classe">
+        <div class="aspas">“</div>
+        <p>@Texto</p>
+        <div class="parecer-assinatura">
+            <span>@Assinatura</span>
+            <span>@Periodo</span>
+        </div>
+    </article>
+}
+else if (!Apresentacao)
+{
+    <div class="parecer-vazio">
+        Nenhum parecer ainda. Use <strong>✨ Gerar sugestão</strong> no editor para escolher um modelo.
+        <small>Esta área não aparece no modo apresentação enquanto estiver vazia.</small>
     </div>
-</article>
+}
+else
+{
+    <div class="parecer-oculto"></div>
+}
 
 @code {
     [Parameter] public string Texto { get; set; } = "";
@@ -14,4 +28,5 @@
     [Parameter] public string Assinatura { get; set; } = "insiTalent";
     [Parameter] public string Periodo { get; set; } = "";
     [Parameter] public string Classe { get; set; } = "";
+    [CascadingParameter(Name = "Apresentacao")] public bool Apresentacao { get; set; }
 }

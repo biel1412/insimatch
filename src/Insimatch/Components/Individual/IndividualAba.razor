@@ -64,10 +64,18 @@
 
                 <div class="form-grupo">
                     Parecer
-                    <button class="link" @onclick="GerarParecerAsync">✨ Gerar parecer formal</button>
+                    <button class="link" @onclick="() => { MostrarSugestoes = !MostrarSugestoes; }">✨ Gerar sugestão</button>
                 </div>
-                <textarea rows="6" @bind="Atual.Parecer" @bind:event="oninput" @bind:after="SalvarAsync"
-                          placeholder="Escreva o parecer ou clique em “Gerar parecer formal”. Se ficar vazio, o painel mostra o parecer formal automático, sempre atualizado com os números."></textarea>
+                @if (MostrarSugestoes)
+                {
+                    <SugestoesParecer Opcoes="@Avaliacao.ListarSugestoes(Atual)" OnEscolher="UsarSugestaoAsync" OnFechar="() => { MostrarSugestoes = false; }" />
+                }
+                <textarea rows="7" @bind="Atual.Parecer" @bind:event="oninput" @bind:after="SalvarAsync"
+                          placeholder="Clique em “Gerar sugestão” para escolher um modelo, ou escreva o seu. Vazio = sem parecer na apresentação."></textarea>
+                @if (!string.IsNullOrWhiteSpace(Atual.Parecer))
+                {
+                    <button class="link alinhar-dir" @onclick="LimparParecerAsync">Limpar parecer</button>
+                }
 
                 <div class="acoes">
                     <button class="btn" @onclick="NovoAsync">+ Novo</button>
@@ -260,10 +268,20 @@
         await SalvarAsync();
     }
 
-    private async Task GerarParecerAsync()
+    private bool MostrarSugestoes;
+
+    private async Task UsarSugestaoAsync(string texto)
     {
         if (Atual is null) return;
-        Atual.Parecer = Avaliacao.GerarParecer(Atual);
+        Atual.Parecer = texto;
+        MostrarSugestoes = false;
+        await SalvarAsync();
+    }
+
+    private async Task LimparParecerAsync()
+    {
+        if (Atual is null) return;
+        Atual.Parecer = "";
         await SalvarAsync();
     }
 

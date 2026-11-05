@@ -155,35 +155,25 @@
     else if (Aba == "parecer")
     {
         <div class="form">
-            <div class="form-2">
-                <label>Formato
-                    <select @bind="Atual.Tom" @bind:after="SalvarAsync">
-                        <option value="@TomParecer.Formal">Texto formal</option>
-                        <option value="@TomParecer.Topicos">Tópicos por situação</option>
-                    </select>
-                </label>
-                <label class="interruptor">
-                    <input type="checkbox" @bind="Atual.ParecerIncluiSemMeta" @bind:after="SalvarAsync" />
-                    <span>Incluir campos sem meta</span>
-                </label>
-            </div>
+            <label class="interruptor">
+                <input type="checkbox" @bind="Atual.ParecerIncluiSemMeta" @bind:after="SalvarAsync" />
+                <span>Incluir campos sem meta nas sugestões</span>
+            </label>
             <div class="form-grupo">
                 Parecer
-                <button class="link" @onclick="GerarParecerAsync">✨ Gerar parecer</button>
+                <button class="link" @onclick="() => { MostrarSugestoes = !MostrarSugestoes; }">✨ Gerar sugestão</button>
             </div>
+            @if (MostrarSugestoes)
+            {
+                <SugestoesParecer Opcoes="@AvaliacaoCliente.ListarSugestoes(Atual, Contexto)" OnEscolher="UsarSugestaoAsync" OnFechar="() => { MostrarSugestoes = false; }" />
+            }
             <textarea rows="14" @bind="Atual.Parecer" @bind:event="oninput" @bind:after="SalvarAsync"
-                      placeholder="Vazio = parecer automático, sempre atualizado com os campos. Clique em “Gerar parecer” para criar o texto e editá-lo."></textarea>
-            <div class="acoes">
-                @if (!string.IsNullOrWhiteSpace(Atual.Parecer))
-                {
-                    <button class="btn" @onclick="LimparParecerAsync">Voltar ao automático</button>
-                }
-            </div>
-            <p class="dica">
-                @(string.IsNullOrWhiteSpace(Atual.Parecer)
-                    ? "O painel está mostrando o parecer automático."
-                    : "O painel está mostrando o texto editado acima. Ele não muda sozinho quando os números mudam.")
-            </p>
+                      placeholder="Clique em “Gerar sugestão” para escolher um modelo, ou escreva o seu. Vazio = sem parecer na apresentação."></textarea>
+            @if (!string.IsNullOrWhiteSpace(Atual.Parecer))
+            {
+                <div class="acoes"><button class="btn" @onclick="LimparParecerAsync">Limpar parecer</button></div>
+            }
+            <p class="dica">O parecer não muda sozinho quando os números mudam: gere uma nova sugestão quando quiser atualizar.</p>
         </div>
     }
     else
@@ -428,10 +418,13 @@
 
     // ---------- Parecer ----------
 
-    private async Task GerarParecerAsync()
+    private bool MostrarSugestoes;
+
+    private async Task UsarSugestaoAsync(string texto)
     {
         if (Atual is null) return;
-        Atual.Parecer = AvaliacaoCliente.GerarParecer(Atual, Contexto);
+        Atual.Parecer = texto;
+        MostrarSugestoes = false;
         await SalvarAsync();
     }
 

@@ -2,7 +2,7 @@
 @inject ArmazenamentoService Armazenamento
 @inject IJSRuntime JS
 
-<div class="app @(Apresentacao ? "modo-apresentacao" : "")" data-tema="@Temas[TemaIdx].Id" data-fundo="@Fundos[FundoIdx].Id"
+<div class="app @(Apresentacao ? "modo-apresentacao" : "")" data-tema="@Temas[TemaIdx].Id" data-fundo="@Fundos[FundoIdx].Id" data-movimento="@(Movimento ? "on" : "off")"
      data-aba="@(AbaAtual.Personalizada is null ? AbaAtual.Id : "cliente")">
     <PapelDeParede Fundo="@Fundos[FundoIdx].Id" />
 
@@ -29,6 +29,7 @@
         <div class="dock-rodape">@(AbaIdx + 1)/@Abas.Count</div>
     </nav>
 
+    <CascadingValue Name="Apresentacao" Value="Apresentacao">
     @if (!Pronto)
     {
         <div class="vazio">Carregando…</div>
@@ -54,6 +55,7 @@
                 break;
         }
     }
+    </CascadingValue>
 
     @if (DialogoAberto)
     {
@@ -80,21 +82,33 @@
         new("cliente", "Resultado do cliente", "Cliente", "maleta", ModelosPainel)
     };
 
-    private static readonly Opcao[] Temas =
+    private record Visual(string Id, string Nome, string Grupo);
+
+    private static readonly Visual[] Temas =
     {
-        new("noturno", "Noturno"), new("oceano", "Oceano"), new("esmeralda", "Esmeralda"),
-        new("aurora", "Aurora"), new("claro", "Claro")
+        new("noturno", "Noturno", "Escuras"), new("oceano", "Oceano", "Escuras"), new("esmeralda", "Esmeralda", "Escuras"),
+        new("aurora", "Aurora", "Escuras"), new("rubi", "Rubi", "Escuras"), new("solar", "Solar", "Escuras"),
+        new("lavanda", "Lavanda", "Escuras"), new("coral", "Coral", "Escuras"), new("meia-noite", "Meia-noite", "Escuras"),
+        new("grafite", "Grafite", "Escuras"),
+        new("claro", "Claro", "Claras"), new("areia", "Areia", "Claras"), new("artico", "Ártico", "Claras")
     };
 
-    private static readonly Opcao[] Fundos =
+    private static readonly Visual[] Fundos =
     {
-        new("brilho", "Brilho"), new("aurora", "Aurora"), new("ondas", "Ondas"), new("grade", "Grade"),
-        new("pontos", "Pontos"), new("geometrico", "Geométrico"), new("liso", "Liso")
+        new("brilho", "Brilho", "Clássicos"), new("grade", "Grade", "Clássicos"), new("pontos", "Pontos", "Clássicos"),
+        new("geometrico", "Geométrico", "Clássicos"), new("listras", "Listras", "Clássicos"), new("liso", "Liso", "Clássicos"),
+        new("ondas", "Ondas", "Formas"), new("topografia", "Topografia", "Formas"), new("hexagonos", "Hexágonos", "Formas"),
+        new("malha", "Malha", "Formas"),
+        new("aurora", "Aurora", "Feitos para movimento"), new("fluido", "Fluido", "Feitos para movimento"),
+        new("bokeh", "Bokeh", "Feitos para movimento"), new("particulas", "Partículas", "Feitos para movimento"),
+        new("estrelas", "Estrelas", "Feitos para movimento")
     };
 
     private const string ChaveAbas = "insitalent.abas";
 
     private bool Pronto;
+    private bool Movimento;
+    private string? Popover;
     private bool Apresentacao;
     private string AbaId = "individual";
     private int TemaIdx;
@@ -125,8 +139,9 @@
     {
         if (!firstRender) return;
 
-        TemaIdx = Indice(Temas, await Armazenamento.LerTextoAsync("insimatch.tema"));
-        FundoIdx = Indice(Fundos, await Armazenamento.LerTextoAsync("insitalent.fundo"));
+        TemaIdx = IndiceVisual(Temas, await Armazenamento.LerTextoAsync("insimatch.tema"));
+        FundoIdx = IndiceVisual(Fundos, await Armazenamento.LerTextoAsync("insitalent.fundo"));
+        Movimento = await Armazenamento.LerTextoAsync("insitalent.movimento") == "on";
         Personalizadas = await Armazenamento.CarregarAsync<List<AbaPersonalizada>>(ChaveAbas) ?? new();
 
         var abaSalva = await Armazenamento.LerTextoAsync("insitalent.aba");
@@ -145,6 +160,7 @@
     }
 
     private static int Indice(Opcao[] opcoes, string? id) => Math.Max(0, Array.FindIndex(opcoes, o => o.Id == id));
+    private static int IndiceVisual(Visual[] opcoes, string? id) => Math.Max(0, Array.FindIndex(opcoes, o => o.Id == id));
 
     private async Task MudarAbaAsync(string id)
     {
@@ -152,16 +168,25 @@
         await Armazenamento.GravarTextoAsync("insitalent.aba", id);
     }
 
-    private async Task MudarTemaAsync()
+    private void AlternarPopover(string qual) => Popover = Popover == qual ? null : qual;
+    private void FecharPopover() => Popover = null;
+
+    private async Task EscolherTemaAsync(int idx)
     {
-        TemaIdx = (TemaIdx + 1) % Temas.Length;
-        await Armazenamento.GravarTextoAsync("insimatch.tema", Temas[TemaIdx].Id);
+        TemaIdx = idx;
+        await Armazenamento.GravarTextoAsync("insimatch.tema", Temas[idx].Id);
     }
 
-    private async Task MudarFundoAsync()
+    private async Task EscolherFundoAsync(int idx)
     {
-        FundoIdx = (FundoIdx + 1) % Fundos.Length;
-        await Armazenamento.GravarTextoAsync("insitalent.fundo", Fundos[FundoIdx].Id);
+        FundoIdx = idx;
+        await Armazenamento.GravarTextoAsync("insitalent.fundo", Fundos[idx].Id);
+    }
+
+    private async Task AlternarMovimentoAsync()
+    {
+        Movimento = !Movimento;
+        await Armazenamento.GravarTextoAsync("insitalent.movimento", Movimento ? "on" : "off");
     }
 
     private async Task MudarModeloAsync()
@@ -245,13 +270,17 @@
             </div>
         }
         <div class="grupo-ferr">
-            <button class="ferr" title="Mudar a cor da página" @onclick="MudarTemaAsync">
+            <button class="ferr @(Popover == "cor" ? "ativo" : "")" title="Escolher a cor da página" @onclick='() => AlternarPopover("cor")'>
                 <span class="bolinha"></span>
                 <span class="ferr-txt"><small>Cor</small>@Temas[TemaIdx].Nome</span>
             </button>
-            <button class="ferr" title="Mudar o papel de parede" @onclick="MudarFundoAsync">
+            <button class="ferr @(Popover == "fundo" ? "ativo" : "")" title="Escolher o papel de parede" @onclick='() => AlternarPopover("fundo")'>
                 <svg class="ferr-ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3" /><path d="M3 16l5-5 4 4 3-3 6 6" /><circle cx="16" cy="9" r="1.6" /></svg>
                 <span class="ferr-txt"><small>Fundo</small>@Fundos[FundoIdx].Nome</span>
+            </button>
+            <button class="ferr @(Movimento ? "" : "desligado")" title="Ligar ou desligar o movimento do fundo" @onclick="AlternarMovimentoAsync">
+                <svg class="mov-ico" viewBox="0 0 24 24"><path d="M3 12c2.5-4 5-4 7.5 0s5 4 7.5 0 2.5-2 3-2" /><path d="M3 17c2.5-4 5-4 7.5 0s5 4 7.5 0" opacity=".5" /></svg>
+                <span class="ferr-txt"><small>Movimento</small>@(Movimento ? "Ligado" : "Desligado")</span>
             </button>
             <button class="ferr" title="Alternar o modelo de apresentação" @onclick="MudarModeloAsync">
                 <svg class="ferr-ico" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="10" rx="2" /><rect x="13" y="3" width="8" height="6" rx="2" /><rect x="13" y="11" width="8" height="10" rx="2" /><rect x="3" y="15" width="8" height="6" rx="2" /></svg>
@@ -262,5 +291,51 @@
             @(Apresentacao ? "✎ Editar" : "▶ Apresentar")
         </button>
         <button class="btn icone-btn" title="Tela cheia" @onclick="TelaCheiaAsync">⛶</button>
+
+        @if (Popover is not null)
+        {
+            <div class="pop-fundo" @onclick="FecharPopover"></div>
+            <div class="popover" role="dialog" aria-label="@(Popover == "cor" ? "Cor da página" : "Papel de parede")">
+                @if (Popover == "cor")
+                {
+                    <div class="pop-titulo">Cor da página <small>@Temas.Length opções</small></div>
+                    @foreach (var grupo in Temas.Select(t => t.Grupo).Distinct())
+                    {
+                        <div class="pop-secao">@grupo</div>
+                        <div class="pop-grade">
+                            @for (var i = 0; i < Temas.Length; i++)
+                            {
+                                if (Temas[i].Grupo != grupo) continue;
+                                var idx = i;
+                                <button class="pop-item @(idx == TemaIdx ? "sel" : "")" @onclick="() => EscolherTemaAsync(idx)">
+                                    <span class="pc-amostra" data-tema="@Temas[idx].Id"><i></i><b></b><em></em><u></u></span>
+                                    <span>@Temas[idx].Nome</span>
+                                </button>
+                            }
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="pop-titulo">Papel de parede <small>@Fundos.Length opções</small></div>
+                    @foreach (var grupo in Fundos.Select(f => f.Grupo).Distinct())
+                    {
+                        <div class="pop-secao">@grupo</div>
+                        <div class="pop-grade">
+                            @for (var i = 0; i < Fundos.Length; i++)
+                            {
+                                if (Fundos[i].Grupo != grupo) continue;
+                                var idx = i;
+                                <button class="pop-item @(idx == FundoIdx ? "sel" : "")" @onclick="() => EscolherFundoAsync(idx)">
+                                    <span class="mini-papel"><PapelDeParede Fundo="@Fundos[idx].Id" /></span>
+                                    <span>@Fundos[idx].Nome</span>
+                                </button>
+                            }
+                        </div>
+                    }
+                    <p class="pop-dica">Ligue <strong>Movimento</strong> na barra para animar o fundo. Desligado, ele fica parado.</p>
+                }
+            </div>
+        }
     </div>;
 }
