@@ -1417,6 +1417,6 @@ body.rel-avulso .rel-folha { animation: none; }
     .rel-kpis, .rel-secao { margin-top: 5mm; }
     .rel-tabela td { padding: 7px 10px; }
     .rel-rodape { margin-top: 5mm; }
-    .rel-folha { padding-bottom: 0 !important; }
+    .rel-folha { padding-bottom: 0 !important; zoom: .93; }
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 }
