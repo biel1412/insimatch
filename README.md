@@ -19,8 +19,9 @@ Escrito em **C# com Blazor WebAssembly** e hospedado no **GitHub Pages**: abre d
 No menu lateral, **+ Nova** cria uma aba com o nome que você quiser, um ícone (há 24 disponíveis) e o nome de cada registro (ex.: projeto, unidade, contrato). Ela pode começar em branco ou com um exemplo. Cada aba funciona como a aba Cliente: campos livres, metas, gráficos e parecer. O botão **⚙** no topo do editor da aba permite renomear, trocar o ícone ou excluir a aba (com confirmação).
 
 Na barra do topo:
-- **Cor:** Noturno, Oceano, Esmeralda, Aurora ou Claro.
-- **Fundo** (papel de parede): Brilho, Aurora, Ondas, Grade, Pontos, Geométrico ou Liso.
+- **Cor:** 13 opções num seletor com amostras. Escuras: Noturno, Oceano, Esmeralda, Aurora, Rubi, Solar, Lavanda, Coral, Meia-noite e Grafite. Claras: Claro, Areia e Ártico.
+- **Fundo** (papel de parede): 15 opções com miniaturas. Clássicos: Brilho, Grade, Pontos, Geométrico, Listras e Liso. Formas: Ondas, Topografia, Hexágonos e Malha. Feitos para movimento: Aurora, Fluido, Bokeh, Partículas e Estrelas.
+- **Movimento:** liga ou desliga a animação do fundo (desligado, o fundo fica parado).
 - **Modelo:** alterna o formato de apresentação da aba atual.
 - **▶ Apresentar** esconde os editores e **⛶** abre em tela cheia.
 
@@ -58,7 +59,7 @@ A aba Cliente não tem indicadores fixos: você cria os **campos** que cada clie
 - **Clientes:** vários clientes; **Novo período** reaproveita campos, metas e gráficos com os valores em branco; **Exportar/Importar (.json)** leva a configuração para outro computador ou para a equipe; excluir um campo pode ser desfeito.
 - **Resultado geral:** considera todos os campos com meta (na meta, próximos e fora).
 
-Em todas as abas, o **parecer** é gerado em linguagem formal a partir dos números, e pode ser editado.
+Em todas as abas, o **parecer** só aparece quando você escolhe um. **✨ Gerar sugestão** mostra 7 modelos montados com os números atuais: Formal completo, Resumo executivo, Pontos fortes e de melhoria, Feedback motivacional (ou Mensagem cordial, no Cliente), Tópicos, Plano de ação e Mensagem curta para o Teams. Depois de escolher, o texto pode ser editado. Sem parecer, a seção não aparece na apresentação.
 
 ## Como usar
 
