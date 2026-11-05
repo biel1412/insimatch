@@ -97,6 +97,7 @@ public static class Avaliacao
         var f = new FatosParecer
         {
             Sujeito = string.IsNullOrWhiteSpace(nome) ? "o(a) colaborador(a)" : nome,
+            Nome = nome,
             Vocativo = string.IsNullOrWhiteSpace(nome) ? "Olá" : nome.Split(' ')[0],
             Periodo = c.MesPorExtenso.ToLowerInvariant(),
             Status = Geral(c)
@@ -114,7 +115,7 @@ public static class Avaliacao
                 f.Positivos.Add($"a média de {media:N1} itens/dia, acima da meta Pro ({c.MetaPro:0.#}/dia)");
                 if (c.MetaPremium > 0)
                 {
-                    f.Atencao.Add($"faltaram {c.MetaPremium - media:N1} itens/dia para a meta Premium");
+                    f.Atencao.Add($"a diferença de {c.MetaPremium - media:N1} itens/dia para a meta Premium");
                     f.Acoes.Add($"buscar mais {c.MetaPremium - media:N1} itens por dia para alcançar a meta Premium");
                 }
                 break;

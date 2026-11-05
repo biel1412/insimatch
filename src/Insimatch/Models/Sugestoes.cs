@@ -6,6 +6,10 @@ public class FatosParecer
     /// <summary>Quem é avaliado, por extenso (ex.: "Maria Souza", "o time Atendimento").</summary>
     public string Sujeito { get; set; } = "";
 
+    /// <summary>Nome curto para títulos e mensagem curta (ex.: "Maria Souza", "Time Atendimento"). Vazio = usa o Sujeito.</summary>
+    public string Nome { get; set; } = "";
+    public string Titulo => string.IsNullOrWhiteSpace(Nome) ? Sujeito : Nome;
+
     /// <summary>Como chamar na mensagem direta (ex.: "Maria", "Pessoal"). Null = tom institucional.</summary>
     public string? Vocativo { get; set; }
 
@@ -65,7 +69,7 @@ public static class Sugestoes
     private static string Resumo(FatosParecer f)
     {
         var partes = new List<string> { $"{Maiuscula(f.Sujeito)} apresentou {Situacao(f.Status)} em {f.Periodo}." };
-        if (f.Positivos.Count > 0) partes.Add($"Destaca-se {Lista(f.Positivos.Take(3))}.");
+        if (f.Positivos.Count > 0) partes.Add($"{(f.Positivos.Count > 1 ? "Destacam-se" : "Destaca-se")} {Lista(f.Positivos.Take(3))}.");
         if (f.Atencao.Count > 0) partes.Add($"Requer atenção: {Lista(f.Atencao.Take(3))}.");
         else partes.Add("Não há indicadores fora do esperado.");
         return string.Join(" ", partes);
@@ -73,7 +77,7 @@ public static class Sugestoes
 
     private static string FortesMelhorias(FatosParecer f)
     {
-        var l = new List<string> { $"{Maiuscula(f.Sujeito)} · {f.Periodo}", "" };
+        var l = new List<string> { $"{Maiuscula(f.Titulo)} · {f.Periodo}", "" };
         l.Add("Pontos fortes");
         l.AddRange(f.Positivos.Count > 0 ? f.Positivos.Select(p => "• " + Maiuscula(p) + ".") : new[] { "• Sem destaques acima da meta no período." });
         l.Add("");
@@ -118,7 +122,7 @@ public static class Sugestoes
 
     private static string Topicos(FatosParecer f)
     {
-        var l = new List<string> { $"Resultado de {f.Periodo}: {Situacao(f.Status)}.", "" };
+        var l = new List<string> { $"{Maiuscula(f.Periodo)}: {Situacao(f.Status)}.", "" };
         l.AddRange(f.Positivos.Select(p => "✓ " + Maiuscula(p)));
         l.AddRange(f.Atencao.Select(p => "! " + Maiuscula(p)));
         l.AddRange(f.Neutros.Select(p => "• " + Maiuscula(p)));
@@ -149,6 +153,6 @@ public static class Sugestoes
             _ => "Resumo"
         };
         var chaves = f.Chaves.Count > 0 ? " — " + string.Join(" · ", f.Chaves.Take(3)) : "";
-        return $"{Maiuscula(f.Sujeito)} · {f.Periodo}: {rotulo}{chaves}.";
+        return $"{Maiuscula(f.Titulo)} · {f.Periodo}: {rotulo}{chaves}.";
     }
 }
