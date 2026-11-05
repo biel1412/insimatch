@@ -1362,7 +1362,8 @@ button, input, textarea { font-family: inherit; }
     letter-spacing: .14em; text-transform: uppercase; color: color-mix(in srgb, var(--r-ac) 80%, #000);
 }
 .rel-secao h2::after { content: ""; flex: 1; height: 1px; background: var(--r-borda); }
-.rel-tabela { width: 100%; border-collapse: collapse; font-size: 13px; }
+.rel-tabela { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+.rel-tabela td { overflow-wrap: anywhere; }
 .rel-tabela th { text-align: left; font-size: 10.5px; font-weight: 700; color: var(--r-txt3); text-transform: uppercase; letter-spacing: .08em; padding: 6px 10px; border-bottom: 1.5px solid var(--r-borda); }
 .rel-tabela td { padding: 9px 10px; border-bottom: 1px solid var(--r-borda); color: var(--r-txt); vertical-align: middle; }
 .rel-tabela tr:last-child td { border-bottom: 0; }
@@ -1411,5 +1412,10 @@ body.rel-avulso .rel-folha { animation: none; }
     .rel-folha { box-shadow: none !important; width: auto !important; margin: 0 !important; border-radius: 0 !important; animation: none !important; }
     .rel-quebra-evitar, .rel-kpi, .rel-tabela tr, .rel-veredito { break-inside: avoid; }
     .rel-secao h2 { break-after: avoid; }
+    .rel-capa { padding: 9mm 12mm 7mm; }
+    .rel-veredito { margin-top: 5mm; }
+    .rel-kpis, .rel-secao { margin-top: 5mm; }
+    .rel-tabela td { padding: 7px 10px; }
+    .rel-rodape { margin-top: 6mm; }
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 }

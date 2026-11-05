@@ -152,9 +152,11 @@ public static class Relatorios
             Parecer = cl.Parecer
         };
 
-        var kpis = cl.Campos.Where(c => c.Destaque).ToList();
-        if (kpis.Count == 0) kpis = comMeta;
-        if (kpis.Count == 0) kpis = cl.Campos.Where(c => c.Numerico).ToList();
+        // Destaques primeiro; completa até 4 com os campos com meta e depois os numéricos
+        var kpis = cl.Campos.Where(c => c.Destaque)
+            .Concat(comMeta)
+            .Concat(cl.Campos.Where(c => c.Numerico && AvaliacaoCliente.ValorPreenchido(c)))
+            .DistinctBy(c => c.Id).ToList();
         foreach (var c in kpis.Take(4))
             r.Kpis.Add(new(c.Nome, AvaliacaoCliente.Valor(c),
                 c.TemMeta ? $"meta {AvaliacaoCliente.MetaTexto(c)} · {AvaliacaoCliente.Atingimento(c):N0}%" : (string.IsNullOrWhiteSpace(c.Grupo) ? null : c.Grupo),
