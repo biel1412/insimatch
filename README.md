@@ -23,7 +23,9 @@ Na barra do topo:
 - **Fundo** (papel de parede): 15 opções com miniaturas. Clássicos: Brilho, Grade, Pontos, Geométrico, Listras e Liso. Formas: Ondas, Topografia, Hexágonos e Malha. Feitos para movimento: Aurora, Fluido, Bokeh, Partículas e Estrelas.
 - **Movimento:** liga ou desliga a animação do fundo (desligado, o fundo fica parado).
 - **Modelo:** alterna o formato de apresentação da aba atual.
+- **Relatório:** gera um relatório da apresentação aberta (capa, resultado geral, indicadores-chave, tabelas, atingimento das metas e parecer) para **imprimir / salvar em PDF** (A4) ou **baixar em .html**.
 - **▶ Apresentar** esconde os editores e **⛶** abre em tela cheia.
+- **⚙ Configurações** (no menu lateral): oculte opções da barra (cor, fundo, movimento, modelo, relatório, tela cheia), as abas fixas (Individual, Time, Cliente), o botão “+ Nova” e a troca de abas na apresentação. Pelo menos uma aba fica sempre visível; ocultar não apaga dados.
 
 No modo apresentação, a troca de aba fica no próprio topo. Cor, fundo, modelo e aba ficam salvos no navegador.
 
