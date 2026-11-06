@@ -219,7 +219,11 @@
         var origem = F.Nos.FirstOrDefault(n => n.Id == UltimoAberto && Abertos.Contains(n.Id))
                      ?? F.Nos.LastOrDefault(n => n.Tipo != TipoNo.Fim);
         if (origem is not null && tipo != TipoNo.Inicio && origem.Tipo != TipoNo.Fim)
-            origem.Proximos.Add(new Ligacao { Destino = novo.Id, Rotulo = origem.Tipo == TipoNo.Decisao ? (origem.Proximos.Count == 0 ? "Sim" : "Não") : "" });
+            origem.Proximos.Add(new Ligacao
+            {
+                Destino = novo.Id,
+                Rotulo = origem.Tipo == TipoNo.Decisao ? origem.Proximos.Count switch { 0 => "Sim", 1 => "Não", _ => "" } : ""
+            });
 
         var pos = origem is null ? F.Nos.Count : F.Nos.IndexOf(origem) + 1;
         F.Nos.Insert(Math.Min(pos, F.Nos.Count), novo);

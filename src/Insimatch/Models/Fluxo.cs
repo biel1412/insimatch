@@ -138,6 +138,7 @@ public static class FluxoRegras
         // 5) Setas
         var setas = new List<SetaPos>();
         var desvio = 0.0;
+        double minX = 0, minY = 0; // retornos pela esquerda/topo podem precisar de espaço extra
         foreach (var n in nos)
         {
             var saidas = n.Proximos.Where(p => pos.ContainsKey(p.Destino)).ToList();
@@ -163,30 +164,102 @@ public static class FluxoRegras
                     caminho = $"M{F(x1)} {F(y1)} C{F(meio)} {F(y1)} {F(meio)} {F(y2)} {F(x2)} {F(y2)}";
                     (rx, ry) = (meio, (y1 + y2) / 2);
                 }
-                else if (!horizontal)
-                {
-                    // retorno: sai pela direita, sobe pela lateral e entra pela direita do destino
-                    desvio += 22;
-                    var lado = Math.Max(o.X + o.L, d.X + d.L) + 26 + desvio;
-                    double y1 = o.Y + o.A / 2, y2 = d.Y + d.A / 2;
-                    caminho = $"M{F(o.X + o.L)} {F(y1)} H{F(lado - 12)} Q{F(lado)} {F(y1)} {F(lado)} {F(y1 - 12)} V{F(y2 + 12)} Q{F(lado)} {F(y2)} {F(lado - 12)} {F(y2)} H{F(d.X + d.L + 4)}";
-                    (rx, ry) = (lado, (y1 + y2) / 2);
-                    largura = Math.Max(largura, lado + Margem);
-                }
                 else
                 {
-                    desvio += 22;
-                    var lado = Math.Max(o.Y + o.A, d.Y + d.A) + 26 + desvio;
-                    double x1 = o.X + o.L / 2, x2 = d.X + d.L / 2;
-                    caminho = $"M{F(x1)} {F(o.Y + o.A)} V{F(lado - 12)} Q{F(x1)} {F(lado)} {F(x1 - 12)} {F(lado)} H{F(x2 + 12)} Q{F(x2)} {F(lado)} {F(x2)} {F(lado - 12)} V{F(d.Y + d.A + 4)}";
-                    (rx, ry) = ((x1 + x2) / 2, lado);
-                    altura = Math.Max(altura, lado + Margem);
+                    // Retorno: contorna os nós dos níveis envolvidos pelo lado mais livre
+                    desvio += 18;
+                    var nMin = Math.Min(o.Nivel, d.Nivel);
+                    var nMax = Math.Max(o.Nivel, d.Nivel);
+                    var faixa = pos.Values.Where(q => q.Nivel >= nMin && q.Nivel <= nMax).ToList();
+                    var mesmoNivel = pos.Values.Where(q => q.Nivel == o.Nivel).OrderBy(q => horizontal ? q.Y : q.X).ToList();
+                    var primeiro = mesmoNivel.Count > 1 && mesmoNivel[0].No.Id == o.No.Id;
+                    var ultimo = mesmoNivel[^1].No.Id == o.No.Id;
+
+                    if (!horizontal)
+                    {
+                        double oy = o.Y + o.A / 2, ty = d.Y + d.A / 2;
+                        if (primeiro)
+                        {
+                            var lado = faixa.Min(q => q.X) - 26 - desvio;
+                            caminho = $"M{F(o.X)} {F(oy)} H{F(lado + 12)} Q{F(lado)} {F(oy)} {F(lado)} {F(oy - 12)} V{F(ty + 12)} Q{F(lado)} {F(ty)} {F(lado + 12)} {F(ty)} H{F(d.X - 4)}";
+                            (rx, ry) = (lado, (oy + ty) / 2);
+                            minX = Math.Min(minX, lado - 20);
+                        }
+                        else
+                        {
+                            var lado = faixa.Max(q => q.X + q.L) + 26 + desvio;
+                            if (ultimo)
+                                caminho = $"M{F(o.X + o.L)} {F(oy)} H{F(lado - 12)} Q{F(lado)} {F(oy)} {F(lado)} {F(oy - 12)} V{F(ty + 12)} Q{F(lado)} {F(ty)} {F(lado - 12)} {F(ty)} H{F(d.X + d.L + 4)}";
+                            else
+                            {
+                                // no meio do nível: desce para o vão entre as linhas antes de contornar
+                                double cx = o.X + o.L / 2, vao = o.Y + o.A + EspY / 2;
+                                caminho = $"M{F(cx)} {F(o.Y + o.A)} V{F(vao - 10)} Q{F(cx)} {F(vao)} {F(cx + 10)} {F(vao)} H{F(lado - 12)} Q{F(lado)} {F(vao)} {F(lado)} {F(vao - 12)} V{F(ty + 12)} Q{F(lado)} {F(ty)} {F(lado - 12)} {F(ty)} H{F(d.X + d.L + 4)}";
+                            }
+                            (rx, ry) = (lado, (oy + ty) / 2);
+                            largura = Math.Max(largura, lado + Margem);
+                        }
+                    }
+                    else
+                    {
+                        double ox = o.X + o.L / 2, tx = d.X + d.L / 2;
+                        if (primeiro)
+                        {
+                            var lado = faixa.Min(q => q.Y) - 26 - desvio;
+                            caminho = $"M{F(ox)} {F(o.Y)} V{F(lado + 12)} Q{F(ox)} {F(lado)} {F(ox - 12)} {F(lado)} H{F(tx + 12)} Q{F(tx)} {F(lado)} {F(tx)} {F(lado + 12)} V{F(d.Y - 4)}";
+                            (rx, ry) = ((ox + tx) / 2, lado);
+                            minY = Math.Min(minY, lado - 20);
+                        }
+                        else
+                        {
+                            var lado = faixa.Max(q => q.Y + q.A) + 26 + desvio;
+                            if (ultimo)
+                                caminho = $"M{F(ox)} {F(o.Y + o.A)} V{F(lado - 12)} Q{F(ox)} {F(lado)} {F(ox - 12)} {F(lado)} H{F(tx + 12)} Q{F(tx)} {F(lado)} {F(tx)} {F(lado - 12)} V{F(d.Y + d.A + 4)}";
+                            else
+                            {
+                                // no meio da coluna: sai pela direita, para o vão entre as colunas
+                                double cy = o.Y + o.A / 2, vao = o.X + o.L + (EspY + 30) / 2;
+                                caminho = $"M{F(o.X + o.L)} {F(cy)} H{F(vao - 10)} Q{F(vao)} {F(cy)} {F(vao)} {F(cy + 10)} V{F(lado - 12)} Q{F(vao)} {F(lado)} {F(vao - 12)} {F(lado)} H{F(tx + 12)} Q{F(tx)} {F(lado)} {F(tx)} {F(lado - 12)} V{F(d.Y + d.A + 4)}";
+                            }
+                            (rx, ry) = ((ox + tx) / 2, lado);
+                            altura = Math.Max(altura, lado + Margem);
+                        }
+                    }
                 }
                 setas.Add(new SetaPos(caminho, saidas[i].Rotulo, rx, ry, ehRetorno));
             }
         }
 
+        // Se algum retorno saiu pela esquerda/topo, desloca tudo para dentro do quadro
+        if (minX < 0 || minY < 0)
+        {
+            double dx = minX < 0 ? -minX : 0, dy = minY < 0 ? -minY : 0;
+            var movidos = pos.Values.Select(q => q with { X = q.X + dx, Y = q.Y + dy }).ToList();
+            var setasMovidas = setas.Select(st => st with { Caminho = Deslocar(st.Caminho, dx, dy), RX = st.RX + dx, RY = st.RY + dy }).ToList();
+            return new DesenhoFluxo(movidos, setasMovidas, Math.Max(largura + dx, 300), Math.Max(altura + dy, 160));
+        }
         return new DesenhoFluxo(pos.Values.ToList(), setas, Math.Max(largura, 300), Math.Max(altura, 160));
+    }
+
+    /// <summary>Desloca um caminho SVG (comandos absolutos M, C, Q, H, V) por dx/dy.</summary>
+    private static string Deslocar(string caminho, double dx, double dy)
+    {
+        var partes = caminho.Split(' ');
+        var r = new List<string>();
+        var eixo = 'x'; // próximo número é x ou y
+        foreach (var p in partes)
+        {
+            var cmd = char.IsLetter(p[0]) ? p[0] : '\0';
+            var num = cmd == '\0' ? p : p[1..];
+            if (cmd != '\0') eixo = cmd == 'V' ? 'y' : 'x';
+            var v = double.Parse(num, System.Globalization.CultureInfo.InvariantCulture);
+            v += eixo == 'x' ? dx : dy;
+            r.Add((cmd == '\0' ? "" : cmd.ToString()) + F(v));
+            // H e V têm só um eixo; demais comandos alternam x, y
+            if (cmd is 'H' or 'V') eixo = 'x';
+            else eixo = eixo == 'x' ? 'y' : 'x';
+        }
+        return string.Join(" ", r);
     }
 
     private static double Cruz(NoFluxo n, bool horizontal) => horizontal ? Tamanho(n).A : Tamanho(n).L;
