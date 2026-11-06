@@ -5,7 +5,7 @@ public record RelKpi(string Rotulo, string Valor, string? Detalhe = null, Status
 public record RelLinha(string Indicador, string Realizado, string Referencia = "—", Status? Status = null,
                        string? StatusRotulo = null, decimal? Atingimento = null);
 
-public record RelSecao(string Titulo, List<RelLinha> Linhas);
+public record RelSecao(string Titulo, List<RelLinha> Linhas, string? Texto = null, List<string>? Imagens = null, string[]? Colunas = null);
 
 public record RelBarra(string Nome, decimal Percentual, Status Status);
 
@@ -23,6 +23,9 @@ public class RelatorioDados
     public List<RelSecao> Secoes { get; set; } = new();
     public List<RelBarra> Barras { get; set; } = new();
     public string Parecer { get; set; } = "";
+    /// <summary>Fluxograma a desenhar no relatório (abas de fluxograma).</summary>
+    public Fluxo? Fluxo { get; set; }
+    public bool FluxoHorizontal { get; set; }
     public DateTime GeradoEm { get; set; } = DateTime.Now;
 
     public string NomeArquivo
@@ -172,6 +175,73 @@ public static class Relatorios
 
         foreach (var c in comMeta)
             r.Barras.Add(new(c.Nome, AvaliacaoCliente.Atingimento(c), AvaliacaoCliente.StatusCampo(c)));
+        return r;
+    }
+
+    // ---------- Slides ----------
+    public static RelatorioDados De(Apresentacao ap, ContextoPainel ctx, IReadOnlyDictionary<string, string> imagens)
+    {
+        var campos = ap.Slides.SelectMany(s => s.Campos).ToList();
+        var comMeta = campos.Where(c => c.TemMeta).ToList();
+        var naMeta = comMeta.Count(c => AvaliacaoCliente.StatusCampo(c) == Status.Excelente);
+        var r = new RelatorioDados
+        {
+            Tipo = ctx.RotuloSup,
+            Titulo = string.IsNullOrWhiteSpace(ap.Nome) ? ctx.RotuloSup : ap.Nome,
+            Sigla = Datas.Iniciais(string.IsNullOrWhiteSpace(ap.Nome) ? ctx.RotuloSup : ap.Nome),
+            Info = new() { $"{ap.Slides.Count} slide(s)" },
+            Status = Status.Neutro,
+            StatusRotulo = "Apresentação",
+            Resumo = comMeta.Count > 0
+                ? $"{naMeta} de {comMeta.Count} indicadores com meta atendidos ao longo dos slides"
+                : $"{ap.Slides.Count} slide(s) com {campos.Count} campo(s)"
+        };
+        if (comMeta.Count > 0)
+        {
+            r.Status = comMeta.All(c => AvaliacaoCliente.StatusCampo(c) == Status.Excelente) ? Status.Excelente
+                : comMeta.Any(c => AvaliacaoCliente.StatusCampo(c) == Status.Critico) ? Status.Atencao : Status.Bom;
+            r.StatusRotulo = r.Status switch { Status.Excelente => "Todas as metas atendidas", Status.Bom => "Está bem", _ => "Atenção" };
+        }
+        for (var i = 0; i < ap.Slides.Count; i++)
+        {
+            var s = ap.Slides[i];
+            var titulo = $"{i + 1}. {(string.IsNullOrWhiteSpace(s.Titulo) ? "Slide sem título" : s.Titulo)}";
+            var texto = string.Join("\n", new[] { s.Subtitulo }.Where(x => !string.IsNullOrWhiteSpace(x))
+                .Concat(SlidesRegras.Linhas(s.Texto).Select(l => l.Topico ? "• " + l.Texto : l.Texto)));
+            var linhas = s.Campos.Select(c => new RelLinha(c.Nome, AvaliacaoCliente.Valor(c),
+                c.Meta.HasValue && c.Numerico ? AvaliacaoCliente.MetaTexto(c) : "—",
+                c.TemMeta ? AvaliacaoCliente.StatusCampo(c) : null,
+                c.TemMeta ? AvaliacaoCliente.RotuloCampo(c) : null,
+                c.TemMeta ? AvaliacaoCliente.Atingimento(c) : null)).ToList();
+            var imgs = s.Imagens.Take(SlidesRegras.MaxImagens).Where(im => imagens.ContainsKey(im.Id)).Select(im => imagens[im.Id]).ToList();
+            r.Secoes.Add(new RelSecao(titulo, linhas, texto.Length > 0 ? texto : null, imgs.Count > 0 ? imgs : null));
+        }
+        foreach (var c in comMeta.Take(12))
+            r.Barras.Add(new(c.Nome, AvaliacaoCliente.Atingimento(c), AvaliacaoCliente.StatusCampo(c)));
+        return r;
+    }
+
+    // ---------- Fluxograma ----------
+    public static RelatorioDados De(Fluxo f, ContextoPainel ctx, bool horizontal)
+    {
+        string NomeNo(string id) => f.Nos.FirstOrDefault(n => n.Id == id)?.Texto is { Length: > 0 } t ? t : "Etapa sem nome";
+        var r = new RelatorioDados
+        {
+            Tipo = ctx.RotuloSup,
+            Titulo = string.IsNullOrWhiteSpace(f.Nome) ? "Fluxograma" : f.Nome,
+            Sigla = Datas.Iniciais(string.IsNullOrWhiteSpace(f.Nome) ? ctx.RotuloSup : f.Nome),
+            Info = new[] { f.Descricao }.Where(x => !string.IsNullOrWhiteSpace(x)).ToList(),
+            Status = Status.Neutro,
+            StatusRotulo = "Fluxograma",
+            Resumo = $"{f.Nos.Count} etapa(s) · {f.Nos.Count(n => n.Tipo == TipoNo.Decisao)} decisão(ões)",
+            Fluxo = f,
+            FluxoHorizontal = horizontal
+        };
+        r.Secoes.Add(new RelSecao("Etapas",
+            f.Nos.Select((n, i) => new RelLinha($"{i + 1}. {(string.IsNullOrWhiteSpace(n.Texto) ? "Etapa sem nome" : n.Texto)}",
+                FluxoRegras.NomeTipo(n.Tipo),
+                n.Proximos.Count == 0 ? "—" : string.Join("; ", n.Proximos.Select(p => (string.IsNullOrWhiteSpace(p.Rotulo) ? "" : p.Rotulo + ": ") + NomeNo(p.Destino))))).ToList(),
+            Colunas: new[] { "Etapa", "Tipo", "Segue para", "" }));
         return r;
     }
 

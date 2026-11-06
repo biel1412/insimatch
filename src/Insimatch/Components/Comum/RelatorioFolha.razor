@@ -59,14 +59,38 @@
                 </section>
             }
 
+            @if (D.Fluxo is not null)
+            {
+                <section class="rel-secao rel-quebra-evitar">
+                    <h2>Fluxograma</h2>
+                    <div class="rel-fluxo"><FluxoDiagrama F="D.Fluxo" Horizontal="D.FluxoHorizontal" Escala="1" /></div>
+                </section>
+            }
+
             @foreach (var s in D.Secoes)
             {
+                var cols = s.Colunas ?? new[] { "Indicador", "Realizado", "Referência", "Situação" };
                 <section class="rel-secao">
                     <h2>@s.Titulo</h2>
+                    @if (!string.IsNullOrWhiteSpace(s.Texto))
+                    {
+                        <div class="rel-texto">@s.Texto</div>
+                    }
+                    @if (s.Imagens is { Count: > 0 })
+                    {
+                        <div class="rel-imagens n-@s.Imagens.Count">
+                            @foreach (var src in s.Imagens)
+                            {
+                                <img src="@src" alt="" />
+                            }
+                        </div>
+                    }
+                    @if (s.Linhas.Count > 0)
+                    {
                     <table class="rel-tabela">
                         <colgroup><col style="width:31%" /><col style="width:16%" /><col style="width:23%" /><col style="width:30%" /></colgroup>
                         <thead>
-                            <tr><th>Indicador</th><th>Realizado</th><th>Referência</th><th>Situação</th></tr>
+                            <tr><th>@cols[0]</th><th>@cols[1]</th><th>@cols[2]</th><th>@cols[3]</th></tr>
                         </thead>
                         <tbody>
                             @foreach (var l in s.Linhas)
@@ -89,6 +113,7 @@
                             }
                         </tbody>
                     </table>
+                    }
                 </section>
             }
 

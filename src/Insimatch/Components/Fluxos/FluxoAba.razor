@@ -1,0 +1,285 @@
+@* Aba personalizada no formato de fluxograma *@
+@inject ArmazenamentoService Armazenamento
+
+<PageTitle>insiTalent · @Contexto.RotuloSup</PageTitle>
+
+<aside class="lateral lateral-cliente">
+    <div class="marca marca-com-acao">
+        <div>
+            <div class="marca-logo">insi<span>Talent</span></div>
+            <div class="marca-sub">@Contexto.RotuloSup · fluxograma</div>
+        </div>
+        @if (OnConfigurar.HasDelegate)
+        {
+            <button class="btn icone-btn" title="Configurar esta aba (nome, ícone, excluir)" @onclick="() => OnConfigurar.InvokeAsync()">⚙</button>
+        }
+    </div>
+
+    @if (F is null)
+    {
+        <div class="vazio">Carregando…</div>
+    }
+    else
+    {
+        <div class="form">
+            <label>Nome do fluxo
+                <input @bind="F.Nome" @bind:event="oninput" @bind:after="SalvarAsync" placeholder="Ex.: Fluxo de atendimento" />
+            </label>
+            <label>Descrição (opcional)
+                <input @bind="F.Descricao" @bind:event="oninput" @bind:after="SalvarAsync" placeholder="Uma linha sobre o processo" />
+            </label>
+
+            <div class="form-grupo">
+                Etapas (@F.Nos.Count)
+                @if (F.Nos.Count > 0)
+                {
+                    <button class="link" @onclick="AlternarTodos">@(Abertos.Count > 0 ? "Recolher todas" : "Expandir todas")</button>
+                }
+            </div>
+            <p class="dica">Descreva as etapas e para onde cada uma segue. O desenho se organiza sozinho.</p>
+
+            <div class="campos-lista">
+                @for (var i = 0; i < F.Nos.Count; i++)
+                {
+                    var idx = i;
+                    var no = F.Nos[i];
+                    var aberto = Abertos.Contains(no.Id);
+                    <div class="campo-card @(aberto ? "aberto" : "")" @key="no.Id">
+                        <button class="campo-cab" @onclick="() => Alternar(no.Id)" aria-expanded="@(aberto ? "true" : "false")">
+                            <span class="campo-ico fx-ico-@no.Tipo.ToString().ToLowerInvariant()">@FluxoRegras.IconeTipo(no.Tipo)</span>
+                            <span class="campo-cab-txt">
+                                <strong>@(string.IsNullOrWhiteSpace(no.Texto) ? "Etapa sem nome" : no.Texto)</strong>
+                                <small>@FluxoRegras.NomeTipo(no.Tipo)@Destinos(no)</small>
+                            </span>
+                            <span class="campo-chev">▾</span>
+                        </button>
+                        @if (aberto)
+                        {
+                            <div class="campo-corpo">
+                                <div class="form-2">
+                                    <label>Texto
+                                        <input @bind="no.Texto" @bind:event="oninput" @bind:after="SalvarAsync" placeholder="O que acontece nesta etapa" />
+                                    </label>
+                                    <label>Tipo
+                                        <select @bind="no.Tipo" @bind:after="SalvarAsync">
+                                            @foreach (var t in Enum.GetValues<TipoNo>())
+                                            {
+                                                <option value="@t">@FluxoRegras.NomeTipo(t)</option>
+                                            }
+                                        </select>
+                                    </label>
+                                </div>
+
+                                <div class="fx-ligacoes">
+                                    <span class="fx-ligacoes-titulo">Segue para</span>
+                                    @if (no.Proximos.Count == 0)
+                                    {
+                                        <span class="dica">@(no.Tipo == TipoNo.Fim ? "Etapa final." : "Nenhuma ligação.")</span>
+                                    }
+                                    @for (var j = 0; j < no.Proximos.Count; j++)
+                                    {
+                                        var lig = no.Proximos[j];
+                                        var jdx = j;
+                                        <div class="fx-ligacao">
+                                            <select @bind="lig.Destino" @bind:after="SalvarAsync">
+                                                @foreach (var outro in F.Nos.Where(n => n.Id != no.Id))
+                                                {
+                                                    <option value="@outro.Id">@(string.IsNullOrWhiteSpace(outro.Texto) ? "Etapa sem nome" : outro.Texto)</option>
+                                                }
+                                            </select>
+                                            <input @bind="lig.Rotulo" @bind:event="oninput" @bind:after="SalvarAsync" placeholder="@(no.Tipo == TipoNo.Decisao ? "Sim / Não" : "rótulo")" />
+                                            <button class="btn" title="Remover ligação" @onclick="() => RemoverLigacaoAsync(no, jdx)">✕</button>
+                                        </div>
+                                    }
+                                    @if (F.Nos.Count > 1)
+                                    {
+                                        <button class="link" @onclick="() => AdicionarLigacaoAsync(no)">+ Ligação</button>
+                                    }
+                                </div>
+
+                                <div class="campo-acoes">
+                                    <button class="btn" title="Subir" disabled="@(idx == 0)" @onclick="() => MoverAsync(idx, -1)">↑</button>
+                                    <button class="btn" title="Descer" disabled="@(idx == F.Nos.Count - 1)" @onclick="() => MoverAsync(idx, 1)">↓</button>
+                                    <button class="btn perigo" @onclick="() => ExcluirAsync(idx)">Excluir</button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            @if (Excluido is not null)
+            {
+                <div class="desfazer">
+                    Etapa “@(string.IsNullOrWhiteSpace(Excluido.No.Texto) ? "sem nome" : Excluido.No.Texto)” excluída.
+                    <button class="link" @onclick="DesfazerAsync">Desfazer</button>
+                </div>
+            }
+
+            <div class="form-grupo">Adicionar etapa</div>
+            <div class="tipos-grade">
+                @foreach (var t in Enum.GetValues<TipoNo>())
+                {
+                    <button class="tipo-btn" @onclick="() => AdicionarAsync(t)">
+                        <span class="fx-ico-@t.ToString().ToLowerInvariant()">@FluxoRegras.IconeTipo(t)</span>@FluxoRegras.NomeTipo(t)
+                    </button>
+                }
+            </div>
+            <p class="dica">A nova etapa já é ligada à etapa aberta (ou à última). Decisões costumam ter duas saídas: “Sim” e “Não”.</p>
+        </div>
+    }
+</aside>
+
+<main class="principal">
+    <div class="barra-topo">
+        <div class="espaco"></div>
+        @Ferramentas
+    </div>
+
+    @if (F is not null)
+    {
+        <section class="painel modelo-fluxo">
+            <Topo Sigla="@Datas.Iniciais(string.IsNullOrWhiteSpace(F.Nome) ? Contexto.RotuloSup : F.Nome)"
+                  RotuloSup="@Contexto.RotuloSup"
+                  Titulo="@(string.IsNullOrWhiteSpace(F.Nome) ? "Fluxograma" : F.Nome)"
+                  Info="@(string.IsNullOrWhiteSpace(F.Descricao) ? Array.Empty<string>() : new[] { F.Descricao })"
+                  SeloRotulo="Fluxograma"
+                  SeloValor="@($"{F.Nos.Count} etapa(s)")" />
+            <article class="cartao neutro fluxo-cartao">
+                <FluxoDiagrama F="F" Horizontal="@(Modelo == "horizontal")" />
+            </article>
+            <div class="fluxo-legenda">
+                @foreach (var t in Enum.GetValues<TipoNo>().Where(t => F.Nos.Any(n => n.Tipo == t)))
+                {
+                    <span><i class="fx-ico-@t.ToString().ToLowerInvariant()">@FluxoRegras.IconeTipo(t)</i>@FluxoRegras.NomeTipo(t)</span>
+                }
+            </div>
+        </section>
+    }
+</main>
+
+@code {
+    [Parameter] public bool Apresentacao { get; set; }
+    [Parameter] public string Modelo { get; set; } = "vertical";
+    [Parameter] public RenderFragment? Ferramentas { get; set; }
+    [Parameter] public string Chave { get; set; } = "";
+    [Parameter] public ContextoPainel Contexto { get; set; } = new("Fluxograma", "etapa", true);
+    [Parameter] public EventCallback OnConfigurar { get; set; }
+    [CascadingParameter] public RelatorioHost? Relatorio { get; set; }
+
+    private Fluxo? F;
+    private readonly HashSet<string> Abertos = new();
+    private string? UltimoAberto;
+    private record Removido(NoFluxo No, int Indice, List<(NoFluxo De, Ligacao Lig)> Entradas);
+    private Removido? Excluido;
+
+    protected override void OnInitialized()
+    {
+        if (Relatorio is not null) Relatorio.Gerar = () => F is null ? null : Relatorios.De(F, Contexto, Modelo == "horizontal");
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        F = await Armazenamento.CarregarAsync<Fluxo>(Chave) ?? new Fluxo();
+        await SalvarAsync();
+        StateHasChanged();
+    }
+
+    private Task SalvarAsync() => F is null ? Task.CompletedTask : Armazenamento.SalvarAsync(Chave, F);
+
+    private string Destinos(NoFluxo no)
+    {
+        if (F is null || no.Proximos.Count == 0) return "";
+        var nomes = no.Proximos.Select(p => F.Nos.FirstOrDefault(n => n.Id == p.Destino)?.Texto).Where(t => !string.IsNullOrWhiteSpace(t)).ToList();
+        return nomes.Count == 0 ? "" : " → " + string.Join(", ", nomes);
+    }
+
+    private void Alternar(string id)
+    {
+        if (!Abertos.Remove(id)) { Abertos.Add(id); UltimoAberto = id; }
+    }
+
+    private void AlternarTodos()
+    {
+        if (F is null) return;
+        if (Abertos.Count > 0) Abertos.Clear();
+        else foreach (var n in F.Nos) Abertos.Add(n.Id);
+    }
+
+    private async Task AdicionarAsync(TipoNo tipo)
+    {
+        if (F is null) return;
+        var novo = new NoFluxo
+        {
+            Tipo = tipo,
+            Texto = tipo switch { TipoNo.Inicio => "Início", TipoNo.Fim => "Fim", TipoNo.Decisao => "Condição?", _ => "" }
+        };
+        // liga a partir da etapa aberta mais recente, ou da última que não é "Fim"
+        var origem = F.Nos.FirstOrDefault(n => n.Id == UltimoAberto && Abertos.Contains(n.Id))
+                     ?? F.Nos.LastOrDefault(n => n.Tipo != TipoNo.Fim);
+        if (origem is not null && tipo != TipoNo.Inicio && origem.Tipo != TipoNo.Fim)
+            origem.Proximos.Add(new Ligacao { Destino = novo.Id, Rotulo = origem.Tipo == TipoNo.Decisao ? (origem.Proximos.Count == 0 ? "Sim" : "Não") : "" });
+
+        var pos = origem is null ? F.Nos.Count : F.Nos.IndexOf(origem) + 1;
+        F.Nos.Insert(Math.Min(pos, F.Nos.Count), novo);
+        Abertos.Clear();
+        Abertos.Add(novo.Id);
+        UltimoAberto = novo.Id;
+        Excluido = null;
+        await SalvarAsync();
+    }
+
+    private async Task AdicionarLigacaoAsync(NoFluxo no)
+    {
+        if (F is null) return;
+        var destino = F.Nos.FirstOrDefault(n => n.Id != no.Id && no.Proximos.All(p => p.Destino != n.Id)) ?? F.Nos.First(n => n.Id != no.Id);
+        no.Proximos.Add(new Ligacao
+        {
+            Destino = destino.Id,
+            Rotulo = no.Tipo == TipoNo.Decisao ? (no.Proximos.Count == 0 ? "Sim" : no.Proximos.Count == 1 ? "Não" : "") : ""
+        });
+        await SalvarAsync();
+    }
+
+    private async Task RemoverLigacaoAsync(NoFluxo no, int j)
+    {
+        if (j >= 0 && j < no.Proximos.Count) no.Proximos.RemoveAt(j);
+        await SalvarAsync();
+    }
+
+    private async Task MoverAsync(int idx, int delta)
+    {
+        if (F is null) return;
+        var novo = idx + delta;
+        if (novo < 0 || novo >= F.Nos.Count) return;
+        (F.Nos[idx], F.Nos[novo]) = (F.Nos[novo], F.Nos[idx]);
+        await SalvarAsync();
+    }
+
+    private async Task ExcluirAsync(int idx)
+    {
+        if (F is null) return;
+        var no = F.Nos[idx];
+        var entradas = new List<(NoFluxo, Ligacao)>();
+        foreach (var n in F.Nos)
+            foreach (var l in n.Proximos.Where(p => p.Destino == no.Id).ToList())
+            {
+                entradas.Add((n, l));
+                n.Proximos.Remove(l);
+            }
+        F.Nos.RemoveAt(idx);
+        Abertos.Remove(no.Id);
+        Excluido = new Removido(no, idx, entradas);
+        await SalvarAsync();
+    }
+
+    private async Task DesfazerAsync()
+    {
+        if (F is null || Excluido is null) return;
+        F.Nos.Insert(Math.Clamp(Excluido.Indice, 0, F.Nos.Count), Excluido.No);
+        foreach (var (de, lig) in Excluido.Entradas) if (F.Nos.Contains(de)) de.Proximos.Add(lig);
+        Excluido = null;
+        await SalvarAsync();
+    }
+}

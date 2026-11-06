@@ -36,17 +36,22 @@
 
             @if (!Editando)
             {
-                <div class="form-grupo">Começar com</div>
-                <div class="opcoes-inicio">
-                    <button class="opcao-inicio @(!Form.ComExemplo ? "sel" : "")" @onclick="() => { Form.ComExemplo = false; }">
-                        <strong>Em branco</strong>
-                        <span>Você cria os campos do zero.</span>
-                    </button>
-                    <button class="opcao-inicio @(Form.ComExemplo ? "sel" : "")" @onclick="() => { Form.ComExemplo = true; }">
-                        <strong>Exemplo pronto</strong>
-                        <span>Campos de exemplo para adaptar.</span>
-                    </button>
+                <div class="form-grupo">Formato da aba</div>
+                <div class="opcoes-inicio opcoes-4">
+                    @foreach (var (id, titulo, desc, ico) in Inicios)
+                    {
+                        var opc = id;
+                        <button class="opcao-inicio @(Form.Inicio == opc ? "sel" : "")" @onclick="() => EscolherInicio(opc)">
+                            <span class="opcao-ico"><IconeSvg Id="@ico" /></span>
+                            <strong>@titulo</strong>
+                            <span>@desc</span>
+                        </button>
+                    }
                 </div>
+            }
+            else
+            {
+                <div class="calculado">Formato: <strong>@Aba!.NomeTipo</strong></div>
             }
 
             @if (!string.IsNullOrEmpty(Erro))
@@ -77,6 +82,14 @@
     [Parameter] public EventCallback OnFechar { get; set; }
 
     private FormAba Form = new();
+
+    private static readonly (string Id, string Titulo, string Desc, string Icone)[] Inicios =
+    {
+        ("branco", "Em branco", "Painel de indicadores do zero.", "grafico"),
+        ("exemplo", "Exemplo pronto", "Painel com campos de exemplo.", "estrela"),
+        ("slides", "Slides", "Várias páginas com texto, campos e imagens.", "slides"),
+        ("fluxo", "Fluxograma", "Etapas e decisões, desenhadas automaticamente.", "fluxo")
+    };
     private bool Editando => Aba is not null;
     private bool Confirmar;
     private string Erro = "";
@@ -98,6 +111,16 @@
     }
 
     private Task Fechar() => OnFechar.InvokeAsync();
+
+    private void EscolherInicio(string id)
+    {
+        Form.Inicio = id;
+        // sugere um ícone que combine com o formato, se ainda estiver no padrão
+        if (Form.Icone is "grafico" or "slides" or "fluxo")
+            Form.Icone = id switch { "slides" => "slides", "fluxo" => "fluxo", _ => "grafico" };
+        if (string.IsNullOrWhiteSpace(Form.Singular) && id == "slides") Form.Singular = "slide";
+        if (string.IsNullOrWhiteSpace(Form.Singular) && id == "fluxo") Form.Singular = "etapa";
+    }
 
     private async Task SalvarAsync()
     {

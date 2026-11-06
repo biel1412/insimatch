@@ -1,0 +1,518 @@
+@* Aba personalizada no formato de slides *@
+@implements IDisposable
+@inject ArmazenamentoService Armazenamento
+@inject IJSRuntime JS
+
+<PageTitle>insiTalent · @Contexto.RotuloSup</PageTitle>
+
+<aside class="lateral lateral-cliente">
+    <div class="marca marca-com-acao">
+        <div>
+            <div class="marca-logo">insi<span>Talent</span></div>
+            <div class="marca-sub">@Contexto.RotuloSup · slides</div>
+        </div>
+        @if (OnConfigurar.HasDelegate)
+        {
+            <button class="btn icone-btn" title="Configurar esta aba (nome, ícone, excluir)" @onclick="() => OnConfigurar.InvokeAsync()">⚙</button>
+        }
+    </div>
+
+    <div class="abas">
+        <button class="@(Aba == "slide" ? "ativa" : "")" @onclick='() => { Aba = "slide"; }'>Slide</button>
+        <button class="@(Aba == "todos" ? "ativa" : "")" @onclick='() => { Aba = "todos"; }'>Todos (@(Deck?.Slides.Count ?? 0))</button>
+    </div>
+
+    @if (Deck is null || Atual is null)
+    {
+        <div class="vazio">Carregando…</div>
+    }
+    else if (Aba == "slide")
+    {
+        <div class="form">
+            <div class="slide-nav-editor">
+                <button class="icone" title="Slide anterior" disabled="@(Indice == 0)" @onclick="() => Mover(-1)">‹</button>
+                <strong>Slide @(Indice + 1) de @Deck.Slides.Count</strong>
+                <button class="icone" title="Próximo slide" disabled="@(Indice == Deck.Slides.Count - 1)" @onclick="() => Mover(1)">›</button>
+            </div>
+
+            <label>Título
+                <input @bind="Atual.Titulo" @bind:event="oninput" @bind:after="SalvarAsync" placeholder="Título do slide" />
+            </label>
+            <label>Subtítulo (opcional)
+                <input @bind="Atual.Subtitulo" @bind:event="oninput" @bind:after="SalvarAsync" placeholder="Uma linha de apoio" />
+            </label>
+            <label>Texto (opcional)
+                <textarea rows="5" @bind="Atual.Texto" @bind:event="oninput" @bind:after="SalvarAsync"
+                          placeholder="Escreva livremente. Comece a linha com “-” para virar tópico."></textarea>
+            </label>
+
+            <div class="form-grupo">Imagens (@Atual.Imagens.Count/@SlidesRegras.MaxImagens)</div>
+            @foreach (var img in Atual.Imagens)
+            {
+                var id = img.Id;
+                <div class="img-card">
+                    <div class="img-previa">
+                        @if (Imagens.TryGetValue(id, out var src))
+                        {
+                            <img src="@src" alt="" />
+                        }
+                    </div>
+                    <div class="img-dados">
+                        <input @bind="img.Legenda" @bind:event="oninput" @bind:after="SalvarAsync" placeholder="Legenda (opcional)" />
+                        <div class="img-opcoes">
+                            <label class="check"><input type="checkbox" @bind="img.Inteira" @bind:after="SalvarAsync" /><span>Mostrar inteira</span></label>
+                            <span class="mudo">@img.Largura×@img.Altura</span>
+                            <button class="link perigo-txt" @onclick="() => RemoverImagemAsync(id)">Remover</button>
+                        </div>
+                    </div>
+                </div>
+            }
+            @if (Atual.Imagens.Count < SlidesRegras.MaxImagens)
+            {
+                <label class="btn arquivo @(Carregando ? "carregando" : "")">
+                    @(Carregando ? "Carregando…" : "+ Carregar imagem")
+                    <InputFile OnChange="CarregarImagemAsync" accept="image/png,image/jpeg,image/webp,image/gif" multiple />
+                </label>
+            }
+            <div class="calculado">Posição automática: <strong>@NomeLayout(SlidesRegras.Layout(Atual))</strong></div>
+            @if (!string.IsNullOrEmpty(Mensagem))
+            {
+                <div class="aviso">@Mensagem</div>
+            }
+
+            <div class="form-grupo">
+                Campos (@Atual.Campos.Count)
+            </div>
+            <datalist id="grupos-slide"></datalist>
+            <div class="campos-lista">
+                @for (var i = 0; i < Atual.Campos.Count; i++)
+                {
+                    var idx = i;
+                    var c = Atual.Campos[i];
+                    <CampoEditor @key="c.Id" C="c" Aberto="Abertos.Contains(c.Id)" ListaGrupos="grupos-slide"
+                                 Primeiro="idx == 0" Ultimo="idx == Atual.Campos.Count - 1"
+                                 OnAlternar="() => Alternar(c.Id)" OnMudou="SalvarAsync"
+                                 OnMover="d => MoverCampoAsync(idx, d)" OnDuplicar="() => DuplicarCampoAsync(idx)"
+                                 OnExcluir="() => ExcluirCampoAsync(idx)" />
+                }
+            </div>
+            <div class="tipos-grade">
+                @foreach (var t in Enum.GetValues<TipoCampo>())
+                {
+                    <button class="tipo-btn" @onclick="() => AdicionarCampoAsync(t)">
+                        <span>@AvaliacaoCliente.IconeTipo(t)</span>@AvaliacaoCliente.NomeTipo(t)
+                    </button>
+                }
+            </div>
+
+            <div class="form-grupo">Slide</div>
+            <div class="acoes">
+                <button class="btn" @onclick="NovoSlideAsync">+ Novo slide</button>
+                <button class="btn" @onclick="DuplicarSlideAsync">Duplicar</button>
+                <button class="btn" disabled="@(Indice == 0)" @onclick="() => MoverSlideAsync(-1)">↑</button>
+                <button class="btn" disabled="@(Indice == Deck.Slides.Count - 1)" @onclick="() => MoverSlideAsync(1)">↓</button>
+                <button class="btn perigo" @onclick="ExcluirSlideAsync">@(ConfirmarExclusao ? "Confirmar exclusão" : "Excluir")</button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="form">
+            <label>Nome da apresentação
+                <input @bind="Deck.Nome" @bind:event="oninput" @bind:after="SalvarAsync" placeholder="Ex.: Resultados do trimestre" />
+            </label>
+            <ul class="lista">
+                @for (var i = 0; i < Deck.Slides.Count; i++)
+                {
+                    var idx = i;
+                    var s = Deck.Slides[i];
+                    <li class="@(idx == Indice ? "sel" : "")" @onclick="() => Ir(idx, true)">
+                        <span class="mini-avatar neutro">@(idx + 1)</span>
+                        <span class="lista-txt">
+                            <strong>@(string.IsNullOrWhiteSpace(s.Titulo) ? "(sem título)" : s.Titulo)</strong>
+                            <small>@Resumo(s)</small>
+                        </span>
+                    </li>
+                }
+            </ul>
+            <div class="acoes">
+                <button class="btn" @onclick="NovoSlideAsync">+ Novo slide</button>
+            </div>
+
+            <div class="form-grupo">Importar / exportar</div>
+            <div class="acoes">
+                <button class="btn" @onclick="ExportarAsync">Exportar (.json)</button>
+                <label class="btn arquivo">
+                    Importar slides (.json)
+                    <InputFile OnChange="ImportarAsync" accept=".json,application/json" />
+                </label>
+            </div>
+            @if (!string.IsNullOrEmpty(Mensagem))
+            {
+                <div class="calculado">@Mensagem</div>
+            }
+            <p class="dica">O arquivo exportado leva os slides e as imagens. Importar adiciona os slides ao final desta apresentação. As imagens ficam guardadas neste navegador.</p>
+        </div>
+    }
+</aside>
+
+<main class="principal">
+    <div class="barra-topo">
+        @if (Deck is not null && Deck.Slides.Count > 1 && Modelo == "slide")
+        {
+            <div class="navegacao">
+                <button class="icone" title="Anterior (←)" @onclick="() => Mover(-1)">‹</button>
+                <span>@(Indice + 1) de @Deck.Slides.Count</span>
+                <button class="icone" title="Próximo (→)" @onclick="() => Mover(1)">›</button>
+            </div>
+        }
+        <div class="espaco"></div>
+        @Ferramentas
+    </div>
+
+    @if (Deck is not null && Atual is not null)
+    {
+        var rodape = string.IsNullOrWhiteSpace(Deck.Nome) ? Contexto.RotuloSup : Deck.Nome;
+        @switch (Modelo)
+        {
+            case "rolagem":
+                <div class="slides-rolagem">
+                    @for (var i = 0; i < Deck.Slides.Count; i++)
+                    {
+                        <SlideVisual @key="Deck.Slides[i].Id" S="Deck.Slides[i]" Imagens="Imagens" Numero="i + 1" Total="Deck.Slides.Count" Rodape="@rodape" />
+                    }
+                </div>
+                break;
+            case "grade":
+                <div class="slides-grade">
+                    @for (var i = 0; i < Deck.Slides.Count; i++)
+                    {
+                        var idx = i;
+                        <button class="slide-mini @(idx == Indice ? "sel" : "")" @onclick="() => Ir(idx, false)" title="Ir para o slide @(idx + 1)">
+                            <span class="slide-mini-quadro">
+                                <SlideVisual @key="Deck.Slides[idx].Id" S="Deck.Slides[idx]" Imagens="Imagens" Numero="idx + 1" Total="Deck.Slides.Count" Rodape="@rodape" />
+                            </span>
+                            <span class="slide-mini-nome">@(idx + 1). @(string.IsNullOrWhiteSpace(Deck.Slides[idx].Titulo) ? "Sem título" : Deck.Slides[idx].Titulo)</span>
+                        </button>
+                    }
+                </div>
+                break;
+            default:
+                <div class="slide-palco">
+                    <SlideVisual @key="Atual.Id" S="Atual" Imagens="Imagens" Numero="Indice + 1" Total="Deck.Slides.Count" Rodape="@rodape" Ativo="true" />
+                </div>
+                @if (Deck.Slides.Count > 1)
+                {
+                    <div class="slide-pontos">
+                        @for (var i = 0; i < Deck.Slides.Count; i++)
+                        {
+                            var idx = i;
+                            <button class="@(idx == Indice ? "ativo" : "")" title="Slide @(idx + 1)" @onclick="() => Ir(idx, false)"></button>
+                        }
+                    </div>
+                }
+                break;
+        }
+    }
+</main>
+
+@code {
+    [Parameter] public bool Apresentacao { get; set; }
+    [Parameter] public string Modelo { get; set; } = "slide";
+    [Parameter] public RenderFragment? Ferramentas { get; set; }
+    [Parameter] public string Chave { get; set; } = "";
+    [Parameter] public ContextoPainel Contexto { get; set; } = new("Slides", "slide", true);
+    [Parameter] public EventCallback OnConfigurar { get; set; }
+    [CascadingParameter] public RelatorioHost? Relatorio { get; set; }
+
+    private Apresentacao? Deck;
+    private int Indice;
+    private Slide? Atual => Deck is null || Deck.Slides.Count == 0 ? null : Deck.Slides[Math.Clamp(Indice, 0, Deck.Slides.Count - 1)];
+    private readonly Dictionary<string, string> Imagens = new();
+    private readonly HashSet<string> Abertos = new();
+    private string Aba = "slide";
+    private string Mensagem = "";
+    private bool Carregando;
+    private bool ConfirmarExclusao;
+    private DotNetObjectReference<SlidesAba>? Ref;
+
+    protected override void OnInitialized()
+    {
+        if (Relatorio is not null) Relatorio.Gerar = () => Deck is null ? null : Relatorios.De(Deck, Contexto, Imagens);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        Deck = await Armazenamento.CarregarAsync<Apresentacao>(Chave) ?? new Apresentacao();
+        if (Deck.Slides.Count == 0) Deck.Slides.Add(new Slide { Titulo = "Novo slide" });
+        await SalvarAsync();
+        var ids = Deck.Slides.SelectMany(s => s.Imagens).Select(i => i.Id).ToArray();
+        if (ids.Length > 0)
+        {
+            var lidas = await JS.InvokeAsync<Dictionary<string, string>>("insimatch.imgLer", (object)ids);
+            foreach (var kv in lidas) Imagens[kv.Key] = kv.Value;
+        }
+        Ref = DotNetObjectReference.Create(this);
+        await JS.InvokeVoidAsync("insimatch.teclasSlides", Ref);
+        StateHasChanged();
+    }
+
+    /// <summary>Setas do teclado / PageUp / PageDown / espaço navegam entre os slides.</summary>
+    [JSInvokable]
+    public void Tecla(int passo)
+    {
+        if (Modelo != "slide") return;
+        Mover(passo);
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        _ = JS.InvokeVoidAsync("insimatch.teclasSlides", null);
+        Ref?.Dispose();
+    }
+
+    private Task SalvarAsync() => Deck is null ? Task.CompletedTask : Armazenamento.SalvarAsync(Chave, Deck);
+
+    private static string NomeLayout(string l) => l switch
+    {
+        "so-conteudo" => "só conteúdo, ocupando o slide",
+        "imagem-cheia" => "imagem em tela cheia",
+        "galeria" => "duas imagens lado a lado",
+        "imagem-baixo" => "imagem em destaque abaixo do texto",
+        "imagem-lado" => "imagem ao lado do conteúdo",
+        "duas-baixo" => "duas imagens abaixo do conteúdo",
+        _ => "duas imagens ao lado do conteúdo"
+    };
+
+    private static string Resumo(Slide s)
+    {
+        var partes = new List<string>();
+        if (s.Campos.Count > 0) partes.Add($"{s.Campos.Count} campo(s)");
+        if (s.Imagens.Count > 0) partes.Add($"{s.Imagens.Count} imagem(ns)");
+        if (!string.IsNullOrWhiteSpace(s.Texto)) partes.Add("texto");
+        return partes.Count == 0 ? "vazio" : string.Join(" · ", partes);
+    }
+
+    private void Ir(int idx, bool abrirEditor)
+    {
+        if (Deck is null) return;
+        Indice = Math.Clamp(idx, 0, Deck.Slides.Count - 1);
+        Abertos.Clear();
+        ConfirmarExclusao = false;
+        Mensagem = "";
+        if (abrirEditor) Aba = "slide";
+    }
+
+    private void Mover(int passo)
+    {
+        if (Deck is null) return;
+        Ir(Math.Clamp(Indice + passo, 0, Deck.Slides.Count - 1), false);
+    }
+
+    // ---------- Slides ----------
+
+    private async Task NovoSlideAsync()
+    {
+        if (Deck is null) return;
+        Deck.Slides.Insert(Indice + 1, new Slide());
+        Ir(Indice + 1, true);
+        await SalvarAsync();
+    }
+
+    private async Task DuplicarSlideAsync()
+    {
+        if (Deck is null || Atual is null) return;
+        var copia = System.Text.Json.JsonSerializer.Deserialize<Slide>(System.Text.Json.JsonSerializer.Serialize(Atual))!;
+        copia.Id = Guid.NewGuid().ToString("N")[..10];
+        foreach (var c in copia.Campos) c.Id = Guid.NewGuid().ToString("N")[..10];
+        foreach (var img in copia.Imagens)
+        {
+            var antigo = img.Id;
+            img.Id = "img-" + Guid.NewGuid().ToString("N")[..12];
+            if (Imagens.TryGetValue(antigo, out var src))
+            {
+                Imagens[img.Id] = src;
+                await JS.InvokeVoidAsync("insimatch.imgSalvar", img.Id, src);
+            }
+        }
+        Deck.Slides.Insert(Indice + 1, copia);
+        Ir(Indice + 1, true);
+        await SalvarAsync();
+    }
+
+    private async Task MoverSlideAsync(int delta)
+    {
+        if (Deck is null) return;
+        var novo = Indice + delta;
+        if (novo < 0 || novo >= Deck.Slides.Count) return;
+        (Deck.Slides[Indice], Deck.Slides[novo]) = (Deck.Slides[novo], Deck.Slides[Indice]);
+        Indice = novo;
+        await SalvarAsync();
+    }
+
+    private async Task ExcluirSlideAsync()
+    {
+        if (Deck is null || Atual is null) return;
+        if (!ConfirmarExclusao) { ConfirmarExclusao = true; return; }
+        foreach (var img in Atual.Imagens)
+        {
+            Imagens.Remove(img.Id);
+            await JS.InvokeVoidAsync("insimatch.imgRemover", img.Id);
+        }
+        Deck.Slides.RemoveAt(Indice);
+        if (Deck.Slides.Count == 0) Deck.Slides.Add(new Slide());
+        Ir(Math.Min(Indice, Deck.Slides.Count - 1), true);
+        await SalvarAsync();
+    }
+
+    // ---------- Imagens ----------
+
+    private async Task CarregarImagemAsync(InputFileChangeEventArgs e)
+    {
+        if (Atual is null) return;
+        Mensagem = "";
+        Carregando = true;
+        try
+        {
+            foreach (var arquivo in e.GetMultipleFiles(SlidesRegras.MaxImagens))
+            {
+                if (Atual.Imagens.Count >= SlidesRegras.MaxImagens)
+                {
+                    Mensagem = $"Cada slide aceita até {SlidesRegras.MaxImagens} imagens.";
+                    break;
+                }
+                // Reduz para no máximo 1920 px: leve para guardar e nítido para apresentar
+                var formato = arquivo.ContentType == "image/png" ? "image/png" : "image/jpeg";
+                var reduzida = await arquivo.RequestImageFileAsync(formato, 1920, 1920);
+                using var ms = new MemoryStream();
+                await reduzida.OpenReadStream(25 * 1024 * 1024).CopyToAsync(ms);
+                var dataUrl = $"data:{formato};base64,{Convert.ToBase64String(ms.ToArray())}";
+                var dim = await JS.InvokeAsync<int[]>("insimatch.imgDimensoes", dataUrl);
+                var img = new ImagemSlide { Largura = dim.Length > 0 ? dim[0] : 0, Altura = dim.Length > 1 ? dim[1] : 0 };
+                await JS.InvokeVoidAsync("insimatch.imgSalvar", img.Id, dataUrl);
+                Imagens[img.Id] = dataUrl;
+                Atual.Imagens.Add(img);
+            }
+            await SalvarAsync();
+        }
+        catch (Exception ex)
+        {
+            Mensagem = "Não foi possível carregar a imagem: " + ex.Message;
+        }
+        finally
+        {
+            Carregando = false;
+        }
+    }
+
+    private async Task RemoverImagemAsync(string id)
+    {
+        if (Atual is null) return;
+        Atual.Imagens.RemoveAll(i => i.Id == id);
+        Imagens.Remove(id);
+        await JS.InvokeVoidAsync("insimatch.imgRemover", id);
+        await SalvarAsync();
+    }
+
+    // ---------- Campos ----------
+
+    private void Alternar(string id)
+    {
+        if (!Abertos.Remove(id)) Abertos.Add(id);
+    }
+
+    private async Task AdicionarCampoAsync(TipoCampo tipo)
+    {
+        if (Atual is null) return;
+        var campo = new CampoCliente
+        {
+            Tipo = tipo,
+            Casas = tipo switch { TipoCampo.Moeda or TipoCampo.Percentual => 2, TipoCampo.Decimal => 1, _ => 0 },
+            Visual = AvaliacaoCliente.VisualPadrao(tipo)
+        };
+        Atual.Campos.Add(campo);
+        Abertos.Clear();
+        Abertos.Add(campo.Id);
+        await SalvarAsync();
+    }
+
+    private async Task MoverCampoAsync(int idx, int delta)
+    {
+        if (Atual is null) return;
+        var novo = idx + delta;
+        if (novo < 0 || novo >= Atual.Campos.Count) return;
+        (Atual.Campos[idx], Atual.Campos[novo]) = (Atual.Campos[novo], Atual.Campos[idx]);
+        await SalvarAsync();
+    }
+
+    private async Task DuplicarCampoAsync(int idx)
+    {
+        if (Atual is null) return;
+        var copia = System.Text.Json.JsonSerializer.Deserialize<CampoCliente>(System.Text.Json.JsonSerializer.Serialize(Atual.Campos[idx]))!;
+        copia.Id = Guid.NewGuid().ToString("N")[..10];
+        copia.Nome += " (cópia)";
+        Atual.Campos.Insert(idx + 1, copia);
+        await SalvarAsync();
+    }
+
+    private async Task ExcluirCampoAsync(int idx)
+    {
+        if (Atual is null) return;
+        Atual.Campos.RemoveAt(idx);
+        await SalvarAsync();
+    }
+
+    // ---------- Importar / exportar ----------
+
+    private class Pacote
+    {
+        public Apresentacao Apresentacao { get; set; } = new();
+        public Dictionary<string, string> Imagens { get; set; } = new();
+    }
+
+    private async Task ExportarAsync()
+    {
+        if (Deck is null) return;
+        var ids = Deck.Slides.SelectMany(s => s.Imagens).Select(i => i.Id).ToHashSet();
+        var pacote = new Pacote { Apresentacao = Deck, Imagens = Imagens.Where(kv => ids.Contains(kv.Key)).ToDictionary(kv => kv.Key, kv => kv.Value) };
+        var json = System.Text.Json.JsonSerializer.Serialize(pacote, ArmazenamentoService.JsonExportacao);
+        var nome = string.IsNullOrWhiteSpace(Deck.Nome) ? "slides" : Deck.Nome.Trim().Replace(' ', '-').ToLowerInvariant();
+        await JS.InvokeVoidAsync("insimatch.baixar", $"insitalent-{nome}.json", json, "application/json;charset=utf-8");
+    }
+
+    private async Task ImportarAsync(InputFileChangeEventArgs e)
+    {
+        if (Deck is null) return;
+        try
+        {
+            using var leitor = new StreamReader(e.File.OpenReadStream(60 * 1024 * 1024));
+            var texto = (await leitor.ReadToEndAsync()).TrimStart('﻿');
+            var pacote = System.Text.Json.JsonSerializer.Deserialize<Pacote>(texto, ArmazenamentoService.JsonExportacao);
+            if (pacote?.Apresentacao is null || pacote.Apresentacao.Slides.Count == 0) { Mensagem = "Nenhum slide encontrado no arquivo."; return; }
+            foreach (var s in pacote.Apresentacao.Slides)
+            {
+                s.Id = Guid.NewGuid().ToString("N")[..10];
+                foreach (var img in s.Imagens)
+                {
+                    var antigo = img.Id;
+                    img.Id = "img-" + Guid.NewGuid().ToString("N")[..12];
+                    if (pacote.Imagens.TryGetValue(antigo, out var src))
+                    {
+                        Imagens[img.Id] = src;
+                        await JS.InvokeVoidAsync("insimatch.imgSalvar", img.Id, src);
+                    }
+                }
+                s.Imagens.RemoveAll(i => !Imagens.ContainsKey(i.Id));
+                Deck.Slides.Add(s);
+            }
+            Mensagem = $"{pacote.Apresentacao.Slides.Count} slide(s) importado(s).";
+            await SalvarAsync();
+        }
+        catch (Exception ex)
+        {
+            Mensagem = "Não foi possível importar: " + ex.Message;
+        }
+    }
+}
