@@ -1,13 +1,13 @@
 @* Um slide. O layout é escolhido pela plataforma conforme o conteúdo e as imagens (máx. 2). *@
 @{
-    var layout = SlidesRegras.Layout(S);
+    var disposicao = SlidesRegras.Layout(S);
     var linhas = SlidesRegras.Linhas(S.Texto);
     var imagens = S.Imagens.Take(SlidesRegras.MaxImagens).ToList();
     var temConteudo = linhas.Count > 0 || S.Campos.Count > 0;
     var semTitulo = string.IsNullOrWhiteSpace(S.Titulo) && string.IsNullOrWhiteSpace(S.Subtitulo);
 }
 
-<section class="slide layout-@layout @(semTitulo ? "sem-titulo" : "") @(Ativo ? "ativo" : "")" aria-label="Slide @Numero">
+<section class="slide layout-@disposicao @(semTitulo ? "sem-titulo" : "") @(Ativo ? "ativo" : "")" aria-label="Slide @Numero">
     @if (!semTitulo)
     {
         <header class="slide-cab">
