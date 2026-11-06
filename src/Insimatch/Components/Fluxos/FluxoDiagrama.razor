@@ -1,0 +1,85 @@
+@* Desenho do fluxograma, com posições calculadas automaticamente *@
+@{
+    var d = FluxoRegras.Desenhar(F, Horizontal);
+    string N(double v) => FluxoRegras.F(v);
+}
+
+@if (F.Nos.Count == 0)
+{
+    <div class="fluxo-vazio">Adicione etapas no editor para desenhar o fluxograma.</div>
+}
+else
+{
+    <div class="fluxo-quadro @(Horizontal ? "horizontal" : "vertical")">
+        <svg class="fluxo-svg" viewBox="0 0 @N(d.Largura) @N(d.Altura)" style="max-width:@N(d.Largura * Escala)px" role="img" aria-label="Fluxograma @F.Nome">
+            <defs>
+                <marker id="seta-@Uid" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                    <path d="M0 0 L10 5 L0 10 z" class="fx-ponta" />
+                </marker>
+            </defs>
+
+            @foreach (var s in d.Setas)
+            {
+                <path d="@s.Caminho" class="fx-seta @(s.Retorno ? "retorno" : "")" marker-end="url(#seta-@Uid)" />
+            }
+
+            @foreach (var p in d.Nos)
+            {
+                var x = p.X; var y = p.Y; var l = p.L; var a = p.A;
+                var linhas = FluxoRegras.Quebrar(p.No.Texto, p.No.Tipo == TipoNo.Decisao ? 15 : 22);
+                <g class="fx-no fx-@p.No.Tipo.ToString().ToLowerInvariant()">
+                    @switch (p.No.Tipo)
+                    {
+                        case TipoNo.Inicio or TipoNo.Fim:
+                            <rect x="@N(x)" y="@N(y)" width="@N(l)" height="@N(a)" rx="@N(a / 2)" />
+                            break;
+                        case TipoNo.Decisao:
+                            <polygon points="@N(x + l / 2),@N(y) @N(x + l),@N(y + a / 2) @N(x + l / 2),@N(y + a) @N(x),@N(y + a / 2)" />
+                            break;
+                        case TipoNo.Documento:
+                            <path d="@Documento(x, y, l, a)" />
+                            break;
+                        case TipoNo.Dados:
+                            <polygon points="@N(x + 18),@N(y) @N(x + l),@N(y) @N(x + l - 18),@N(y + a) @N(x),@N(y + a)" />
+                            break;
+                        default:
+                            <rect x="@N(x)" y="@N(y)" width="@N(l)" height="@N(a)" rx="14" />
+                            break;
+                    }
+                    <text x="@N(x + l / 2)" y="@N(y + a / 2 - (linhas.Count - 1) * 9 - (p.No.Tipo == TipoNo.Documento ? 4 : 0))" text-anchor="middle" dominant-baseline="middle">
+                        @for (var i = 0; i < linhas.Count; i++)
+                        {
+                            <tspan x="@N(x + l / 2)" dy="@(i == 0 ? "0" : "18")">@linhas[i]</tspan>
+                        }
+                    </text>
+                </g>
+            }
+
+            @foreach (var s in d.Setas.Where(s => !string.IsNullOrWhiteSpace(s.Rotulo)))
+            {
+                var w = s.Rotulo.Length * 7.2 + 16;
+                <g class="fx-rotulo">
+                    <rect x="@N(s.RX - w / 2)" y="@N(s.RY - 11)" width="@N(w)" height="22" rx="11" />
+                    <text x="@N(s.RX)" y="@N(s.RY + 1)" text-anchor="middle" dominant-baseline="middle">@s.Rotulo</text>
+                </g>
+            }
+        </svg>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public Fluxo F { get; set; } = default!;
+    [Parameter] public bool Horizontal { get; set; }
+    /// <summary>Tamanho máximo em relação ao desenho original (1 = 100%).</summary>
+    [Parameter] public double Escala { get; set; } = 1.15;
+
+    private readonly string Uid = Guid.NewGuid().ToString("N")[..6];
+
+    /// <summary>Forma de documento (base ondulada).</summary>
+    private static string Documento(double x, double y, double l, double a)
+    {
+        string N(double v) => FluxoRegras.F(v);
+        return $"M{N(x)} {N(y + 10)} Q{N(x)} {N(y)} {N(x + 10)} {N(y)} H{N(x + l - 10)} Q{N(x + l)} {N(y)} {N(x + l)} {N(y + 10)} " +
+               $"V{N(y + a - 12)} Q{N(x + l * 0.75)} {N(y + a - 26)} {N(x + l / 2)} {N(y + a - 10)} T{N(x)} {N(y + a - 12)} Z";
+    }
+}

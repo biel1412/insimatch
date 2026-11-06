@@ -42,9 +42,24 @@
     }
     else if (AbaAtual.Personalizada is { } p)
     {
-        <ClienteAba @key="p.Id" Chave="@p.ChaveDados" Contexto="@(new ContextoPainel(p.Nome, p.Singular, true))"
-                    SementeExemplo="false" OnConfigurar="() => AbrirEdicao(p)"
-                    Apresentacao="Apresentacao" Modelo="@ModeloAtual.Id" Ferramentas="Ferramentas" />
+        @switch (p.Tipo)
+        {
+            case "slides":
+                <SlidesAba @key="p.Id" Chave="@p.ChaveDados" Contexto="@(new ContextoPainel(p.Nome, p.Singular, true))"
+                           OnConfigurar="() => AbrirEdicao(p)"
+                           Apresentacao="Apresentacao" Modelo="@ModeloAtual.Id" Ferramentas="Ferramentas" />
+                break;
+            case "fluxo":
+                <FluxoAba @key="p.Id" Chave="@p.ChaveDados" Contexto="@(new ContextoPainel(p.Nome, p.Singular, true))"
+                          OnConfigurar="() => AbrirEdicao(p)"
+                          Apresentacao="Apresentacao" Modelo="@ModeloAtual.Id" Ferramentas="Ferramentas" />
+                break;
+            default:
+                <ClienteAba @key="p.Id" Chave="@p.ChaveDados" Contexto="@(new ContextoPainel(p.Nome, p.Singular, true))"
+                            SementeExemplo="false" OnConfigurar="() => AbrirEdicao(p)"
+                            Apresentacao="Apresentacao" Modelo="@ModeloAtual.Id" Ferramentas="Ferramentas" />
+                break;
+        }
     }
     else
     {
@@ -86,6 +101,23 @@
     private static readonly Opcao[] ModelosPainel =
     {
         new("cartoes", "Cartões"), new("placar", "Placar"), new("foco", "Foco")
+    };
+
+    private static readonly Opcao[] ModelosSlides =
+    {
+        new("slide", "Slide"), new("rolagem", "Rolagem"), new("grade", "Visão geral")
+    };
+
+    private static readonly Opcao[] ModelosFluxo =
+    {
+        new("vertical", "Vertical"), new("horizontal", "Horizontal")
+    };
+
+    private static Opcao[] ModelosDe(AbaPersonalizada p) => p.Tipo switch
+    {
+        "slides" => ModelosSlides,
+        "fluxo" => ModelosFluxo,
+        _ => ModelosPainel
     };
 
     private static readonly Aba[] Fixas =
@@ -146,7 +178,7 @@
         get
         {
             var l = Fixas.Where(a => !Config.AbasOcultas.Contains(a.Id))
-                .Concat(Personalizadas.Select(p => new Aba(p.Id, p.Nome, p.Nome, p.Icone, ModelosPainel, p)))
+                .Concat(Personalizadas.Select(p => new Aba(p.Id, p.Nome, p.Nome, p.Icone, ModelosDe(p), p)))
                 .ToList();
             // nunca deixa o menu vazio
             return l.Count > 0 ? l : new List<Aba> { Fixas[0] };
@@ -276,12 +308,26 @@
         }
         else
         {
-            var nova = new AbaPersonalizada { Nome = f.Nome, Icone = f.Icone, Singular = f.Singular };
-            if (f.ComExemplo)
+            var nova = new AbaPersonalizada
             {
-                var exemplo = AvaliacaoCliente.Exemplo();
-                exemplo.Nome = "Exemplo";
-                await Armazenamento.SalvarAsync(nova.ChaveDados, new List<Cliente> { exemplo });
+                Nome = f.Nome, Icone = f.Icone, Singular = f.Singular,
+                Tipo = f.Inicio switch { "slides" => "slides", "fluxo" => "fluxo", _ => "painel" }
+            };
+            switch (f.Inicio)
+            {
+                case "exemplo":
+                    var exemplo = AvaliacaoCliente.Exemplo();
+                    exemplo.Nome = "Exemplo";
+                    await Armazenamento.SalvarAsync(nova.ChaveDados, new List<Cliente> { exemplo });
+                    break;
+                case "slides":
+                    var deck = SlidesRegras.Exemplo();
+                    deck.Nome = f.Nome;
+                    await Armazenamento.SalvarAsync(nova.ChaveDados, deck);
+                    break;
+                case "fluxo":
+                    await Armazenamento.SalvarAsync(nova.ChaveDados, FluxoRegras.Exemplo());
+                    break;
             }
             Personalizadas.Add(nova);
             AbaId = nova.Id;

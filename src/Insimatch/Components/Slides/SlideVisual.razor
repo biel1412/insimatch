@@ -1,0 +1,121 @@
+@* Um slide. O layout é escolhido pela plataforma conforme o conteúdo e as imagens (máx. 2). *@
+@{
+    var layout = SlidesRegras.Layout(S);
+    var linhas = SlidesRegras.Linhas(S.Texto);
+    var imagens = S.Imagens.Take(SlidesRegras.MaxImagens).ToList();
+    var temConteudo = linhas.Count > 0 || S.Campos.Count > 0;
+    var semTitulo = string.IsNullOrWhiteSpace(S.Titulo) && string.IsNullOrWhiteSpace(S.Subtitulo);
+}
+
+<section class="slide layout-@layout @(semTitulo ? "sem-titulo" : "") @(Ativo ? "ativo" : "")" aria-label="Slide @Numero">
+    @if (!semTitulo)
+    {
+        <header class="slide-cab">
+            @if (!string.IsNullOrWhiteSpace(S.Titulo))
+            {
+                <h2>@S.Titulo</h2>
+            }
+            @if (!string.IsNullOrWhiteSpace(S.Subtitulo))
+            {
+                <p>@S.Subtitulo</p>
+            }
+        </header>
+    }
+
+    <div class="slide-corpo">
+        @if (temConteudo)
+        {
+            <div class="slide-conteudo">
+                @if (linhas.Count > 0)
+                {
+                    <div class="slide-texto">
+                        @foreach (var bloco in Blocos(linhas))
+                        {
+                            if (bloco.Topicos)
+                            {
+                                <ul>
+                                    @foreach (var t in bloco.Itens)
+                                    {
+                                        <li>@t</li>
+                                    }
+                                </ul>
+                            }
+                            else
+                            {
+                                foreach (var t in bloco.Itens)
+                                {
+                                    <p>@t</p>
+                                }
+                            }
+                        }
+                    </div>
+                }
+                @if (S.Campos.Count > 0)
+                {
+                    <div class="slide-campos n-@Math.Min(S.Campos.Count, 4)">
+                        @foreach (var c in S.Campos)
+                        {
+                            <CampoVisual @key="c.Id" C="c" />
+                        }
+                    </div>
+                }
+            </div>
+        }
+
+        @if (imagens.Count > 0)
+        {
+            <div class="slide-imagens n-@imagens.Count">
+                @foreach (var img in imagens)
+                {
+                    <figure class="@(img.Inteira ? "inteira" : "cobrir") @(img.Paisagem ? "pais" : "retrato")">
+                        @if (Imagens.TryGetValue(img.Id, out var src))
+                        {
+                            <img src="@src" alt="@img.Legenda" />
+                        }
+                        else
+                        {
+                            <div class="slide-img-carregando">Carregando imagem…</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(img.Legenda))
+                        {
+                            <figcaption>@img.Legenda</figcaption>
+                        }
+                    </figure>
+                }
+            </div>
+        }
+
+        @if (!temConteudo && imagens.Count == 0)
+        {
+            <div class="slide-vazio">Slide vazio. Adicione título, texto, campos ou imagens no editor.</div>
+        }
+    </div>
+
+    <footer class="slide-rodape">
+        <span>@Rodape</span>
+        <span>@Numero / @Total</span>
+    </footer>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public Slide S { get; set; } = default!;
+    [Parameter] public IReadOnlyDictionary<string, string> Imagens { get; set; } = new Dictionary<string, string>();
+    [Parameter] public int Numero { get; set; } = 1;
+    [Parameter] public int Total { get; set; } = 1;
+    [Parameter] public string Rodape { get; set; } = "";
+    [Parameter] public bool Ativo { get; set; }
+
+    private record Bloco(bool Topicos, List<string> Itens);
+
+    /// <summary>Agrupa linhas seguidas do mesmo tipo (tópicos viram uma lista).</summary>
+    private static List<Bloco> Blocos(List<(bool Topico, string Texto)> linhas)
+    {
+        var r = new List<Bloco>();
+        foreach (var (topico, texto) in linhas)
+        {
+            if (r.Count > 0 && r[^1].Topicos == topico) r[^1].Itens.Add(texto);
+            else r.Add(new Bloco(topico, new List<string> { texto }));
+        }
+        return r;
+    }
+}

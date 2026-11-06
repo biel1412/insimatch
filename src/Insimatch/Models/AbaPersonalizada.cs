@@ -10,7 +10,12 @@ public class AbaPersonalizada
     /// <summary>Como chamar cada registro da aba (ex.: projeto, unidade, contrato).</summary>
     public string Singular { get; set; } = "registro";
 
+    /// <summary>painel (campos flexíveis), slides ou fluxo.</summary>
+    public string Tipo { get; set; } = "painel";
+
     public string ChaveDados => $"insitalent.dados.{Id}";
+
+    public string NomeTipo => Tipo switch { "slides" => "Apresentação em slides", "fluxo" => "Fluxograma", _ => "Painel de indicadores" };
 }
 
 /// <summary>Textos que mudam conforme a aba que usa o painel flexível.</summary>
@@ -29,5 +34,6 @@ public class FormAba
     public string Nome { get; set; } = "";
     public string Icone { get; set; } = "grafico";
     public string Singular { get; set; } = "";
-    public bool ComExemplo { get; set; }
+    /// <summary>branco, exemplo, slides ou fluxo.</summary>
+    public string Inicio { get; set; } = "branco";
 }
