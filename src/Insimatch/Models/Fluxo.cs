@@ -141,7 +141,9 @@ public static class FluxoRegras
         double minX = 0, minY = 0; // retornos pela esquerda/topo podem precisar de espaço extra
         foreach (var n in nos)
         {
-            var saidas = n.Proximos.Where(p => pos.ContainsKey(p.Destino)).ToList();
+            // ordena as saídas pela posição do destino, para as setas não se cruzarem ao sair do nó
+            var saidas = n.Proximos.Where(p => pos.ContainsKey(p.Destino))
+                .OrderBy(p => horizontal ? pos[p.Destino].Y : pos[p.Destino].X).ToList();
             for (var i = 0; i < saidas.Count; i++)
             {
                 var o = pos[n.Id];
@@ -183,7 +185,7 @@ public static class FluxoRegras
                             var lado = faixa.Min(q => q.X) - 26 - desvio;
                             caminho = $"M{F(o.X)} {F(oy)} H{F(lado + 12)} Q{F(lado)} {F(oy)} {F(lado)} {F(oy - 12)} V{F(ty + 12)} Q{F(lado)} {F(ty)} {F(lado + 12)} {F(ty)} H{F(d.X - 4)}";
                             (rx, ry) = (lado, (oy + ty) / 2);
-                            minX = Math.Min(minX, lado - 20);
+                            minX = Math.Min(minX, lado - 60); // espaço para o rótulo
                         }
                         else
                         {
@@ -197,7 +199,7 @@ public static class FluxoRegras
                                 caminho = $"M{F(cx)} {F(o.Y + o.A)} V{F(vao - 10)} Q{F(cx)} {F(vao)} {F(cx + 10)} {F(vao)} H{F(lado - 12)} Q{F(lado)} {F(vao)} {F(lado)} {F(vao - 12)} V{F(ty + 12)} Q{F(lado)} {F(ty)} {F(lado - 12)} {F(ty)} H{F(d.X + d.L + 4)}";
                             }
                             (rx, ry) = (lado, (oy + ty) / 2);
-                            largura = Math.Max(largura, lado + Margem);
+                            largura = Math.Max(largura, lado + Margem + 30);
                         }
                     }
                     else
@@ -208,7 +210,7 @@ public static class FluxoRegras
                             var lado = faixa.Min(q => q.Y) - 26 - desvio;
                             caminho = $"M{F(ox)} {F(o.Y)} V{F(lado + 12)} Q{F(ox)} {F(lado)} {F(ox - 12)} {F(lado)} H{F(tx + 12)} Q{F(tx)} {F(lado)} {F(tx)} {F(lado + 12)} V{F(d.Y - 4)}";
                             (rx, ry) = ((ox + tx) / 2, lado);
-                            minY = Math.Min(minY, lado - 20);
+                            minY = Math.Min(minY, lado - 24);
                         }
                         else
                         {

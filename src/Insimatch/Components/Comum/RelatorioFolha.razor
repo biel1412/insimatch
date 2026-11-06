@@ -88,9 +88,22 @@
                     @if (s.Linhas.Count > 0)
                     {
                     <table class="rel-tabela">
-                        <colgroup><col style="width:31%" /><col style="width:16%" /><col style="width:23%" /><col style="width:30%" /></colgroup>
+                        @if (cols[3].Length == 0)
+                        {
+                            <colgroup><col style="width:36%" /><col style="width:18%" /><col style="width:46%" /></colgroup>
+                        }
+                        else
+                        {
+                            <colgroup><col style="width:31%" /><col style="width:16%" /><col style="width:23%" /><col style="width:30%" /></colgroup>
+                        }
                         <thead>
-                            <tr><th>@cols[0]</th><th>@cols[1]</th><th>@cols[2]</th><th>@cols[3]</th></tr>
+                            <tr>
+                                <th>@cols[0]</th><th>@cols[1]</th><th>@cols[2]</th>
+                                @if (cols[3].Length > 0)
+                                {
+                                    <th>@cols[3]</th>
+                                }
+                            </tr>
                         </thead>
                         <tbody>
                             @foreach (var l in s.Linhas)
@@ -99,6 +112,8 @@
                                     <td>@l.Indicador</td>
                                     <td class="rel-num">@l.Realizado</td>
                                     <td class="rel-ref">@l.Referencia</td>
+                                    @if (cols[3].Length > 0)
+                                    {
                                     <td>
                                         @if (l.Status is { } st)
                                         {
@@ -109,6 +124,7 @@
                                             <span class="rel-ref">—</span>
                                         }
                                     </td>
+                                    }
                                 </tr>
                             }
                         </tbody>
