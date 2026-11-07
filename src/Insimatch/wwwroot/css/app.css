@@ -1749,3 +1749,5 @@ html.versao-teste body::after {
     border: 1px solid color-mix(in srgb, var(--amarelo, #ffc857) 40%, transparent);
 }
 .dialogo-ia-bloqueio .btn { justify-content: center; text-align: center; }
+.opcoes-inicio.tres { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 640px) { .opcoes-inicio.tres { grid-template-columns: 1fr; } }

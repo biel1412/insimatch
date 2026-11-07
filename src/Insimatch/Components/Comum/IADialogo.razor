@@ -34,7 +34,7 @@ else
         <div class="form">
             @* ---------- Fonte dos dados ---------- *@
             <div class="form-grupo">1. De onde vêm os dados</div>
-            <div class="opcoes-inicio">
+            <div class="opcoes-inicio tres">
                 <button class="opcao-inicio @(Fonte == "planilha" ? "sel" : "")" @onclick='() => { Fonte = "planilha"; Erro = ""; }'>
                     <span class="opcao-ico"><IconeSvg Id="documento" /></span>
                     <strong>Planilha</strong>
@@ -47,7 +47,19 @@ else
                     <strong>Imagem / print</strong>
                     <span>Envie ou cole (Ctrl+V) prints de tela, relatórios ou fotos.</span>
                 </button>
+                <button class="opcao-inicio @(Fonte == "texto" ? "sel" : "")" @onclick='() => { Fonte = "texto"; Erro = ""; }'>
+                    <span class="opcao-ico">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z" /><path d="M13.5 6.5l4 4" /></svg>
+                    </span>
+                    <strong>Só texto</strong>
+                    <span>Sem arquivo: descreva o que quer nas instruções.</span>
+                </button>
             </div>
+
+            @if (Fonte == "texto")
+            {
+                <p class="dica">Sem arquivo: descreva em “Instruções para a IA” o que ela deve montar. Se informar números, ela usa; se não, monta a estrutura com os valores em branco para você preencher.</p>
+            }
 
             @if (Fonte == "planilha")
             {
@@ -125,13 +137,15 @@ else
                 </button>
             </div>
 
-            <div class="form-grupo">3. Detalhes (opcional)</div>
+            <div class="form-grupo">3. Detalhes @(Fonte == "texto" ? "" : "(opcional)")</div>
             <label>Nome da nova aba
                 <input @bind="NomeAba" @bind:event="oninput" maxlength="40" placeholder="Ex.: Resultados de outubro" />
             </label>
-            <label>Instruções para a IA
-                <textarea rows="3" @bind="Instrucoes" @bind:event="oninput"
-                          placeholder="Ex.: compare as equipes; a meta de qualidade é 99,94%; destaque quem ficou abaixo da meta."></textarea>
+            <label>Instruções para a IA @(Fonte == "texto" ? "(obrigatório)" : "")
+                <textarea rows="@(Fonte == "texto" ? 6 : 3)" @bind="Instrucoes" @bind:event="oninput"
+                          placeholder="@(Fonte == "texto"
+                              ? "Ex.: monte 5 slides sobre o resultado de outubro: volume 14.040 (meta 14.200), qualidade 99,93% (meta 99,94%), 11 desvios. Destaque os pontos de melhoria."
+                              : "Ex.: compare as equipes; a meta de qualidade é 99,94%; destaque quem ficou abaixo da meta.")"></textarea>
             </label>
 
             @if (!string.IsNullOrEmpty(Erro))
@@ -274,7 +288,13 @@ else
         string dados, origem;
         var cortado = false;
         List<(string Mime, string Base64)>? anexos = null;
-        if (Fonte == "imagem")
+        if (Fonte == "texto")
+        {
+            if (string.IsNullOrWhiteSpace(Instrucoes)) { Erro = "Escreva nas instruções o que a IA deve montar."; return; }
+            dados = "(nenhum arquivo enviado: use somente o que está nas instruções do usuário)";
+            origem = "somente as instruções do usuário, em texto";
+        }
+        else if (Fonte == "imagem")
         {
             if (Imagens.Count == 0) { Erro = "Escolha ou cole uma imagem primeiro."; return; }
             anexos = Imagens.Select(i => (i.Mime, i.Base64)).ToList();

@@ -47,6 +47,7 @@ public static class PromptsIA
         - "valor" e "meta" são números puros (ponto como separador decimal, sem símbolo, sem separador de milhar).
         - Quando houver "Resumo calculado pelo sistema", use exatamente aqueles totais, médias, totais por grupo e percentuais de atingimento; não refaça contas.
         - Se os dados vierem de imagens, use somente o que está legível nelas; se um número estiver ilegível, deixe-o de fora em vez de adivinhar.
+        - Se não houver arquivo (só instruções em texto), os dados são as instruções: use os números citados nelas. Se o usuário não der números, monte a estrutura pedida com "valor": null e "meta": null (e tópicos/textos sem números inventados), para ele preencher depois.
         - Ignore linhas vazias, linhas de "Total" sem números e linhas soltas que pareçam rascunho ou lixo (ex.: uma data com um valor isolado e "n/d"). Não as inclua em somas ou médias.
         - Percentual: use o número em escala 0–100 (ex.: 97.5 para 97,5%). Use o tipo "percentual" só para porcentagens de verdade (coluna com %, taxa, qualidade); notas e índices como NPS, CSAT ou nota 0–10 são "decimal" ou "inteiro".
         - Só preencha "meta" quando ela existir nos dados (ex.: coluna Meta/Objetivo/Alvo) ou for pedida nas instruções. Sem meta, use null.
