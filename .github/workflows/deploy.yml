@@ -62,6 +62,16 @@ jobs:
           sed -i "s|<base href=\"/\" />|<base href=\"/${REPO}/teste/\" />|g" release-teste/wwwroot/index.html
           mkdir -p release/wwwroot/teste
           cp -r release-teste/wwwroot/. release/wwwroot/teste/
+          # Links diretos da versão de teste (ex.: /teste/admdev) voltam para ela com ?rota=
+          python3 - "$REPO" <<'PY'
+          import sys
+          repo = sys.argv[1]
+          p = 'release/wwwroot/404.html'
+          s = open(p, encoding='utf-8').read()
+          js = ("<script>(function(){var b='/" + repo + "/teste/',p=location.pathname;"
+                "if(p.indexOf(b)===0&&p.length>b.length){location.replace(b+'?rota='+encodeURIComponent(p.slice(b.length)));}})();</script>")
+          open(p, 'w', encoding='utf-8').write(s.replace('<head>', '<head>' + js, 1))
+          PY
 
       - name: Guardar build (download manual)
         uses: actions/upload-artifact@v4
