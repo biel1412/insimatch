@@ -1,9 +1,10 @@
-import json, sys, time, os
+import json, sys, time, os, atexit
 from playwright.sync_api import sync_playwright
 URL = "https://biel1412.github.io/insimatch/teste/"
 PLAN = sys.argv[1]; OUT = sys.argv[2]
 os.makedirs(OUT, exist_ok=True)
 log = {"testes": [], "groq": [], "console": []}
+atexit.register(lambda: json.dump(log, open(f"{OUT}/resultado.json", "w"), ensure_ascii=False, indent=2))
 
 def rodar(page, nome, slides):
     t0 = time.time()
@@ -24,6 +25,10 @@ def rodar(page, nome, slides):
     if page.locator(".ia-erro").count():
         erro = page.locator(".ia-erro").inner_text()
     page.wait_for_timeout(2500)
+    if page.locator(".dialogo-ia").count():
+        page.screenshot(path=f"{OUT}/erro_{'slides' if slides else 'painel'}.png")
+        page.click(".dialogo-x")
+        page.wait_for_timeout(500)
     page.screenshot(path=f"{OUT}/{'slides' if slides else 'painel'}.png", full_page=True)
     texto = page.inner_text("main") if page.locator("main").count() else page.inner_text("body")
     log["testes"].append({"nome": nome, "slides": slides, "secao_chave_oculta": sem_chave,
@@ -44,11 +49,17 @@ with sync_playwright() as p:
             except Exception: info["corpo"] = corpo[:1500]
             log["groq"].append(info)
     page.on("response", resp)
-    page.goto(URL, wait_until="networkidle")
-    page.wait_for_selector(".btn-ia", timeout=60000)
-    log["chave_carregada"] = page.evaluate("() => !!(window.insimatch && window.insimatch.chaveIA && window.insimatch.chaveIA())")
-    rodar(page, "IA Painel Teste", False)
-    rodar(page, "IA Slides Teste", True)
+    ok = False
+    for tentativa in range(20):
+        page.goto(URL + "?v=" + str(time.time()), wait_until="networkidle")
+        page.wait_for_selector(".btn-ia", timeout=60000)
+        ok = page.evaluate("() => !!(window.insimatch && window.insimatch.chaveIA && window.insimatch.chaveIA())")
+        if ok: break
+        time.sleep(20)
+    log["chave_carregada"] = ok
+    for nome, sl in (("IA Painel Teste", False), ("IA Slides Teste", True)):
+        try: rodar(page, nome, sl)
+        except Exception as e: log["testes"].append({"nome": nome, "excecao": str(e)[:500]})
     # Navega pelos slides gerados
     for i in range(1, 4):
         page.keyboard.press("ArrowRight"); page.wait_for_timeout(700)
