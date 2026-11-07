@@ -1,0 +1,329 @@
+@* Gerar com IA: lê uma planilha (ou a tela atual) e o Groq monta um painel ou slides no formato da plataforma *@
+@implements IDisposable
+@inject ArmazenamentoService Armazenamento
+@inject GroqService Groq
+
+<div class="dialogo-fundo" @onclick="FecharSeLivre">
+    <div class="dialogo dialogo-ia" role="dialog" aria-modal="true" aria-labelledby="ia-titulo" @onclick:stopPropagation="true">
+        <div class="dialogo-topo">
+            <div class="dialogo-previa ia-previa">✨</div>
+            <div>
+                <h2 id="ia-titulo">Gerar com IA</h2>
+                <p>A IA lê os dados e monta uma nova aba no formato da plataforma. Nada do que já existe é alterado.</p>
+            </div>
+            <button class="dialogo-x" title="Fechar" disabled="@Gerando" @onclick="Fechar">✕</button>
+        </div>
+
+        <div class="form">
+            @* ---------- Chave do Groq ---------- *@
+            <div class="ia-chave @(ChaveAberta ? "aberta" : "")">
+                <button class="ia-chave-cab" @onclick="() => { ChaveAberta = !ChaveAberta; }">
+                    <span class="campo-st @(TemChave ? "st-excelente" : "st-atencao")"></span>
+                    <span>@(TemChave ? $"Groq conectado · {NomeModelo(Cfg.Modelo)}" : "Configure sua chave gratuita do Groq")</span>
+                    <span class="campo-chev">▾</span>
+                </button>
+                @if (ChaveAberta)
+                {
+                    <div class="ia-chave-corpo">
+                        <label>Chave da API do Groq
+                            <span class="campo-com-botao">
+                                <input type="@(MostrarChave ? "text" : "password")" @bind="ChaveDigitada" @bind:event="oninput"
+                                       placeholder="gsk_…" autocomplete="off" spellcheck="false" />
+                                <button class="btn" title="Mostrar/ocultar" @onclick="() => { MostrarChave = !MostrarChave; }">@(MostrarChave ? "Ocultar" : "Mostrar")</button>
+                            </span>
+                        </label>
+                        <label>Modelo
+                            <select @bind="ModeloEscolhido">
+                                @foreach (var (id, nome) in GroqService.Modelos)
+                                {
+                                    <option value="@id">@nome</option>
+                                }
+                            </select>
+                        </label>
+                        <div class="acoes">
+                            <button class="btn primario btn-pequeno" @onclick="SalvarChaveAsync">Salvar</button>
+                            @if (TemChave)
+                            {
+                                <button class="btn btn-pequeno" @onclick="RemoverChaveAsync">Remover chave</button>
+                            }
+                        </div>
+                        <p class="dica">
+                            Crie uma chave grátis em <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a>.
+                            Ela fica salva só neste navegador e é enviada apenas ao Groq.
+                        </p>
+                    </div>
+                }
+            </div>
+
+            @* ---------- Fonte dos dados ---------- *@
+            <div class="form-grupo">1. De onde vêm os dados</div>
+            <div class="opcoes-inicio">
+                <button class="opcao-inicio @(Fonte == "planilha" ? "sel" : "")" @onclick='() => { Fonte = "planilha"; Erro = ""; }'>
+                    <span class="opcao-ico"><IconeSvg Id="documento" /></span>
+                    <strong>Planilha</strong>
+                    <span>Envie um arquivo .xlsx ou .csv.</span>
+                </button>
+                <button class="opcao-inicio @(Fonte == "tela" ? "sel" : "") @(Tela is null ? "desab" : "")" disabled="@(Tela is null)"
+                        @onclick='() => { Fonte = "tela"; Erro = ""; }'>
+                    <span class="opcao-ico"><IconeSvg Id="grafico" /></span>
+                    <strong>Dados da tela atual</strong>
+                    <span>@(Tela is null ? "Indisponível nesta aba." : $"Usa o que está aberto em “{AbaAtual}”.")</span>
+                </button>
+            </div>
+
+            @if (Fonte == "planilha")
+            {
+                <label class="btn arquivo ia-arquivo @(Lendo ? "carregando" : "")">
+                    @(Lendo ? "Lendo planilha…" : Abas.Count > 0 ? $"Trocar arquivo ({NomeArquivo})" : "Escolher planilha (.xlsx ou .csv)")
+                    <InputFile OnChange="LerPlanilhaAsync" accept=".xlsx,.xlsm,.csv,.tsv,.txt" />
+                </label>
+                @if (Abas.Count > 0)
+                {
+                    var total = Abas.Sum(a => a.Linhas.Count);
+                    <div class="ia-planilha">
+                        <div class="ia-planilha-info">
+                            <strong>@NomeArquivo</strong>
+                            <span>@Abas.Count aba(s) · @total linha(s)@(Cortado ? " · grande: será resumida pelo início" : "")</span>
+                        </div>
+                        <div class="ia-tabela-rolagem">
+                            <table class="ia-tabela">
+                                @foreach (var linha in Abas[0].Linhas.Take(6))
+                                {
+                                    <tr>
+                                        @foreach (var cel in linha.Take(7))
+                                        {
+                                            <td>@cel</td>
+                                        }
+                                    </tr>
+                                }
+                            </table>
+                        </div>
+                        @if (Abas.Count > 1)
+                        {
+                            <small class="mudo">Prévia da aba “@Abas[0].Nome”. As outras abas também serão lidas: @string.Join(", ", Abas.Skip(1).Select(a => a.Nome)).</small>
+                        }
+                    </div>
+                }
+            }
+
+            @* ---------- Formato ---------- *@
+            <div class="form-grupo">2. O que montar</div>
+            <div class="opcoes-inicio">
+                <button class="opcao-inicio @(!Slides ? "sel" : "")" @onclick="() => { Slides = false; }">
+                    <span class="opcao-ico"><IconeSvg Id="grafico" /></span>
+                    <strong>Painel de indicadores</strong>
+                    <span>Campos com metas, gráficos e parecer.</span>
+                </button>
+                <button class="opcao-inicio @(Slides ? "sel" : "")" @onclick="() => { Slides = true; }">
+                    <span class="opcao-ico"><IconeSvg Id="slides" /></span>
+                    <strong>Apresentação em slides</strong>
+                    <span>4 a 8 slides com tópicos e números.</span>
+                </button>
+            </div>
+
+            <div class="form-grupo">3. Detalhes (opcional)</div>
+            <label>Nome da nova aba
+                <input @bind="NomeAba" @bind:event="oninput" maxlength="40" placeholder="Ex.: Resultados de outubro" />
+            </label>
+            <label>Instruções para a IA
+                <textarea rows="3" @bind="Instrucoes" @bind:event="oninput"
+                          placeholder="Ex.: compare as equipes; a meta de qualidade é 99,94%; destaque quem ficou abaixo da meta."></textarea>
+            </label>
+
+            @if (!string.IsNullOrEmpty(Erro))
+            {
+                <div class="aviso ia-erro">@Erro</div>
+            }
+
+            <div class="dialogo-acoes">
+                <span class="dica">Os dados escolhidos são enviados ao Groq para gerar o resultado.</span>
+                <div class="espaco"></div>
+                @if (Gerando)
+                {
+                    <button class="btn" @onclick="Cancelar">Cancelar</button>
+                    <button class="btn primario" disabled>
+                        <span class="ia-girando"></span> Gerando…
+                    </button>
+                }
+                else
+                {
+                    <button class="btn" @onclick="Fechar">Fechar</button>
+                    <button class="btn primario" @onclick="GerarAsync">✨ Gerar</button>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    /// <summary>Como ler os dados da aba aberta (o mesmo usado pelo relatório). Null = indisponível.</summary>
+    [Parameter] public Func<RelatorioDados?>? Tela { get; set; }
+    [Parameter] public string AbaAtual { get; set; } = "";
+    [Parameter] public EventCallback<ResultadoIA> OnCriar { get; set; }
+    [Parameter] public EventCallback OnFechar { get; set; }
+
+    private const string ChaveConfig = "insitalent.groq";
+    private const int LimiteTexto = 14000; // cabe no limite gratuito por minuto, com folga para a resposta
+
+    private ConfigIA Cfg = new();
+    private string ChaveDigitada = "";
+    private string ModeloEscolhido = "llama-3.3-70b-versatile";
+    private bool ChaveAberta;
+    private bool MostrarChave;
+    private bool TemChave => !string.IsNullOrWhiteSpace(Cfg.Chave);
+
+    private string Fonte = "planilha";
+    private bool Slides;
+    private string NomeAba = "";
+    private string Instrucoes = "";
+    private List<Insimatch.Services.PlanilhaAba> Abas = new();
+    private string NomeArquivo = "";
+    private bool Cortado;
+    private bool Lendo;
+    private bool Gerando;
+    private string Erro = "";
+    private CancellationTokenSource? Cts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Cfg = await Armazenamento.CarregarAsync<ConfigIA>(ChaveConfig) ?? new ConfigIA();
+        ChaveDigitada = Cfg.Chave;
+        ModeloEscolhido = Cfg.Modelo;
+        ChaveAberta = !TemChave;
+        if (Tela is null) Fonte = "planilha";
+    }
+
+    private static string NomeModelo(string id) => GroqService.Modelos.FirstOrDefault(m => m.Id == id).Nome ?? id;
+
+    private async Task SalvarChaveAsync()
+    {
+        Cfg = new ConfigIA { Chave = ChaveDigitada.Trim(), Modelo = ModeloEscolhido };
+        await Armazenamento.SalvarAsync(ChaveConfig, Cfg);
+        Erro = "";
+        if (TemChave) ChaveAberta = false;
+    }
+
+    private async Task RemoverChaveAsync()
+    {
+        Cfg = new ConfigIA { Modelo = ModeloEscolhido };
+        ChaveDigitada = "";
+        await Armazenamento.SalvarAsync(ChaveConfig, Cfg);
+    }
+
+    private async Task LerPlanilhaAsync(InputFileChangeEventArgs e)
+    {
+        Erro = "";
+        Lendo = true;
+        try
+        {
+            using var ms = new MemoryStream();
+            await e.File.OpenReadStream(15 * 1024 * 1024).CopyToAsync(ms);
+            var abas = Insimatch.Services.PlanilhaService.Ler(e.File.Name, ms.ToArray())
+                .Where(a => a.Linhas.Count > 0).ToList();
+            if (abas.Count == 0) { Erro = "A planilha está vazia."; return; }
+            Abas = abas;
+            NomeArquivo = e.File.Name;
+            Cortado = Insimatch.Services.PlanilhaService.ParaTexto(Abas, LimiteTexto).Cortado;
+            if (string.IsNullOrWhiteSpace(NomeAba)) NomeAba = Path.GetFileNameWithoutExtension(e.File.Name);
+        }
+        catch (Exception ex)
+        {
+            Abas = new();
+            Erro = ex is InvalidOperationException ? ex.Message : "Não foi possível ler a planilha: " + ex.Message;
+        }
+        finally
+        {
+            Lendo = false;
+        }
+    }
+
+    private async Task GerarAsync()
+    {
+        Erro = "";
+        if (!TemChave)
+        {
+            ChaveAberta = true;
+            Erro = "Configure a chave do Groq (grátis) para gerar com IA.";
+            return;
+        }
+
+        string dados, origem;
+        var cortado = false;
+        if (Fonte == "tela")
+        {
+            var r = Tela?.Invoke();
+            if (r is null) { Erro = "Não há dados na tela atual."; return; }
+            dados = PromptsIA.TelaParaTexto(r);
+            if (dados.Length > LimiteTexto) { dados = dados[..LimiteTexto]; cortado = true; }
+            origem = $"tela atual do sistema ({r.Tipo})";
+            if (string.IsNullOrWhiteSpace(NomeAba)) NomeAba = $"IA · {r.Titulo}";
+        }
+        else
+        {
+            if (Abas.Count == 0) { Erro = "Escolha uma planilha primeiro."; return; }
+            (dados, cortado) = Insimatch.Services.PlanilhaService.ParaTexto(Abas, LimiteTexto);
+            origem = $"planilha “{NomeArquivo}”";
+        }
+
+        Gerando = true;
+        Cts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+        try
+        {
+            var json = await Groq.GerarJsonAsync(Cfg.Chave, Cfg.Modelo, PromptsIA.Sistema(Slides),
+                PromptsIA.Usuario(dados, origem, Instrucoes, cortado), Cts.Token);
+
+            ResultadoIA resultado;
+            if (Slides)
+            {
+                var deck = ConversorIA.ParaSlides(json);
+                var nome = Nome(deck.Nome);
+                if (string.IsNullOrWhiteSpace(deck.Nome)) deck.Nome = nome;
+                resultado = new ResultadoIA(nome, true, null, deck);
+            }
+            else
+            {
+                var painel = ConversorIA.ParaPainel(json);
+                resultado = new ResultadoIA(Nome(painel.Nome), false, painel, null);
+            }
+            await OnCriar.InvokeAsync(resultado);
+        }
+        catch (OperationCanceledException)
+        {
+            Erro = "Geração cancelada (ou o Groq demorou mais de 90 segundos).";
+        }
+        catch (GroqErro ex)
+        {
+            Erro = ex.Message;
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            Erro = "A IA respondeu num formato inesperado. Tente de novo; se repetir, troque o modelo.";
+        }
+        catch (Exception ex)
+        {
+            Erro = ex.Message;
+        }
+        finally
+        {
+            Gerando = false;
+            Cts?.Dispose();
+            Cts = null;
+        }
+    }
+
+    private string Nome(string sugerido)
+    {
+        var n = !string.IsNullOrWhiteSpace(NomeAba) ? NomeAba.Trim() : !string.IsNullOrWhiteSpace(sugerido) ? sugerido.Trim() : "Gerado com IA";
+        return n.Length > 40 ? n[..40] : n;
+    }
+
+    private void Cancelar() => Cts?.Cancel();
+    private Task Fechar() => OnFechar.InvokeAsync();
+    private Task FecharSeLivre() => Gerando ? Task.CompletedTask : Fechar();
+
+    public void Dispose()
+    {
+        Cts?.Cancel();
+        Cts?.Dispose();
+    }
+}

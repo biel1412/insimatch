@@ -84,6 +84,11 @@
         <RelatorioFolha D="RelatorioAberto" OnFechar="() => { RelatorioAberto = null; }" />
     }
 
+    @if (IAAberta)
+    {
+        <IADialogo Tela="RelHost.Gerar" AbaAtual="@AbaAtual.Nome" OnCriar="CriarAbaIAAsync" OnFechar="() => { IAAberta = false; }" />
+    }
+
     @if (ConfigAberta)
     {
         <ConfigDialogo Atual="Config" Personalizadas="Personalizadas.Count" OnSalvar="SalvarConfigAsync" OnFechar="() => { ConfigAberta = false; }" />
@@ -167,6 +172,7 @@
 
     private bool DialogoAberto;
     private bool ConfigAberta;
+    private bool IAAberta;
     private Configuracoes Config = new();
     private readonly RelatorioHost RelHost = new();
     private RelatorioDados? RelatorioAberto;
@@ -266,6 +272,26 @@
     {
         Popover = null;
         RelatorioAberto = RelHost.Gerar?.Invoke();
+    }
+
+    /// <summary>Cria uma aba nova com o que a IA gerou (nada existente é alterado).</summary>
+    private async Task CriarAbaIAAsync(ResultadoIA r)
+    {
+        var nova = new AbaPersonalizada
+        {
+            Nome = r.NomeAba,
+            Icone = r.Slides ? "slides" : "raio",
+            Singular = r.Slides ? "slide" : "registro",
+            Tipo = r.Slides ? "slides" : "painel"
+        };
+        if (r.Slides && r.Deck is not null)
+            await Armazenamento.SalvarAsync(nova.ChaveDados, r.Deck);
+        else if (r.Painel is not null)
+            await Armazenamento.SalvarAsync(nova.ChaveDados, new List<Cliente> { r.Painel });
+        Personalizadas.Add(nova);
+        await Armazenamento.SalvarAsync(ChaveAbas, Personalizadas);
+        IAAberta = false;
+        await MudarAbaAsync(nova.Id);
     }
 
     private async Task SalvarConfigAsync(Configuracoes c)
@@ -393,6 +419,12 @@
             </button>
             }
         </div>
+        }
+        @if (Config.MostrarIA)
+        {
+            <button class="btn btn-ia" title="Gerar painel ou slides com IA a partir de uma planilha" @onclick="() => { Popover = null; IAAberta = true; }">
+                ✨ Gerar com IA
+            </button>
         }
         @if (Config.MostrarRelatorio)
         {
