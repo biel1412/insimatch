@@ -1,0 +1,187 @@
+@page "/admdev"
+@* Área do desenvolvedor: login simples e cadastro da chave do Gemini (salva só neste navegador) *@
+@inject ArmazenamentoService Armazenamento
+@inject GeminiService Gemini
+@inject NavigationManager Nav
+
+<PageTitle>insiTalent · Área do desenvolvedor</PageTitle>
+
+<div class="admin-pagina">
+    <div class="dialogo admin-cartao">
+        <div class="dialogo-topo">
+            <div class="dialogo-previa">
+                <span class="dock-ico"><IconeSvg Id="engrenagem" /></span>
+            </div>
+            <div>
+                <h2>Área do desenvolvedor</h2>
+                <p>@(Logado ? "Configure a IA usada em “✨ Gerar com IA”." : "Acesso restrito. Entre com o usuário de desenvolvedor.")</p>
+            </div>
+            <button class="dialogo-x" title="Voltar ao insiTalent" @onclick="Voltar">✕</button>
+        </div>
+
+        @if (!Logado)
+        {
+            <form class="form" @onsubmit="Entrar" @onsubmit:preventDefault="true">
+                <label>Usuário
+                    <input @bind="Usuario" autocomplete="username" spellcheck="false" />
+                </label>
+                <label>Senha
+                    <input type="password" @bind="Senha" autocomplete="current-password" />
+                </label>
+                @if (ErroLogin)
+                {
+                    <div class="aviso ia-erro">Usuário ou senha incorretos.</div>
+                }
+                <div class="dialogo-acoes">
+                    <button type="button" class="btn" @onclick="Voltar">Voltar</button>
+                    <div class="espaco"></div>
+                    <button type="submit" class="btn primario">Entrar</button>
+                </div>
+            </form>
+        }
+        else
+        {
+            <div class="form">
+                <div class="form-grupo">IA · Google Gemini</div>
+                <div class="admin-status">
+                    <span class="campo-st @(TemChave ? "st-excelente" : "st-atencao")"></span>
+                    <span>@(TemChave ? $"Chave configurada neste navegador · modelo {(string.IsNullOrEmpty(Cfg.Modelo) ? "automático" : Cfg.Modelo)}" : "Nenhuma chave configurada neste navegador")</span>
+                </div>
+
+                <label>Chave da API do Gemini
+                    <span class="campo-com-botao">
+                        <input type="@(MostrarChave ? "text" : "password")" @bind="ChaveDigitada" @bind:event="oninput"
+                               placeholder="AIza…" autocomplete="off" spellcheck="false" />
+                        <button class="btn" title="Mostrar/ocultar" @onclick="() => { MostrarChave = !MostrarChave; }">@(MostrarChave ? "Ocultar" : "Mostrar")</button>
+                    </span>
+                </label>
+
+                <label>Modelo
+                    <select @bind="ModeloEscolhido">
+                        <option value="">Automático (melhor modelo disponível)</option>
+                        @foreach (var (id, nome) in Modelos)
+                        {
+                            <option value="@id">@nome (@id)</option>
+                        }
+                        @if (!string.IsNullOrEmpty(ModeloEscolhido) && !Modelos.Any(m => m.Id == ModeloEscolhido))
+                        {
+                            <option value="@ModeloEscolhido">@ModeloEscolhido</option>
+                        }
+                    </select>
+                </label>
+
+                @if (!string.IsNullOrEmpty(Mensagem))
+                {
+                    <div class="admin-ok">@Mensagem</div>
+                }
+                @if (!string.IsNullOrEmpty(Erro))
+                {
+                    <div class="aviso ia-erro">@Erro</div>
+                }
+
+                <div class="dialogo-acoes">
+                    <button class="btn" disabled="@Ocupado" @onclick="TestarAsync">
+                        @if (Ocupado) { <span class="ia-girando"></span> }
+                        Testar chave e carregar modelos
+                    </button>
+                    @if (TemChave)
+                    {
+                        <button class="btn" disabled="@Ocupado" @onclick="RemoverAsync">Remover chave</button>
+                    }
+                    <div class="espaco"></div>
+                    <button class="btn primario" disabled="@Ocupado" @onclick="SalvarAsync">Salvar</button>
+                </div>
+
+                <p class="dica">
+                    Crie uma chave gratuita em <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>.
+                    A chave fica salva só neste navegador: em outro computador ou navegador, a IA precisa ser configurada de novo.
+                </p>
+
+                <div class="dialogo-acoes">
+                    <button class="btn" @onclick="Sair">Sair</button>
+                    <div class="espaco"></div>
+                    <button class="btn" @onclick="Voltar">Voltar ao insiTalent</button>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    // Hash SHA-256 de "insitalent|usuário|senha" (a senha não fica escrita no código)
+    private const string HashAcesso = "939db93d1b6ba38f8c7977e423c62ecbd4bee48b5e851f1382ea14b92817db17";
+
+    private bool Logado;
+    private bool ErroLogin;
+    private string Usuario = "";
+    private string Senha = "";
+
+    private ConfigIA Cfg = new();
+    private string ChaveDigitada = "";
+    private string ModeloEscolhido = "";
+    private bool MostrarChave;
+    private bool Ocupado;
+    private string Mensagem = "";
+    private string Erro = "";
+    private List<(string Id, string Nome)> Modelos = new();
+    private bool TemChave => !string.IsNullOrWhiteSpace(Cfg.Chave);
+
+    private async Task Entrar()
+    {
+        var bytes = System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes($"insitalent|{Usuario.Trim()}|{Senha}"));
+        ErroLogin = Convert.ToHexString(bytes).ToLowerInvariant() != HashAcesso;
+        if (ErroLogin) return;
+        Logado = true;
+        Senha = "";
+        Cfg = await Armazenamento.CarregarAsync<ConfigIA>(ConfigIA.ChaveArmazenamento) ?? new ConfigIA();
+        ChaveDigitada = Cfg.Chave;
+        ModeloEscolhido = Cfg.Modelo;
+    }
+
+    private void Sair()
+    {
+        Logado = false;
+        Usuario = Senha = "";
+        Mensagem = Erro = "";
+    }
+
+    private void Voltar() => Nav.NavigateTo("");
+
+    private async Task TestarAsync()
+    {
+        Mensagem = Erro = "";
+        if (string.IsNullOrWhiteSpace(ChaveDigitada)) { Erro = "Cole a chave do Gemini primeiro."; return; }
+        Ocupado = true;
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+            Modelos = await Gemini.ListarModelosAsync(ChaveDigitada, cts.Token);
+            var resposta = await Gemini.TestarAsync(ChaveDigitada, ModeloEscolhido, cts.Token);
+            Mensagem = $"✓ Chave funcionando. {Modelos.Count} modelo(s) disponível(is). Resposta do teste: “{resposta}”. Clique em Salvar para usar.";
+        }
+        catch (IAErro ex) { Erro = ex.Message; }
+        catch (OperationCanceledException) { Erro = "O Gemini demorou demais para responder. Tente de novo."; }
+        catch (Exception ex) { Erro = "Falha no teste: " + ex.Message; }
+        finally { Ocupado = false; }
+    }
+
+    private async Task SalvarAsync()
+    {
+        Mensagem = Erro = "";
+        if (string.IsNullOrWhiteSpace(ChaveDigitada)) { Erro = "Cole a chave do Gemini primeiro."; return; }
+        Cfg = new ConfigIA { Chave = ChaveDigitada.Trim(), Modelo = ModeloEscolhido };
+        await Armazenamento.SalvarAsync(ConfigIA.ChaveArmazenamento, Cfg);
+        Mensagem = "✓ Salvo. “✨ Gerar com IA” já pode ser usado neste navegador.";
+    }
+
+    private async Task RemoverAsync()
+    {
+        Cfg = new ConfigIA();
+        ChaveDigitada = "";
+        ModeloEscolhido = "";
+        await Armazenamento.SalvarAsync(ConfigIA.ChaveArmazenamento, Cfg);
+        Mensagem = "Chave removida deste navegador.";
+        Erro = "";
+    }
+}

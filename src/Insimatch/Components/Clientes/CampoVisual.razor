@@ -6,7 +6,7 @@
     var valor = AvaliacaoCliente.Valor(C);
 }
 
-<article class="cartao campo-v @Avaliacao.Classe(st) @(C.Destaque ? "destaque span-2" : "") @(C.Numerico ? "" : "info")">
+<article class="cartao campo-v @Avaliacao.Classe(st) @(C.Destaque ? "destaque span-2" : "") @(C.Numerico ? "" : "info") @C.ClassesAparencia" style="@C.EstiloAparencia">
     <div class="cartao-topo">
         <span class="cartao-rotulo">@(string.IsNullOrWhiteSpace(C.Nome) ? "Campo sem nome" : C.Nome)</span>
         @if (C.TemMeta)

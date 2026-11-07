@@ -10,6 +10,7 @@ public class Configuracoes
     public bool MostrarModelo { get; set; } = true;
     public bool MostrarRelatorio { get; set; } = true;
     public bool MostrarTelaCheia { get; set; } = true;
+    public bool MostrarIA { get; set; } = true;
 
     // Menu
     public bool MostrarNovaAba { get; set; } = true;
@@ -21,7 +22,7 @@ public class Configuracoes
     public Configuracoes Copia() => new()
     {
         MostrarCor = MostrarCor, MostrarFundo = MostrarFundo, MostrarMovimento = MostrarMovimento,
-        MostrarModelo = MostrarModelo, MostrarRelatorio = MostrarRelatorio, MostrarTelaCheia = MostrarTelaCheia,
+        MostrarModelo = MostrarModelo, MostrarRelatorio = MostrarRelatorio, MostrarTelaCheia = MostrarTelaCheia, MostrarIA = MostrarIA,
         MostrarNovaAba = MostrarNovaAba, MostrarTrocaAbasApresentacao = MostrarTrocaAbasApresentacao,
         AbasOcultas = new List<string>(AbasOcultas)
     };

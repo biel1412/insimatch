@@ -1,0 +1,354 @@
+@* Gerar com IA: lê uma planilha (ou a tela atual) e o Gemini monta um painel ou slides no formato da plataforma *@
+@implements IDisposable
+@inject ArmazenamentoService Armazenamento
+@inject GeminiService Gemini
+@inject IJSRuntime JS
+
+@if (!Carregado)
+{
+}
+else if (!TemChave)
+{
+    <div class="dialogo-fundo" @onclick="Fechar">
+        <div class="dialogo dialogo-ia-bloqueio" role="alertdialog" aria-modal="true" aria-labelledby="ia-bloq-titulo" @onclick:stopPropagation="true">
+            <div class="ia-bloq-ico">🔒</div>
+            <h2 id="ia-bloq-titulo">Gerar com IA indisponível</h2>
+            <p>Entre em contato com o suporte responsável para verificar se você está autorizado.</p>
+            <button class="btn primario" @onclick="Fechar">Entendi</button>
+        </div>
+    </div>
+}
+else
+{
+<div class="dialogo-fundo" @onclick="FecharSeLivre">
+    <div class="dialogo dialogo-ia" role="dialog" aria-modal="true" aria-labelledby="ia-titulo" @onclick:stopPropagation="true">
+        <div class="dialogo-topo">
+            <div class="dialogo-previa ia-previa">✨</div>
+            <div>
+                <h2 id="ia-titulo">Gerar com IA</h2>
+                <p>A IA lê os dados e monta uma nova aba no formato da plataforma. Nada do que já existe é alterado.</p>
+            </div>
+            <button class="dialogo-x" title="Fechar" disabled="@Gerando" @onclick="Fechar">✕</button>
+        </div>
+
+        <div class="form">
+            @* ---------- Fonte dos dados ---------- *@
+            <div class="form-grupo">1. De onde vêm os dados</div>
+            <div class="opcoes-inicio">
+                <button class="opcao-inicio @(Fonte == "planilha" ? "sel" : "")" @onclick='() => { Fonte = "planilha"; Erro = ""; }'>
+                    <span class="opcao-ico"><IconeSvg Id="documento" /></span>
+                    <strong>Planilha</strong>
+                    <span>Envie um arquivo .xlsx ou .csv.</span>
+                </button>
+                <button class="opcao-inicio @(Fonte == "imagem" ? "sel" : "")" @onclick='() => { Fonte = "imagem"; Erro = ""; }'>
+                    <span class="opcao-ico">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3" /><circle cx="9" cy="10" r="2" /><path d="M21 16l-5-5-9 9" /></svg>
+                    </span>
+                    <strong>Imagem / print</strong>
+                    <span>Envie ou cole (Ctrl+V) prints de tela, relatórios ou fotos.</span>
+                </button>
+            </div>
+
+            @if (Fonte == "planilha")
+            {
+                <label class="btn arquivo ia-arquivo @(Lendo ? "carregando" : "")">
+                    @(Lendo ? "Lendo planilha…" : Abas.Count > 0 ? $"Trocar arquivo ({NomeArquivo})" : "Escolher planilha (.xlsx ou .csv)")
+                    <InputFile OnChange="LerPlanilhaAsync" accept=".xlsx,.xlsm,.csv,.tsv,.txt" />
+                </label>
+                @if (Abas.Count > 0)
+                {
+                    var total = Abas.Sum(a => a.Linhas.Count);
+                    <div class="ia-planilha">
+                        <div class="ia-planilha-info">
+                            <strong>@NomeArquivo</strong>
+                            <span>@Abas.Count aba(s) · @total linha(s)@(Cortado ? " · grande: será resumida pelo início" : "")</span>
+                        </div>
+                        <div class="ia-tabela-rolagem">
+                            <table class="ia-tabela">
+                                @foreach (var linha in Abas[0].Linhas.Take(6))
+                                {
+                                    <tr>
+                                        @foreach (var cel in linha.Take(7))
+                                        {
+                                            <td>@cel</td>
+                                        }
+                                    </tr>
+                                }
+                            </table>
+                        </div>
+                        @if (Abas.Count > 1)
+                        {
+                            <small class="mudo">Prévia da aba “@Abas[0].Nome”. As outras abas também serão lidas: @string.Join(", ", Abas.Skip(1).Select(a => a.Nome)).</small>
+                        }
+                    </div>
+                }
+            }
+
+            @if (Fonte == "imagem")
+            {
+                <label class="btn arquivo ia-arquivo @(Lendo ? "carregando" : "")">
+                    @(Lendo ? "Preparando imagem…" : Imagens.Count > 0 ? $"Adicionar imagem ({Imagens.Count} de {MaxImagens})" : "Escolher imagem (.png, .jpg) — ou cole com Ctrl+V")
+                    <InputFile OnChange="LerImagensAsync" accept="image/png,image/jpeg,image/webp" multiple />
+                </label>
+                @if (Imagens.Count > 0)
+                {
+                    <div class="ia-imagens">
+                        @foreach (var img in Imagens)
+                        {
+                            var atual = img;
+                            <div class="ia-imagem">
+                                <img src="@($"data:{atual.Mime};base64,{atual.Base64}")" alt="@atual.Nome" />
+                                <button class="ia-imagem-x" title="Remover" @onclick="() => RemoverImagem(atual)">✕</button>
+                                <small>@atual.Nome</small>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="dica">Dica: tire um print (Win+Shift+S) e cole aqui com Ctrl+V. Até @MaxImagens imagens; números bem legíveis dão resultados melhores.</p>
+                }
+            }
+
+            @* ---------- Formato ---------- *@
+            <div class="form-grupo">2. O que montar</div>
+            <div class="opcoes-inicio">
+                <button class="opcao-inicio @(!Slides ? "sel" : "")" @onclick="() => { Slides = false; }">
+                    <span class="opcao-ico"><IconeSvg Id="grafico" /></span>
+                    <strong>Painel de indicadores</strong>
+                    <span>Campos com metas, gráficos e parecer.</span>
+                </button>
+                <button class="opcao-inicio @(Slides ? "sel" : "")" @onclick="() => { Slides = true; }">
+                    <span class="opcao-ico"><IconeSvg Id="slides" /></span>
+                    <strong>Apresentação em slides</strong>
+                    <span>4 a 8 slides com tópicos e números.</span>
+                </button>
+            </div>
+
+            <div class="form-grupo">3. Detalhes (opcional)</div>
+            <label>Nome da nova aba
+                <input @bind="NomeAba" @bind:event="oninput" maxlength="40" placeholder="Ex.: Resultados de outubro" />
+            </label>
+            <label>Instruções para a IA
+                <textarea rows="3" @bind="Instrucoes" @bind:event="oninput"
+                          placeholder="Ex.: compare as equipes; a meta de qualidade é 99,94%; destaque quem ficou abaixo da meta."></textarea>
+            </label>
+
+            @if (!string.IsNullOrEmpty(Erro))
+            {
+                <div class="aviso ia-erro">@Erro</div>
+            }
+
+            <div class="dialogo-acoes">
+                <div class="espaco"></div>
+                @if (Gerando)
+                {
+                    <button class="btn" @onclick="Cancelar">Cancelar</button>
+                    <button class="btn primario" disabled>
+                        <span class="ia-girando"></span> Gerando…
+                    </button>
+                }
+                else
+                {
+                    <button class="btn" @onclick="Fechar">Fechar</button>
+                    <button class="btn primario" disabled="@(!TemChave)" @onclick="GerarAsync">✨ Gerar</button>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+}
+
+@code {
+    [Parameter] public EventCallback<ResultadoIA> OnCriar { get; set; }
+    [Parameter] public EventCallback OnFechar { get; set; }
+
+    private const int LimiteTexto = 30000; // cabe com folga no limite gratuito do Gemini
+
+    private ConfigIA Cfg = new();
+    private bool Carregado;
+    private bool TemChave => !string.IsNullOrWhiteSpace(Cfg.Chave);
+
+    private string Fonte = "planilha";
+    private const int MaxImagens = 4;
+    private record ImagemIA(string Nome, string Mime, string Base64);
+    private List<ImagemIA> Imagens = new();
+    private DotNetObjectReference<IADialogo>? Ref;
+    private bool Slides;
+    private string NomeAba = "";
+    private string Instrucoes = "";
+    private List<Insimatch.Services.PlanilhaAba> Abas = new();
+    private string NomeArquivo = "";
+    private bool Cortado;
+    private bool Lendo;
+    private bool Gerando;
+    private string Erro = "";
+    private CancellationTokenSource? Cts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Cfg = await Armazenamento.CarregarAsync<ConfigIA>(ConfigIA.ChaveArmazenamento) ?? new ConfigIA();
+        Carregado = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool primeira)
+    {
+        if (!primeira) return;
+        Ref = DotNetObjectReference.Create(this);
+        try { await JS.InvokeVoidAsync("insimatch.colarImagens", Ref); } catch { }
+    }
+
+    /// <summary>Imagem colada com Ctrl+V (já reduzida no navegador).</summary>
+    [JSInvokable]
+    public Task ImagemColada(string mime, string base64)
+    {
+        if (Gerando) return Task.CompletedTask;
+        Fonte = "imagem";
+        Erro = "";
+        if (Imagens.Count >= MaxImagens) Erro = $"Use no máximo {MaxImagens} imagens.";
+        else Imagens.Add(new ImagemIA($"Print colado {Imagens.Count + 1}", mime, base64));
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task LerImagensAsync(InputFileChangeEventArgs e)
+    {
+        Erro = "";
+        Lendo = true;
+        try
+        {
+            foreach (var f in e.GetMultipleFiles(10))
+            {
+                if (Imagens.Count >= MaxImagens) { Erro = $"Use no máximo {MaxImagens} imagens."; break; }
+                if (!f.ContentType.StartsWith("image/")) { Erro = $"“{f.Name}” não é uma imagem."; continue; }
+                // Reduz imagens grandes (mantém o texto legível e o envio leve)
+                var menor = await f.RequestImageFileAsync("image/jpeg", 2400, 2400);
+                using var ms = new MemoryStream();
+                await menor.OpenReadStream(20 * 1024 * 1024).CopyToAsync(ms);
+                Imagens.Add(new ImagemIA(f.Name, "image/jpeg", Convert.ToBase64String(ms.ToArray())));
+                if (string.IsNullOrWhiteSpace(NomeAba)) NomeAba = Path.GetFileNameWithoutExtension(f.Name);
+            }
+        }
+        catch (Exception ex) { Erro = "Não foi possível ler a imagem: " + ex.Message; }
+        finally { Lendo = false; }
+    }
+
+    private void RemoverImagem(ImagemIA img) => Imagens.Remove(img);
+
+    private async Task LerPlanilhaAsync(InputFileChangeEventArgs e)
+    {
+        Erro = "";
+        Lendo = true;
+        try
+        {
+            using var ms = new MemoryStream();
+            await e.File.OpenReadStream(15 * 1024 * 1024).CopyToAsync(ms);
+            var abas = Insimatch.Services.PlanilhaService.Ler(e.File.Name, ms.ToArray())
+                .Where(a => a.Linhas.Count > 0).ToList();
+            if (abas.Count == 0) { Erro = "A planilha está vazia."; return; }
+            Abas = abas;
+            NomeArquivo = e.File.Name;
+            Cortado = Insimatch.Services.PlanilhaService.ParaTexto(Abas, LimiteTexto).Cortado;
+            if (string.IsNullOrWhiteSpace(NomeAba)) NomeAba = Path.GetFileNameWithoutExtension(e.File.Name);
+        }
+        catch (Exception ex)
+        {
+            Abas = new();
+            Erro = ex is InvalidOperationException ? ex.Message : "Não foi possível ler a planilha: " + ex.Message;
+        }
+        finally
+        {
+            Lendo = false;
+        }
+    }
+
+    private async Task GerarAsync()
+    {
+        Erro = "";
+        if (!TemChave)
+        {
+            Erro = "Entre em contato com o suporte responsável para verificar se você está autorizado.";
+            return;
+        }
+
+        string dados, origem;
+        var cortado = false;
+        List<(string Mime, string Base64)>? anexos = null;
+        if (Fonte == "imagem")
+        {
+            if (Imagens.Count == 0) { Erro = "Escolha ou cole uma imagem primeiro."; return; }
+            anexos = Imagens.Select(i => (i.Mime, i.Base64)).ToList();
+            dados = $"Os dados estão nas {Imagens.Count} imagem(ns) anexada(s). Leia com atenção todos os números, nomes e rótulos visíveis.";
+            origem = "imagem(ns) enviada(s): prints de tela, relatórios ou fotos";
+        }
+        else
+        {
+            if (Abas.Count == 0) { Erro = "Escolha uma planilha primeiro."; return; }
+            (dados, cortado) = Insimatch.Services.PlanilhaService.ParaTexto(Abas, LimiteTexto);
+            origem = $"planilha “{NomeArquivo}”";
+        }
+
+        Gerando = true;
+        Cts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+        try
+        {
+            var json = await Gemini.GerarJsonAsync(Cfg.Chave, Cfg.Modelo, PromptsIA.Sistema(Slides),
+                PromptsIA.Usuario(dados, origem, Instrucoes, cortado), Cts.Token, anexos);
+
+            ResultadoIA resultado;
+            if (Slides)
+            {
+                var deck = ConversorIA.ParaSlides(json);
+                var nome = Nome(deck.Nome);
+                if (string.IsNullOrWhiteSpace(deck.Nome)) deck.Nome = nome;
+                resultado = new ResultadoIA(nome, true, null, deck);
+            }
+            else
+            {
+                var painel = ConversorIA.ParaPainel(json);
+                resultado = new ResultadoIA(Nome(painel.Nome), false, painel, null);
+            }
+            await OnCriar.InvokeAsync(resultado);
+        }
+        catch (OperationCanceledException)
+        {
+            Erro = "Geração cancelada (ou o Gemini demorou mais de 90 segundos).";
+        }
+        catch (IAErro ex)
+        {
+            Erro = ex.Message;
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            Erro = "A IA respondeu num formato inesperado. Tente de novo; se repetir, troque o modelo.";
+        }
+        catch (Exception ex)
+        {
+            Erro = ex.Message;
+        }
+        finally
+        {
+            Gerando = false;
+            Cts?.Dispose();
+            Cts = null;
+        }
+    }
+
+    private string Nome(string sugerido)
+    {
+        var n = !string.IsNullOrWhiteSpace(NomeAba) ? NomeAba.Trim() : !string.IsNullOrWhiteSpace(sugerido) ? sugerido.Trim() : "Gerado com IA";
+        return n.Length > 40 ? n[..40] : n;
+    }
+
+    private void Cancelar() => Cts?.Cancel();
+    private Task Fechar() => OnFechar.InvokeAsync();
+    private Task FecharSeLivre() => Gerando ? Task.CompletedTask : Fechar();
+
+    public void Dispose()
+    {
+        try { _ = JS.InvokeVoidAsync("insimatch.colarImagens", null); } catch { }
+        Ref?.Dispose();
+        Cts?.Cancel();
+        Cts?.Dispose();
+    }
+}

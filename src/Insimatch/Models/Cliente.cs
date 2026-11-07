@@ -46,6 +46,34 @@ public class CampoCliente
     public VisualCampo Visual { get; set; } = VisualCampo.Numero;
     public bool Destaque { get; set; }
 
+    // ---------- Aparência do bloco (vazio = padrão do tema) ----------
+    /// <summary>Cor do texto (#rrggbb).</summary>
+    public string CorTexto { get; set; } = "";
+    /// <summary>Cor de fundo do bloco (#rrggbb).</summary>
+    public string CorFundo { get; set; } = "";
+    /// <summary>Formato do bloco: padrao, reto, redondo, faixa, contorno.</summary>
+    public string Formato { get; set; } = "";
+
+    public bool AparenciaPersonalizada => CorTexto != "" || CorFundo != "" || (Formato != "" && Formato != "padrao");
+
+    /// <summary>Classes CSS da aparência escolhida.</summary>
+    public string ClassesAparencia =>
+        $"{(TextoEfetivo != "" ? "tem-texto" : "")} {(CorFundo != "" ? "tem-fundo" : "")} {(Formato is "" or "padrao" ? "" : "f-" + Formato)}".Trim();
+
+    /// <summary>Variáveis CSS da aparência escolhida.</summary>
+    public string EstiloAparencia =>
+        (TextoEfetivo != "" ? $"--campo-texto:{TextoEfetivo};" : "") + (CorFundo != "" ? $"--campo-fundo:{CorFundo};" : "");
+
+    /// <summary>Cor do texto; com texto automático sobre fundo escolhido, usa preto ou branco para dar contraste.</summary>
+    private string TextoEfetivo => CorTexto != "" ? CorTexto : CorFundo == "" ? "" : (Luminancia(CorFundo) > 0.5 ? "#111827" : "#ffffff");
+
+    private static double Luminancia(string hex)
+    {
+        var h = hex.TrimStart('#');
+        if (h.Length != 6 || !int.TryParse(h, System.Globalization.NumberStyles.HexNumber, null, out var n)) return 0;
+        return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+    }
+
     public bool Numerico => Tipo is TipoCampo.Inteiro or TipoCampo.Decimal or TipoCampo.Moeda or TipoCampo.Percentual;
     public bool TemMeta => Numerico && Meta.HasValue && Valor.HasValue;
 }

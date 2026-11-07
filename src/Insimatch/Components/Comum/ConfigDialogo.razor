@@ -21,6 +21,7 @@
                 <Interruptor Texto="Modelo de apresentação" Dica="Cartões, Placar, Foco…" @bind-Valor="C.MostrarModelo" />
                 <Interruptor Texto="Gerar relatório" Dica="Relatório para imprimir, salvar em PDF ou baixar" @bind-Valor="C.MostrarRelatorio" />
                 <Interruptor Texto="Tela cheia" @bind-Valor="C.MostrarTelaCheia" />
+                <Interruptor Texto="Gerar com IA" Dica="Monta painéis ou slides a partir de uma planilha (Google Gemini)" @bind-Valor="C.MostrarIA" />
             </div>
 
             <div class="form-grupo">Abas fixas</div>
@@ -41,6 +42,13 @@
                 <Interruptor Texto="Troca de abas no modo apresentação" Dica="Seletor de abas no topo durante a apresentação" @bind-Valor="C.MostrarTrocaAbasApresentacao" />
             </div>
 
+            <div class="form-grupo">Desenvolvedor</div>
+            <button class="cfg-dev" @onclick="AbrirAdmin">
+                <span class="dock-ico"><IconeSvg Id="engrenagem" /></span>
+                <span><strong>Área do desenvolvedor</strong><small>Login restrito · chave da IA (Gemini)</small></span>
+                <span class="campo-chev">›</span>
+            </button>
+
             <div class="dialogo-acoes">
                 <button class="btn" @onclick="Restaurar">Restaurar padrão</button>
                 <div class="espaco"></div>
@@ -57,6 +65,9 @@
     [Parameter] public int Personalizadas { get; set; }
     [Parameter] public EventCallback<Configuracoes> OnSalvar { get; set; }
     [Parameter] public EventCallback OnFechar { get; set; }
+
+    [Inject] private NavigationManager Nav { get; set; } = default!;
+    private void AbrirAdmin() => Nav.NavigateTo("admdev");
 
     private static readonly (string Id, string Nome)[] Fixas =
     {

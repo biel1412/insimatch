@@ -109,5 +109,41 @@ window.insimatch = {
             if (!document.fullscreenElement) document.documentElement.requestFullscreen();
             else document.exitFullscreen();
         } catch (e) { /* não suportado */ }
+    },
+    // Colar imagens (Ctrl+V) no "Gerar com IA": reduz no navegador e entrega ao .NET em base64
+    _colar: null,
+    colarImagens: function (ref) {
+        if (window.insimatch._colar) {
+            document.removeEventListener('paste', window.insimatch._colar);
+            window.insimatch._colar = null;
+        }
+        if (!ref) return;
+        const h = function (e) {
+            const itens = (e.clipboardData && e.clipboardData.items) || [];
+            let achou = false;
+            for (const it of itens) {
+                if (!it.type || it.type.indexOf('image/') !== 0) continue;
+                const arq = it.getAsFile();
+                if (!arq) continue;
+                achou = true;
+                const url = URL.createObjectURL(arq);
+                const img = new Image();
+                img.onload = function () {
+                    const max = 2400, esc = Math.min(1, max / Math.max(img.width, img.height));
+                    const c = document.createElement('canvas');
+                    c.width = Math.round(img.width * esc); c.height = Math.round(img.height * esc);
+                    const g = c.getContext('2d');
+                    g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+                    g.drawImage(img, 0, 0, c.width, c.height);
+                    URL.revokeObjectURL(url);
+                    const b64 = c.toDataURL('image/jpeg', 0.92).split(',')[1];
+                    ref.invokeMethodAsync('ImagemColada', 'image/jpeg', b64);
+                };
+                img.src = url;
+            }
+            if (achou) e.preventDefault();
+        };
+        window.insimatch._colar = h;
+        document.addEventListener('paste', h);
     }
 };

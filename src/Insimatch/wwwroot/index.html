@@ -6,6 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>insiTalent</title>
     <base href="/" />
+    <script>
+        // Volta da página 404 do GitHub Pages: ?rota=admdev → /admdev (para links diretos funcionarem)
+        (function () {
+            var q = new URLSearchParams(location.search), r = q.get('rota');
+            if (r) history.replaceState(null, '', document.baseURI + r.replace(/^\/+/, ''));
+        })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -26,6 +33,10 @@
         <a href="" class="reload">Recarregar</a>
         <a class="dismiss">✕</a>
     </div>
+    <script>
+        // Selo visível quando o site é a versão de teste (publicada em /teste/)
+        if (location.pathname.indexOf('/teste/') >= 0) document.documentElement.classList.add('versao-teste');
+    </script>
     <script src="js/insimatch.js"></script>
     <script src="_framework/blazor.webassembly.js"></script>
 </body>

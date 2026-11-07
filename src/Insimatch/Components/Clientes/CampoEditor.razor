@@ -154,6 +154,64 @@
                 <div class="dica">Este visual usa a meta; sem meta, o campo aparece como número.</div>
             }
 
+            @* ---------- Aparência do bloco ---------- *@
+            <div class="ap-bloco @(AparenciaAberta ? "aberta" : "")">
+                <button type="button" class="ap-cab" @onclick="() => { AparenciaAberta = !AparenciaAberta; }">
+                    <span class="ap-amostra @C.ClassesAparencia" style="@C.EstiloAparencia">Aa</span>
+                    <span>Aparência do bloco <em>@(C.AparenciaPersonalizada ? "personalizada" : "padrão do tema")</em></span>
+                    <span class="campo-chev">▾</span>
+                </button>
+                @if (AparenciaAberta)
+                {
+                    <div class="ap-corpo">
+                        <div class="ap-rotulo">Cor do texto</div>
+                        <div class="ap-cores">
+                            <button type="button" class="ap-cor auto @(C.CorTexto == "" ? "sel" : "")" title="Automática (tema)" @onclick="LimparTexto">A</button>
+                            @foreach (var (cor, nome) in CoresTexto)
+                            {
+                                var c = cor;
+                                <button type="button" class="ap-cor @(Igual(C.CorTexto, c) ? "sel" : "")" title="@nome" style="background:@c" @onclick="() => DefinirTexto(c)"></button>
+                            }
+                            <label class="ap-cor ap-livre" title="Outra cor">
+                                <input type="color" value="@(C.CorTexto == "" ? "#ffffff" : C.CorTexto)" @onchange="CorTextoLivre" />
+                                <span>+</span>
+                            </label>
+                        </div>
+
+                        <div class="ap-rotulo">Fundo do bloco</div>
+                        <div class="ap-cores">
+                            <button type="button" class="ap-cor auto @(C.CorFundo == "" ? "sel" : "")" title="Padrão do tema" @onclick="LimparFundo">A</button>
+                            @foreach (var (cor, nome) in CoresFundo)
+                            {
+                                var c = cor;
+                                <button type="button" class="ap-cor @(Igual(C.CorFundo, c) ? "sel" : "")" title="@nome" style="background:@c" @onclick="() => DefinirFundo(c)"></button>
+                            }
+                            <label class="ap-cor ap-livre" title="Outra cor">
+                                <input type="color" value="@(C.CorFundo == "" ? "#1e293b" : C.CorFundo)" @onchange="CorFundoLivre" />
+                                <span>+</span>
+                            </label>
+                        </div>
+
+                        <div class="ap-rotulo">Formato do bloco</div>
+                        <div class="ap-formatos">
+                            @foreach (var (id, nome) in Formatos)
+                            {
+                                var f = id;
+                                <button type="button" class="ap-formato @((C.Formato == "" ? "padrao" : C.Formato) == f ? "sel" : "")" @onclick="() => DefinirFormato(f)">
+                                    <span class="ap-forma forma-@f"></span>
+                                    <small>@nome</small>
+                                </button>
+                            }
+                        </div>
+
+                        @if (C.AparenciaPersonalizada)
+                        {
+                            <button type="button" class="btn btn-pequeno" @onclick="RestaurarAparencia">Restaurar padrão</button>
+                        }
+                    </div>
+                }
+            </div>
+
             <div class="campo-acoes">
                 <button class="btn" title="Subir" disabled="@Primeiro" @onclick="() => OnMover.InvokeAsync(-1)">↑</button>
                 <button class="btn" title="Descer" disabled="@Ultimo" @onclick="() => OnMover.InvokeAsync(1)">↓</button>
@@ -165,6 +223,33 @@
 </div>
 
 @code {
+    private bool AparenciaAberta;
+
+    private static readonly (string Cor, string Nome)[] CoresTexto =
+    {
+        ("#ffffff", "Branco"), ("#111827", "Preto"), ("#4fa9ff", "Azul"), ("#2fe0a0", "Verde"),
+        ("#ffc857", "Amarelo"), ("#ff8a3d", "Laranja"), ("#ff6b81", "Vermelho"), ("#a78bfa", "Roxo")
+    };
+    private static readonly (string Cor, string Nome)[] CoresFundo =
+    {
+        ("#1e3a8a", "Azul-marinho"), ("#065f46", "Verde-escuro"), ("#4c1d95", "Roxo-escuro"), ("#7f1d1d", "Vinho"),
+        ("#1f2937", "Grafite"), ("#ffffff", "Branco"), ("#fef3c7", "Creme"), ("#dbeafe", "Azul-claro")
+    };
+    private static readonly (string Id, string Nome)[] Formatos =
+    {
+        ("padrao", "Padrão"), ("reto", "Reto"), ("redondo", "Arredondado"), ("faixa", "Faixa lateral"), ("contorno", "Contorno")
+    };
+
+    private static bool Igual(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
+    private Task DefinirTexto(string cor) { C.CorTexto = cor; return Mudou(); }
+    private Task DefinirFundo(string cor) { C.CorFundo = cor; return Mudou(); }
+    private Task DefinirFormato(string f) { C.Formato = f == "padrao" ? "" : f; return Mudou(); }
+    private Task LimparTexto() => DefinirTexto(string.Empty);
+    private Task LimparFundo() => DefinirFundo(string.Empty);
+    private Task CorTextoLivre(ChangeEventArgs e) => DefinirTexto(e.Value?.ToString() ?? string.Empty);
+    private Task CorFundoLivre(ChangeEventArgs e) => DefinirFundo(e.Value?.ToString() ?? string.Empty);
+    private Task RestaurarAparencia() { C.CorTexto = C.CorFundo = C.Formato = ""; return Mudou(); }
+
     [Parameter, EditorRequired] public CampoCliente C { get; set; } = default!;
     [Parameter] public bool Aberto { get; set; }
     [Parameter] public bool Primeiro { get; set; }
