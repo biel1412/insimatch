@@ -1,0 +1,18 @@
+name: Versão de teste
+
+# Roda só neste branch: pede ao main uma nova publicação, que inclui esta versão em /teste/.
+on:
+  push:
+    branches: [teste-ia]
+
+permissions:
+  actions: write
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pedir publicação (main + teste)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy.yml --ref main --repo "${{ github.repository }}"
