@@ -16,7 +16,16 @@ Escrito em **C# com Blazor WebAssembly** e hospedado no **GitHub Pages**: abre d
 | **Suas abas** | Abas criadas por você no botão **+ Nova** do menu | Cartões · Placar · Foco |
 
 ### Abas personalizadas
-No menu lateral, **+ Nova** cria uma aba com o nome que você quiser, um ícone (há 24 disponíveis) e o nome de cada registro (ex.: projeto, unidade, contrato). Ela pode começar em branco ou com um exemplo. Cada aba funciona como a aba Cliente: campos livres, metas, gráficos e parecer. O botão **⚙** no topo do editor da aba permite renomear, trocar o ícone ou excluir a aba (com confirmação).
+No menu lateral, **+ Nova** cria uma aba com nome, ícone (26 opções) e nome de cada registro. Há quatro formatos:
+
+| Formato | O que é |
+|---|---|
+| **Em branco** | Painel de indicadores do zero (campos livres, metas, gráficos e parecer, como a aba Cliente). |
+| **Exemplo pronto** | O mesmo painel, já com campos de exemplo. |
+| **Slides** | Várias páginas com título, texto (linhas com “-” viram tópicos), campos flexíveis e **até 2 imagens por slide**. As imagens são carregadas no editor e a plataforma escolhe a posição: ao lado do conteúdo, em destaque abaixo, em tela cheia ou em galeria. Modelos: Slide (setas ← → do teclado), Rolagem e Visão geral. As imagens ficam no IndexedDB do navegador; exportar (.json) leva os slides e as imagens. |
+| **Fluxograma** | Você descreve as etapas (Início, Etapa, Decisão, Documento, Dados/sistema, Fim) e para onde cada uma segue, com rótulos como “Sim/Não”. O desenho é organizado automaticamente em camadas; retornos contornam pelo lado mais livre. Modelos: Vertical e Horizontal. |
+
+O botão **⚙** no topo do editor da aba permite renomear, trocar o ícone ou excluir a aba (com confirmação). O relatório funciona em todos os formatos (nos slides, com as imagens; no fluxograma, com o desenho).
 
 Na barra do topo:
 - **Cor:** 13 opções num seletor com amostras. Escuras: Noturno, Oceano, Esmeralda, Aurora, Rubi, Solar, Lavanda, Coral, Meia-noite e Grafite. Claras: Claro, Areia e Ártico.

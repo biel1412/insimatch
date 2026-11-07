@@ -13,5 +13,7 @@ builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddScoped<ArmazenamentoService>();
+builder.Services.AddScoped(_ => new HttpClient());
+builder.Services.AddScoped<GroqService>();
 
 await builder.Build().RunAsync();
