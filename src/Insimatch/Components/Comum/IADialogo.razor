@@ -34,7 +34,7 @@ else
         <div class="form">
             @* ---------- Fonte dos dados ---------- *@
             <div class="form-grupo">1. De onde vêm os dados</div>
-            <div class="opcoes-inicio tres">
+            <div class="opcoes-inicio quatro">
                 <button class="opcao-inicio @(Fonte == "planilha" ? "sel" : "")" @onclick='() => { Fonte = "planilha"; Erro = ""; }'>
                     <span class="opcao-ico"><IconeSvg Id="documento" /></span>
                     <strong>Planilha</strong>
@@ -46,6 +46,13 @@ else
                     </span>
                     <strong>Imagem / print</strong>
                     <span>Envie ou cole (Ctrl+V) prints de tela, relatórios ou fotos.</span>
+                </button>
+                <button class="opcao-inicio @(Fonte == "pdf" ? "sel" : "")" @onclick='() => { Fonte = "pdf"; Erro = ""; }'>
+                    <span class="opcao-ico">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /><path d="M8.5 13.5h1.2a1.2 1.2 0 0 0 0-2.4H8.5V16M13 11.1V16h1a2 2 0 0 0 2-2v-.9a2 2 0 0 0-2-2z" /></svg>
+                    </span>
+                    <strong>PDF</strong>
+                    <span>Relatórios, extratos ou apresentações em .pdf.</span>
                 </button>
                 <button class="opcao-inicio @(Fonte == "texto" ? "sel" : "")" @onclick='() => { Fonte = "texto"; Erro = ""; }'>
                     <span class="opcao-ico">
@@ -93,6 +100,32 @@ else
                             <small class="mudo">Prévia da aba “@Abas[0].Nome”. As outras abas também serão lidas: @string.Join(", ", Abas.Skip(1).Select(a => a.Nome)).</small>
                         }
                     </div>
+                }
+            }
+
+            @if (Fonte == "pdf")
+            {
+                <label class="btn arquivo ia-arquivo @(Lendo ? "carregando" : "")">
+                    @(Lendo ? "Lendo PDF…" : Pdfs.Count > 0 ? $"Adicionar PDF ({Pdfs.Count} de {MaxPdfs})" : "Escolher arquivo PDF")
+                    <InputFile OnChange="LerPdfsAsync" accept=".pdf,application/pdf" multiple />
+                </label>
+                @if (Pdfs.Count > 0)
+                {
+                    <div class="ia-pdfs">
+                        @foreach (var pdf in Pdfs)
+                        {
+                            var atual = pdf;
+                            <div class="ia-pdf">
+                                <span class="ia-pdf-ico">PDF</span>
+                                <span class="ia-pdf-txt"><strong>@atual.Nome</strong><small>@TamanhoTexto(atual.Bytes)</small></span>
+                                <button class="ia-imagem-x" title="Remover" @onclick="() => Pdfs.Remove(atual)">✕</button>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="dica">Até @MaxPdfs PDFs, somando no máximo 14 MB. A IA lê textos, tabelas e números — inclusive de PDFs escaneados.</p>
                 }
             }
 
@@ -188,6 +221,36 @@ else
     private record ImagemIA(string Nome, string Mime, string Base64);
     private List<ImagemIA> Imagens = new();
     private DotNetObjectReference<IADialogo>? Ref;
+    private const int MaxPdfs = 2;
+    private const long MaxBytesPdf = 14L * 1024 * 1024;
+    private record PdfIA(string Nome, long Bytes, string Base64);
+    private List<PdfIA> Pdfs = new();
+
+    private static string TamanhoTexto(long b) => b >= 1024 * 1024 ? $"{b / 1024d / 1024:0.0} MB" : $"{Math.Max(1, b / 1024)} KB";
+
+    private async Task LerPdfsAsync(InputFileChangeEventArgs e)
+    {
+        Erro = "";
+        Lendo = true;
+        try
+        {
+            foreach (var f in e.GetMultipleFiles(10))
+            {
+                if (Pdfs.Count >= MaxPdfs) { Erro = $"Use no máximo {MaxPdfs} PDFs."; break; }
+                var ehPdf = f.ContentType == "application/pdf" || f.Name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase);
+                if (!ehPdf) { Erro = $"“{f.Name}” não é um PDF."; continue; }
+                if (Pdfs.Sum(p => p.Bytes) + f.Size > MaxBytesPdf) { Erro = "Os PDFs passam de 14 MB juntos. Envie um arquivo menor ou só as páginas importantes."; break; }
+                using var ms = new MemoryStream();
+                await f.OpenReadStream(MaxBytesPdf).CopyToAsync(ms);
+                var bytes = ms.ToArray();
+                if (bytes.Length < 5 || System.Text.Encoding.ASCII.GetString(bytes, 0, 5) != "%PDF-") { Erro = $"“{f.Name}” não parece ser um PDF válido."; continue; }
+                Pdfs.Add(new PdfIA(f.Name, f.Size, Convert.ToBase64String(bytes)));
+                if (string.IsNullOrWhiteSpace(NomeAba)) NomeAba = Path.GetFileNameWithoutExtension(f.Name);
+            }
+        }
+        catch (Exception ex) { Erro = "Não foi possível ler o PDF: " + ex.Message; }
+        finally { Lendo = false; }
+    }
     private bool Slides;
     private string NomeAba = "";
     private string Instrucoes = "";
@@ -294,6 +357,13 @@ else
             dados = "(nenhum arquivo enviado: use somente o que está nas instruções do usuário)";
             origem = "somente as instruções do usuário, em texto";
         }
+        else if (Fonte == "pdf")
+        {
+            if (Pdfs.Count == 0) { Erro = "Escolha um arquivo PDF primeiro."; return; }
+            anexos = Pdfs.Select(p => ("application/pdf", p.Base64)).ToList();
+            dados = $"Os dados estão no(s) {Pdfs.Count} PDF(s) anexado(s). Leia com atenção textos, tabelas, números e gráficos de todas as páginas.";
+            origem = $"PDF: {string.Join(", ", Pdfs.Select(p => p.Nome))}";
+        }
         else if (Fonte == "imagem")
         {
             if (Imagens.Count == 0) { Erro = "Escolha ou cole uma imagem primeiro."; return; }
@@ -309,7 +379,7 @@ else
         }
 
         Gerando = true;
-        Cts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+        Cts = new CancellationTokenSource(TimeSpan.FromSeconds(Fonte == "pdf" ? 150 : 90));
         try
         {
             var json = await Gemini.GerarJsonAsync(Cfg.Chave, Cfg.Modelo, PromptsIA.Sistema(Slides),

@@ -46,6 +46,7 @@ public static class PromptsIA
         - Se houver muitas linhas, resuma: totais, médias, maiores e menores, comparação entre grupos ou períodos.
         - "valor" e "meta" são números puros (ponto como separador decimal, sem símbolo, sem separador de milhar).
         - Quando houver "Resumo calculado pelo sistema", use exatamente aqueles totais, médias, totais por grupo e percentuais de atingimento; não refaça contas.
+        - Se os dados vierem de PDF, use os números e textos do documento; em tabelas, respeite os totais que o próprio PDF já traz.
         - Se os dados vierem de imagens, use somente o que está legível nelas; se um número estiver ilegível, deixe-o de fora em vez de adivinhar.
         - Se não houver arquivo (só instruções em texto), os dados são as instruções: use os números citados nelas. Se o usuário não der números, monte a estrutura pedida com "valor": null e "meta": null (e tópicos/textos sem números inventados), para ele preencher depois.
         - Ignore linhas vazias, linhas de "Total" sem números e linhas soltas que pareçam rascunho ou lixo (ex.: uma data com um valor isolado e "n/d"). Não as inclua em somas ou médias.
