@@ -1,5 +1,7 @@
 name: Publicar no GitHub Pages
 
+# Publica o branch main na raiz do site e, se existir, o branch "teste-ia" em /teste/.
+# O branch de teste dispara esta publicação pelo workflow "Versão de teste" (que roda nele).
 on:
   push:
     branches: [main]
@@ -19,13 +21,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: main
+          path: principal
+
+      - name: Verificar se existe versão de teste
+        id: teste
+        run: |
+          if git ls-remote --exit-code --heads "https://github.com/${{ github.repository }}" teste-ia > /dev/null; then
+            echo "existe=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "existe=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v5
+        if: steps.teste.outputs.existe == 'true'
+        with:
+          ref: teste-ia
+          path: teste
 
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 8.0.x
 
-      - name: Publicar Blazor WebAssembly
-        run: dotnet publish src/Insimatch/Insimatch.csproj -c Release -o release
+      - name: Publicar versão principal
+        run: dotnet publish principal/src/Insimatch/Insimatch.csproj -c Release -o release
 
       - name: Ajustar caminho base para o GitHub Pages
         run: |
@@ -33,6 +53,15 @@ jobs:
           sed -i "s|<base href=\"/\" />|<base href=\"/${REPO}/\" />|g" release/wwwroot/index.html
           cp release/wwwroot/index.html release/wwwroot/404.html
           touch release/wwwroot/.nojekyll
+
+      - name: Publicar versão de teste em /teste/
+        if: steps.teste.outputs.existe == 'true'
+        run: |
+          REPO="${{ github.event.repository.name }}"
+          dotnet publish teste/src/Insimatch/Insimatch.csproj -c Release -o release-teste
+          sed -i "s|<base href=\"/\" />|<base href=\"/${REPO}/teste/\" />|g" release-teste/wwwroot/index.html
+          mkdir -p release/wwwroot/teste
+          cp -r release-teste/wwwroot/. release/wwwroot/teste/
 
       - name: Guardar build (download manual)
         uses: actions/upload-artifact@v4
