@@ -1,0 +1,24 @@
+name: Teste real IA
+on:
+  push:
+    branches: [tmp-preview]
+    paths: ['e2e/**', '.github/workflows/e2e-ia.yml']
+permissions:
+  contents: write
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install playwright && python -m playwright install --with-deps chromium
+      - run: python e2e/teste_ia.py e2e/teste.xlsx saida
+        continue-on-error: true
+      - name: Publicar resultado
+        run: |
+          cd saida
+          git init -q -b tmp-e2e-out
+          git config user.name ci; git config user.email ci@example.com
+          git add -A; git commit -qm resultado
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" tmp-e2e-out
