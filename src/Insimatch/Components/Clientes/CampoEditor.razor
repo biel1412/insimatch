@@ -1,12 +1,23 @@
 @* Editor de um campo livre do cliente (recolhível) *@
 @{ var st = AvaliacaoCliente.StatusCampo(C); }
 
-<div class="campo-card @(Aberto ? "aberto" : "") @Avaliacao.Classe(st)">
+<div class="campo-card @(Aberto ? "aberto" : "") @Avaliacao.Classe(st) @(C.Oculto ? "oculto" : "")">
+    <button class="campo-olho" title="@(C.Oculto ? "Oculto no painel — clique para mostrar" : "Ocultar no painel (continua nos gráficos)")"
+            aria-pressed="@(C.Oculto ? "true" : "false")" @onclick="AlternarOcultoAsync">
+        @if (C.Oculto)
+        {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18" /><path d="M10.6 5.1A10.6 10.6 0 0 1 12 5c6 0 9.5 7 9.5 7a17 17 0 0 1-3.2 4.1M6.6 6.6C3.9 8.4 2.5 12 2.5 12S6 19 12 19a9.7 9.7 0 0 0 5.4-1.6" /><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" /></svg>
+        }
+        else
+        {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7z" /><circle cx="12" cy="12" r="3" /></svg>
+        }
+    </button>
     <button class="campo-cab" @onclick="AlternarAsync" aria-expanded="@(Aberto ? "true" : "false")">
         <span class="campo-ico">@AvaliacaoCliente.IconeTipo(C.Tipo)</span>
         <span class="campo-cab-txt">
             <strong>@(string.IsNullOrWhiteSpace(C.Nome) ? "Campo sem nome" : C.Nome)</strong>
-            <small>@AvaliacaoCliente.Valor(C)@(C.Meta.HasValue && C.Numerico ? " · meta " + AvaliacaoCliente.MetaTexto(C) : "")</small>
+            <small>@(C.Oculto ? "oculto no painel · " : "")@AvaliacaoCliente.Valor(C)@(C.Meta.HasValue && C.Numerico ? " · meta " + AvaliacaoCliente.MetaTexto(C) : "")</small>
         </span>
         @if (C.TemMeta)
         {
@@ -244,6 +255,7 @@
     private Task DefinirTexto(string cor) { C.CorTexto = cor; return Mudou(); }
     private Task DefinirFundo(string cor) { C.CorFundo = cor; return Mudou(); }
     private Task DefinirFormato(string f) { C.Formato = f == "padrao" ? "" : f; return Mudou(); }
+    private Task AlternarOcultoAsync() { C.Oculto = !C.Oculto; return Mudou(); }
     private Task LimparTexto() => DefinirTexto(string.Empty);
     private Task LimparFundo() => DefinirFundo(string.Empty);
     private Task CorTextoLivre(ChangeEventArgs e) => DefinirTexto(e.Value?.ToString() ?? string.Empty);

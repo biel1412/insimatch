@@ -1,7 +1,18 @@
 @* Modelo "Foco" do cliente: campos em destaque bem grandes *@
 <FocoLayout Indicadores="@Principais" Secundarios="@Outros">
     <Superior><ClienteCabecalho Cl="Cl" /></Superior>
-    <Inferior><ClienteParecer Cl="Cl" /></Inferior>
+    <Inferior>
+        @if (Cl.MostraGraficos && Cl.Graficos.Count > 0 && (!Cl.MostraCampos || Escolhidos.Count == 0))
+        {
+            <div class="gp-grade placar-graficos">
+                @foreach (var g in Cl.Graficos)
+                {
+                    <GraficoPainel @key="g.Id" Cl="Cl" G="g" />
+                }
+            </div>
+        }
+        <ClienteParecer Cl="Cl" />
+    </Inferior>
 </FocoLayout>
 
 @code {
@@ -12,9 +23,10 @@
     {
         get
         {
-            var d = Cl.Campos.Where(c => c.Destaque).Take(4).ToList();
-            if (d.Count == 0) d = Cl.Campos.Where(c => c.TemMeta).Take(3).ToList();
-            if (d.Count == 0) d = Cl.Campos.Where(c => c.Numerico).Take(3).ToList();
+            var vis = AvaliacaoCliente.Visiveis(Cl);
+            var d = vis.Where(c => c.Destaque).Take(4).ToList();
+            if (d.Count == 0) d = vis.Where(c => c.TemMeta).Take(3).ToList();
+            if (d.Count == 0) d = vis.Where(c => c.Numerico).Take(3).ToList();
             return d;
         }
     }
@@ -32,7 +44,7 @@
         get
         {
             var ids = Escolhidos.Select(c => c.Id).ToHashSet();
-            return Cl.Campos.Where(c => !ids.Contains(c.Id)).Take(6)
+            return AvaliacaoCliente.Visiveis(Cl).Where(c => !ids.Contains(c.Id)).Take(6)
                 .Select(c => new Indicador(c.Nome, AvaliacaoCliente.Valor(c))).ToList();
         }
     }

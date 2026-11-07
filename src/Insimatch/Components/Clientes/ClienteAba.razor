@@ -43,6 +43,23 @@
                 </label>
             </div>
 
+            <div class="exibir-painel">
+                <div class="ap-rotulo">Exibir no painel</div>
+                <div class="segmentado largo">
+                    <button class="@(Atual.Exibir == "" ? "sel" : "")" @onclick="() => ExibirAsync(string.Empty)">Campos e gráficos</button>
+                    <button class="@(Atual.Exibir == "graficos" ? "sel" : "")" @onclick='() => ExibirAsync("graficos")'>Só gráficos</button>
+                    <button class="@(Atual.Exibir == "campos" ? "sel" : "")" @onclick='() => ExibirAsync("campos")'>Só campos</button>
+                </div>
+                @if (Atual.Exibir == "graficos" && Atual.Graficos.Count == 0)
+                {
+                    <small class="exibir-aviso">Ainda não há gráficos: crie na aba “Gráficos”.</small>
+                }
+                else if (Atual.Exibir != "graficos" && Atual.Campos.Any(c => c.Oculto))
+                {
+                    <small class="exibir-aviso">@Atual.Campos.Count(c => c.Oculto) campo(s) oculto(s) no painel (👁 no campo para mostrar).</small>
+                }
+            </div>
+
             <div class="form-grupo">
                 Campos (@Atual.Campos.Count)
                 @if (Atual.Campos.Count > 0)
@@ -94,7 +111,24 @@
     {
         var numericos = Atual.Campos.Where(c => c.Numerico).ToList();
         <div class="form">
-            <p class="dica">Gráficos comparam vários campos numéricos. Use “% da meta” para comparar indicadores de unidades diferentes.</p>
+            <div class="exibir-painel">
+                <div class="ap-rotulo">Exibir no painel</div>
+                <div class="segmentado largo">
+                    <button class="@(Atual.Exibir == "" ? "sel" : "")" @onclick="() => ExibirAsync(string.Empty)">Campos e gráficos</button>
+                    <button class="@(Atual.Exibir == "graficos" ? "sel" : "")" @onclick='() => ExibirAsync("graficos")'>Só gráficos</button>
+                    <button class="@(Atual.Exibir == "campos" ? "sel" : "")" @onclick='() => ExibirAsync("campos")'>Só campos</button>
+                </div>
+                @if (Atual.Exibir == "graficos" && Atual.Graficos.Count == 0)
+                {
+                    <small class="exibir-aviso">Ainda não há gráficos: crie na aba “Gráficos”.</small>
+                }
+                else if (Atual.Exibir != "graficos" && Atual.Campos.Any(c => c.Oculto))
+                {
+                    <small class="exibir-aviso">@Atual.Campos.Count(c => c.Oculto) campo(s) oculto(s) no painel (👁 no campo para mostrar).</small>
+                }
+            </div>
+
+            <p class="dica">Gráficos comparam vários campos numéricos. Use “% da meta” para comparar indicadores de unidades diferentes. Campos ocultos no painel também podem entrar nos gráficos.</p>
             @for (var i = 0; i < Atual.Graficos.Count; i++)
             {
                 var idx = i;
@@ -312,6 +346,13 @@
     private void Alternar(string id)
     {
         if (!Abertos.Remove(id)) Abertos.Add(id);
+    }
+
+    private async Task ExibirAsync(string modo)
+    {
+        if (Atual is null) return;
+        Atual.Exibir = modo;
+        await SalvarAsync();
     }
 
     private void AlternarTodos()

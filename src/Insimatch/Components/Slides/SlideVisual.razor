@@ -3,7 +3,8 @@
     var disposicao = SlidesRegras.Layout(S);
     var linhas = SlidesRegras.Linhas(S.Texto);
     var imagens = S.Imagens.Take(SlidesRegras.MaxImagens).ToList();
-    var temConteudo = linhas.Count > 0 || S.Campos.Count > 0;
+    var campos = S.Campos.Where(c => !c.Oculto).ToList();
+    var temConteudo = linhas.Count > 0 || campos.Count > 0;
     var semTitulo = string.IsNullOrWhiteSpace(S.Titulo) && string.IsNullOrWhiteSpace(S.Subtitulo);
     var (classes, estilo) = TemasSlides.Visual(Deck, S);
     // Capa: a primeira imagem vira fundo do slide
@@ -58,10 +59,10 @@
                         }
                     </div>
                 }
-                @if (S.Campos.Count > 0)
+                @if (campos.Count > 0)
                 {
-                    <div class="slide-campos n-@Math.Min(S.Campos.Count, 4)">
-                        @foreach (var c in S.Campos)
+                    <div class="slide-campos n-@Math.Min(campos.Count, 4)">
+                        @foreach (var c in campos)
                         {
                             <CampoVisual @key="c.Id" C="c" />
                         }

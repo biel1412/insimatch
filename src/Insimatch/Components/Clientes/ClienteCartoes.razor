@@ -35,6 +35,12 @@
     {
         <div class="cartao neutro gp-vazio grande">Adicione campos no editor para montar este painel.</div>
     }
+    else if (grupos.Count == 0 && (!Cl.MostraGraficos || Cl.Graficos.Count == 0))
+    {
+        <div class="cartao neutro gp-vazio grande">
+            @(Cl.MostraCampos ? "Todos os campos estão ocultos." : "Modo “Só gráficos”: crie gráficos na aba Gráficos do editor para exibi-los aqui.")
+        </div>
+    }
 
     @foreach (var (grupo, campos) in grupos)
     {
@@ -48,7 +54,7 @@
         </div>
     }
 
-    @if (Cl.Graficos.Count > 0)
+    @if (Cl.MostraGraficos && Cl.Graficos.Count > 0)
     {
         n++;
         <div class="secao-titulo"><span>@n.ToString("00")</span> Análises</div>

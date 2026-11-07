@@ -133,9 +133,10 @@ public static class SlidesRegras
     public static string Layout(Slide s)
     {
         var linhas = Linhas(s.Texto);
-        var temConteudo = s.Campos.Count > 0 || linhas.Count > 0;
+        var nCampos = s.Campos.Count(c => !c.Oculto);
+        var temConteudo = nCampos > 0 || linhas.Count > 0;
         var n = Math.Min(s.Imagens.Count, MaxImagens);
-        var curto = s.Campos.Count <= 2 && linhas.Count <= 3 && s.Campos.Count + linhas.Count <= 3;
+        var curto = nCampos <= 2 && linhas.Count <= 3 && nCampos + linhas.Count <= 3;
 
         if (n == 0) return "so-conteudo";
         if (!temConteudo) return n == 1 ? "imagem-cheia" : "galeria";

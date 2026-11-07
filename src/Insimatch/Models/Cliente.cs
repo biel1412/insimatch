@@ -45,6 +45,8 @@ public class CampoCliente
 
     public VisualCampo Visual { get; set; } = VisualCampo.Numero;
     public bool Destaque { get; set; }
+    /// <summary>Não aparece no painel (continua nos gráficos, no resultado geral e no parecer).</summary>
+    public bool Oculto { get; set; }
 
     // ---------- Aparência do bloco (vazio = padrão do tema) ----------
     /// <summary>Cor do texto (#rrggbb).</summary>
@@ -97,6 +99,11 @@ public class Cliente
     public string Descricao { get; set; } = "";
     public List<CampoCliente> Campos { get; set; } = new();
     public List<GraficoCliente> Graficos { get; set; } = new();
+
+    /// <summary>O que o painel mostra: "" (campos e gráficos), "graficos" (só gráficos) ou "campos" (só campos).</summary>
+    public string Exibir { get; set; } = "";
+    public bool MostraCampos => Exibir != "graficos";
+    public bool MostraGraficos => Exibir != "campos";
 
     public string Parecer { get; set; } = "";
     public TomParecer Tom { get; set; } = TomParecer.Formal;
@@ -251,8 +258,12 @@ public static class AvaliacaoCliente
     };
 
     /// <summary>Grupos na ordem em que aparecem; campos sem grupo vão para "Indicadores".</summary>
+    /// <summary>Campos que aparecem no painel (respeita "Só gráficos" e os campos ocultos).</summary>
+    public static List<CampoCliente> Visiveis(Cliente cl) =>
+        cl.MostraCampos ? cl.Campos.Where(c => !c.Oculto).ToList() : new();
+
     public static List<(string Grupo, List<CampoCliente> Campos)> Grupos(Cliente cl) =>
-        cl.Campos
+        Visiveis(cl)
           .GroupBy(c => string.IsNullOrWhiteSpace(c.Grupo) ? "Indicadores" : c.Grupo.Trim())
           .Select(g => (g.Key, g.ToList()))
           .ToList();

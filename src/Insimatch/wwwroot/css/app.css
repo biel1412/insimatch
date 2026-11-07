@@ -1884,3 +1884,20 @@ html.versao-teste body::after {
 /* Duas colunas: sempre alinhado à esquerda dentro de cada coluna */
 .slide.est-colunas .slide-texto { text-align: left; }
 .slide.est-colunas .slide-texto ul { justify-items: start; }
+
+/* Painel: exibir campos/gráficos e ocultar campos */
+.exibir-painel { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: 14px; background: var(--vidro); border: 1px solid var(--vidro-borda); }
+.segmentado.largo { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; }
+.segmentado.largo button { padding: 8px 6px; }
+.exibir-aviso { font-size: 12px; color: var(--texto-3); }
+.campo-card { position: relative; }
+.campo-card .campo-cab { padding-right: 70px; }
+.campo-olho {
+    position: absolute; top: 12px; right: 36px; z-index: 2; width: 30px; height: 30px; border-radius: 9px; cursor: pointer;
+    display: grid; place-items: center; border: 1px solid transparent; background: transparent; color: var(--texto-3); padding: 0;
+}
+.campo-olho svg { width: 17px; height: 17px; }
+.campo-olho:hover { background: var(--hover); color: var(--texto); border-color: var(--vidro-borda); }
+.campo-card.oculto .campo-olho { color: var(--acento); }
+.campo-card.oculto .campo-cab { opacity: .55; }
+.campo-card.oculto .campo-cab strong { text-decoration: line-through; text-decoration-thickness: 1px; }

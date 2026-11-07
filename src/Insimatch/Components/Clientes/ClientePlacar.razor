@@ -3,7 +3,7 @@
 <PlacarLayout Linhas="@Linhas" Criterios="@Criterios" Status="st" VereditoValor="@AvaliacaoCliente.RotuloGeral(Cl)">
     <Superior><ClienteCabecalho Cl="Cl" /></Superior>
     <Inferior>
-        @if (Cl.Graficos.Count > 0)
+        @if (Cl.MostraGraficos && Cl.Graficos.Count > 0)
         {
             <div class="gp-grade placar-graficos">
                 @foreach (var g in Cl.Graficos)
