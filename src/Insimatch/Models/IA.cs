@@ -66,8 +66,10 @@ public static class PromptsIA
 
             {
               "nome": "título da apresentação",
+              "tema": "claro | papel | menta | noite | grafite | executivo | oceano | aurora | vinho | floresta (ou vazio)",
               "slides": [
                 {
+                  "estrutura": "capa | secao | colunas | destaque | vazio (automática)",
                   "titulo": "título do slide",
                   "subtitulo": "uma linha de apoio (opcional)",
                   "texto": "linhas curtas; comece cada tópico com '- ' e separe linhas com \n",
@@ -82,6 +84,9 @@ public static class PromptsIA
             Estrutura sugerida: 1) slide de abertura com o resumo; 2 a 5) um slide por tema com até 4 campos cada
             e 2 a 4 tópicos explicando o que os números mostram; último) conclusões e próximos passos (só texto).
             Use de 4 a 8 slides.
+            Estruturas: "capa" no primeiro slide (título + subtítulo curtos); "secao" para separar partes;
+            "colunas" para listas longas de tópicos; "destaque" para uma mensagem/conclusão curta e forte;
+            vazio nos slides com campos. Escolha um "tema" que combine com o assunto (ou o pedido pelo usuário).
 
             {{Regras}}
             """
@@ -183,13 +188,16 @@ public static class ConversorIA
     {
         using var doc = JsonDocument.Parse(json);
         var r = doc.RootElement;
-        var ap = new Apresentacao { Nome = Txt(r, "nome") };
+        var tema = Txt(r, "tema").Trim().ToLowerInvariant();
+        var ap = new Apresentacao { Nome = Txt(r, "nome"), Tema = TemasSlides.Lista.Any(t => t.Id == tema) ? tema : "" };
+        string[] estruturas = { "capa", "secao", "colunas", "destaque" };
         foreach (var s in Lista(r, "slides").Take(15))
         {
             var slide = new Slide
             {
                 Titulo = Txt(s, "titulo"),
                 Subtitulo = Txt(s, "subtitulo"),
+                Estrutura = estruturas.Contains(Txt(s, "estrutura").Trim().ToLowerInvariant()) ? Txt(s, "estrutura").Trim().ToLowerInvariant() : "",
                 Texto = Txt(s, "texto").Replace("\\n", "\n"),
                 Campos = Lista(s, "campos").Select(ParaCampo).Where(c => c is not null).Select(c => c!).Take(6).ToList()
             };

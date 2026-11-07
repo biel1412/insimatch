@@ -5,9 +5,17 @@
     var imagens = S.Imagens.Take(SlidesRegras.MaxImagens).ToList();
     var temConteudo = linhas.Count > 0 || S.Campos.Count > 0;
     var semTitulo = string.IsNullOrWhiteSpace(S.Titulo) && string.IsNullOrWhiteSpace(S.Subtitulo);
+    var (classes, estilo) = TemasSlides.Visual(Deck, S);
+    // Capa: a primeira imagem vira fundo do slide
+    var capaImg = S.Estrutura == "capa" && imagens.Count > 0 && Imagens.TryGetValue(imagens[0].Id, out var srcCapa) ? srcCapa : null;
+    if (capaImg is not null) { imagens = new(); disposicao = "so-conteudo"; }
 }
 
-<section class="slide layout-@disposicao @(semTitulo ? "sem-titulo" : "") @(Ativo ? "ativo" : "")" aria-label="Slide @Numero">
+<section class="slide layout-@disposicao @(semTitulo ? "sem-titulo" : "") @(Ativo ? "ativo" : "") @classes @(capaImg is null ? "" : "capa-com-imagem")" style="@estilo" aria-label="Slide @Numero">
+    @if (capaImg is not null)
+    {
+        <div class="slide-capa-fundo" style="background-image:url('@capaImg')"></div>
+    }
     @if (!semTitulo)
     {
         <header class="slide-cab">
@@ -85,16 +93,19 @@
             </div>
         }
 
-        @if (!temConteudo && imagens.Count == 0)
+        @if (!temConteudo && imagens.Count == 0 && capaImg is null && S.Estrutura is not ("capa" or "secao"))
         {
             <div class="slide-vazio">Slide vazio. Adicione título, texto, campos ou imagens no editor.</div>
         }
     </div>
 
-    <footer class="slide-rodape">
-        <span>@Rodape</span>
-        <span>@Numero / @Total</span>
-    </footer>
+    @if (Deck?.MostrarRodape != false)
+    {
+        <footer class="slide-rodape">
+            <span>@Rodape</span>
+            <span>@Numero / @Total</span>
+        </footer>
+    }
 </section>
 
 @code {
@@ -104,6 +115,8 @@
     [Parameter] public int Total { get; set; } = 1;
     [Parameter] public string Rodape { get; set; } = "";
     [Parameter] public bool Ativo { get; set; }
+    /// <summary>Apresentação (tema, fonte e rodapé).</summary>
+    [Parameter] public Apresentacao? Deck { get; set; }
 
     private record Bloco(bool Topicos, List<string> Itens);
 

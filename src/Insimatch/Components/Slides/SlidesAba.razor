@@ -105,6 +105,104 @@
                 }
             </div>
 
+            @* ---------- Aparência deste slide ---------- *@
+            <div class="ap-bloco @(AparenciaAberta ? "aberta" : "")">
+                <button type="button" class="ap-cab" @onclick="() => { AparenciaAberta = !AparenciaAberta; }">
+                    <span class="ap-amostra" style="@AmostraSlide(Atual)">Aa</span>
+                    <span>Aparência deste slide <em>@(Atual.AparenciaPersonalizada ? "personalizada" : "segue o tema")</em></span>
+                    <span class="campo-chev">▾</span>
+                </button>
+                @if (AparenciaAberta)
+                {
+                    <div class="ap-corpo">
+                        <div class="ap-rotulo">Estrutura</div>
+                        <div class="ap-formatos est">
+                            @foreach (var (id, nome) in Estruturas)
+                            {
+                                var e = id;
+                                <button type="button" class="ap-formato @(Atual.Estrutura == e ? "sel" : "")" title="@DicaEstrutura(e)" @onclick="() => DefinirAsync(() => Atual.Estrutura = e)">
+                                    <span class="ap-est est-ico-@(e == "" ? "auto" : e)"><i></i><i></i><i></i></span>
+                                    <small>@nome</small>
+                                </button>
+                            }
+                        </div>
+                        <p class="dica ap-dica">@DicaEstrutura(Atual.Estrutura)</p>
+
+                        <div class="ap-rotulo">Fundo da página</div>
+                        <div class="ap-cores">
+                            <button type="button" class="ap-cor auto @(Atual.Fundo == "" ? "sel" : "")" title="Do tema" @onclick="() => DefinirAsync(() => Atual.Fundo = string.Empty)">A</button>
+                            @foreach (var (cor, nome) in FundosSlide)
+                            {
+                                var c = cor;
+                                <button type="button" class="ap-cor @(Atual.Fundo == c ? "sel" : "")" title="@nome" style="background:@c" @onclick="() => DefinirAsync(() => Atual.Fundo = c)"></button>
+                            }
+                            <label class="ap-cor ap-livre" title="Outra cor">
+                                <input type="color" value="@(Atual.Fundo.StartsWith("#") ? Atual.Fundo : "#1e293b")" @onchange="FundoLivreAsync" />
+                                <span>+</span>
+                            </label>
+                        </div>
+
+                        <div class="ap-rotulo">Cor do texto</div>
+                        <div class="ap-cores">
+                            <button type="button" class="ap-cor auto @(Atual.CorTexto == "" ? "sel" : "")" title="Automática (contraste com o fundo)" @onclick="() => DefinirAsync(() => Atual.CorTexto = string.Empty)">A</button>
+                            @foreach (var (cor, nome) in CoresTexto)
+                            {
+                                var c = cor;
+                                <button type="button" class="ap-cor @(Atual.CorTexto == c ? "sel" : "")" title="@nome" style="background:@c" @onclick="() => DefinirAsync(() => Atual.CorTexto = c)"></button>
+                            }
+                            <label class="ap-cor ap-livre" title="Outra cor">
+                                <input type="color" value="@(Atual.CorTexto == "" ? "#ffffff" : Atual.CorTexto)" @onchange="TextoLivreAsync" />
+                                <span>+</span>
+                            </label>
+                        </div>
+
+                        <div class="ap-rotulo">Cor de destaque <small>(marcadores, faixa do topo, gráficos)</small></div>
+                        <div class="ap-cores">
+                            <button type="button" class="ap-cor auto @(Atual.CorDestaque == "" ? "sel" : "")" title="Do tema" @onclick="() => DefinirAsync(() => Atual.CorDestaque = string.Empty)">A</button>
+                            @foreach (var (cor, nome) in CoresDestaque)
+                            {
+                                var c = cor;
+                                <button type="button" class="ap-cor @(Atual.CorDestaque == c ? "sel" : "")" title="@nome" style="background:@c" @onclick="() => DefinirAsync(() => Atual.CorDestaque = c)"></button>
+                            }
+                        </div>
+
+                        <div class="ap-linha">
+                            <div>
+                                <div class="ap-rotulo">Tamanho do texto</div>
+                                <div class="segmentado">
+                                    <button class="@(Atual.TamanhoTexto == "p" ? "sel" : "")" @onclick='() => DefinirAsync(() => Atual.TamanhoTexto = "p")'>P</button>
+                                    <button class="@(Atual.TamanhoTexto == "" ? "sel" : "")" @onclick="() => DefinirAsync(() => Atual.TamanhoTexto = string.Empty)">M</button>
+                                    <button class="@(Atual.TamanhoTexto == "g" ? "sel" : "")" @onclick='() => DefinirAsync(() => Atual.TamanhoTexto = "g")'>G</button>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="ap-rotulo">Alinhamento</div>
+                                <div class="segmentado">
+                                    <button class="@(Atual.Alinhamento == "" ? "sel" : "")" @onclick="() => DefinirAsync(() => Atual.Alinhamento = string.Empty)">Esquerda</button>
+                                    <button class="@(Atual.Alinhamento == "centro" ? "sel" : "")" @onclick='() => DefinirAsync(() => Atual.Alinhamento = "centro")'>Centro</button>
+                                </div>
+                            </div>
+                        </div>
+                        @if (Atual.Imagens.Count > 0 && Atual.Estrutura != "capa")
+                        {
+                            <label class="check"><input type="checkbox" checked="@Atual.InverterImagem" @onchange="InverterAsync" /><span>Imagens do outro lado (esquerda / acima)</span></label>
+                        }
+
+                        <div class="acoes">
+                            <button class="btn btn-pequeno" @onclick="AplicarCoresTodosAsync" title="Usa o fundo, o texto e o destaque deste slide em todos">Usar estas cores em todos os slides</button>
+                            @if (Atual.AparenciaPersonalizada)
+                            {
+                                <button class="btn btn-pequeno" @onclick="RestaurarAparenciaAsync">Restaurar</button>
+                            }
+                        </div>
+                        @if (!string.IsNullOrEmpty(MsgAparencia))
+                        {
+                            <div class="calculado">@MsgAparencia</div>
+                        }
+                    </div>
+                }
+            </div>
+
             <div class="form-grupo">Slide</div>
             <div class="acoes">
                 <button class="btn" @onclick="NovoSlideAsync">+ Novo slide</button>
@@ -121,6 +219,31 @@
             <label>Nome da apresentação
                 <input @bind="Deck.Nome" @bind:event="oninput" @bind:after="SalvarAsync" placeholder="Ex.: Resultados do trimestre" />
             </label>
+
+            <div class="form-grupo">Tema da apresentação</div>
+            <div class="temas-slide">
+                @foreach (var t in TemasSlides.Lista)
+                {
+                    var tema = t;
+                    <button class="tema-slide @(Deck.Tema == tema.Id ? "sel" : "")" @onclick="() => DefinirAsync(() => Deck.Tema = tema.Id)">
+                        <span class="tema-amostra" style="@AmostraTema(tema)">
+                            <b>Aa</b><i></i>
+                        </span>
+                        <small>@tema.Nome</small>
+                    </button>
+                }
+            </div>
+            <p class="dica">O tema vale para todos os slides. Cores escolhidas em um slide (na aba Slide → Aparência) têm prioridade.</p>
+
+            <label>Estilo dos títulos
+                <select value="@Deck.Fonte" @onchange="FonteAsync">
+                    <option value="">Padrão</option>
+                    <option value="elegante">Elegante (serifada)</option>
+                    <option value="impacto">Impacto (caixa alta)</option>
+                    <option value="suave">Suave (leve e arejada)</option>
+                </select>
+            </label>
+            <label class="check"><input type="checkbox" checked="@Deck.MostrarRodape" @onchange="RodapeAsync" /><span>Mostrar rodapé (nome e número do slide)</span></label>
             <ul class="lista">
                 @for (var i = 0; i < Deck.Slides.Count; i++)
                 {
@@ -179,7 +302,7 @@
                 <div class="slides-rolagem">
                     @for (var i = 0; i < Deck.Slides.Count; i++)
                     {
-                        <SlideVisual @key="Deck.Slides[i].Id" S="Deck.Slides[i]" Imagens="Imagens" Numero="i + 1" Total="Deck.Slides.Count" Rodape="@rodape" />
+                        <SlideVisual @key="Deck.Slides[i].Id" S="Deck.Slides[i]" Imagens="Imagens" Numero="i + 1" Total="Deck.Slides.Count" Rodape="@rodape" Deck="Deck" />
                     }
                 </div>
                 break;
@@ -190,7 +313,7 @@
                         var idx = i;
                         <button class="slide-mini @(idx == Indice ? "sel" : "")" @onclick="() => Ir(idx, false)" title="Ir para o slide @(idx + 1)">
                             <span class="slide-mini-quadro">
-                                <SlideVisual @key="Deck.Slides[idx].Id" S="Deck.Slides[idx]" Imagens="Imagens" Numero="idx + 1" Total="Deck.Slides.Count" Rodape="@rodape" />
+                                <SlideVisual @key="Deck.Slides[idx].Id" S="Deck.Slides[idx]" Imagens="Imagens" Numero="idx + 1" Total="Deck.Slides.Count" Rodape="@rodape" Deck="Deck" />
                             </span>
                             <span class="slide-mini-nome">@(idx + 1). @(string.IsNullOrWhiteSpace(Deck.Slides[idx].Titulo) ? "Sem título" : Deck.Slides[idx].Titulo)</span>
                         </button>
@@ -199,7 +322,7 @@
                 break;
             default:
                 <div class="slide-palco">
-                    <SlideVisual @key="Atual.Id" S="Atual" Imagens="Imagens" Numero="Indice + 1" Total="Deck.Slides.Count" Rodape="@rodape" Ativo="true" />
+                    <SlideVisual @key="Atual.Id" S="Atual" Imagens="Imagens" Numero="Indice + 1" Total="Deck.Slides.Count" Rodape="@rodape" Ativo="true" Deck="Deck" />
                 </div>
                 @if (Deck.Slides.Count > 1)
                 {
@@ -235,6 +358,84 @@
     private bool Carregando;
     private bool ConfirmarExclusao;
     private DotNetObjectReference<SlidesAba>? Ref;
+    private bool AparenciaAberta;
+    private string MsgAparencia = "";
+
+    private static readonly (string Id, string Nome)[] Estruturas =
+    {
+        ("", "Automática"), ("capa", "Capa"), ("secao", "Seção"), ("colunas", "Duas colunas"), ("destaque", "Mensagem")
+    };
+    private static string DicaEstrutura(string e) => e switch
+    {
+        "capa" => "Capa: título grande no centro. Se houver imagem, ela vira o fundo do slide.",
+        "secao" => "Seção: divisor entre partes da apresentação, com título grande e faixa de destaque.",
+        "colunas" => "Duas colunas: o texto e os tópicos se dividem em duas colunas.",
+        "destaque" => "Mensagem: o texto aparece grande, como uma frase de destaque ou citação.",
+        _ => "Automática: a plataforma organiza texto, campos e imagens conforme o conteúdo."
+    };
+    private static readonly (string Cor, string Nome)[] FundosSlide =
+    {
+        ("#ffffff", "Branco"), ("#f1f5f9", "Cinza-claro"), ("#fef3c7", "Creme"), ("#0b1020", "Noite"), ("#1f2937", "Grafite"),
+        ("#1e3a8a", "Azul-marinho"), ("#065f46", "Verde-escuro"), ("#4c1d95", "Roxo"),
+        ("linear-gradient(135deg, #0f2a5c 0%, #1e3a8a 100%)", "Degradê azul"),
+        ("linear-gradient(135deg, #4c1d95 0%, #be185d 100%)", "Degradê aurora"),
+        ("linear-gradient(135deg, #0c4a6e 0%, #0e7490 100%)", "Degradê oceano"),
+        ("linear-gradient(135deg, #052e16 0%, #166534 100%)", "Degradê floresta")
+    };
+    private static readonly (string Cor, string Nome)[] CoresTexto =
+    {
+        ("#ffffff", "Branco"), ("#0f172a", "Preto"), ("#334155", "Cinza-escuro"), ("#1e3a8a", "Azul-marinho"),
+        ("#fbbf24", "Amarelo"), ("#5eead4", "Verde-água")
+    };
+    private static readonly (string Cor, string Nome)[] CoresDestaque =
+    {
+        ("#4f46e5", "Índigo"), ("#0ea5e9", "Azul"), ("#10b981", "Verde"), ("#fbbf24", "Amarelo"),
+        ("#f97316", "Laranja"), ("#ef4444", "Vermelho"), ("#ec4899", "Rosa"), ("#a855f7", "Roxo")
+    };
+
+    private string AmostraSlide(Slide s)
+    {
+        var (_, est) = TemasSlides.Visual(Deck, s);
+        return est.Replace("--slide-fundo", "--campo-fundo").Replace("--slide-texto", "--campo-texto")
+                  .Replace("--campo-fundo:", "background:").Replace("--campo-texto:", "color:");
+    }
+    private static string AmostraTema(TemaSlide t) => t.Id == ""
+        ? ""
+        : $"background:{t.Fundo};color:{t.Texto};--amostra-destaque:{t.Destaque};";
+
+    private async Task DefinirAsync(Action mudar)
+    {
+        mudar();
+        MsgAparencia = "";
+        await SalvarAsync();
+    }
+    private Task FundoLivreAsync(ChangeEventArgs e) => DefinirAsync(() => Atual!.Fundo = e.Value?.ToString() ?? string.Empty);
+    private Task TextoLivreAsync(ChangeEventArgs e) => DefinirAsync(() => Atual!.CorTexto = e.Value?.ToString() ?? string.Empty);
+    private Task InverterAsync(ChangeEventArgs e) => DefinirAsync(() => Atual!.InverterImagem = e.Value is true);
+    private Task FonteAsync(ChangeEventArgs e) => DefinirAsync(() => Deck!.Fonte = e.Value?.ToString() ?? string.Empty);
+    private Task RodapeAsync(ChangeEventArgs e) => DefinirAsync(() => Deck!.MostrarRodape = e.Value is true);
+
+    private async Task RestaurarAparenciaAsync()
+    {
+        if (Atual is null) return;
+        Atual.Estrutura = Atual.Fundo = Atual.CorTexto = Atual.CorDestaque = Atual.TamanhoTexto = Atual.Alinhamento = string.Empty;
+        Atual.InverterImagem = false;
+        MsgAparencia = "";
+        await SalvarAsync();
+    }
+
+    private async Task AplicarCoresTodosAsync()
+    {
+        if (Deck is null || Atual is null) return;
+        foreach (var s in Deck.Slides)
+        {
+            s.Fundo = Atual.Fundo;
+            s.CorTexto = Atual.CorTexto;
+            s.CorDestaque = Atual.CorDestaque;
+        }
+        MsgAparencia = $"Cores aplicadas aos {Deck.Slides.Count} slides.";
+        await SalvarAsync();
+    }
 
     protected override void OnInitialized()
     {
