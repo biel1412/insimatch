@@ -2,6 +2,7 @@
 @implements IDisposable
 @inject ArmazenamentoService Armazenamento
 @inject GroqService Groq
+@inject IJSRuntime JS
 
 <div class="dialogo-fundo" @onclick="FecharSeLivre">
     <div class="dialogo dialogo-ia" role="dialog" aria-modal="true" aria-labelledby="ia-titulo" @onclick:stopPropagation="true">
@@ -15,7 +16,9 @@
         </div>
 
         <div class="form">
-            @* ---------- Chave do Groq ---------- *@
+            @* ---------- Chave do Groq (só aparece se o site não tiver chave embutida) ---------- *@
+            @if (!Embutida)
+            {
             <div class="ia-chave @(ChaveAberta ? "aberta" : "")">
                 <button class="ia-chave-cab" @onclick="() => { ChaveAberta = !ChaveAberta; }">
                     <span class="campo-st @(TemChave ? "st-excelente" : "st-atencao")"></span>
@@ -54,6 +57,7 @@
                     </div>
                 }
             </div>
+            }
 
             @* ---------- Fonte dos dados ---------- *@
             <div class="form-grupo">1. De onde vêm os dados</div>
@@ -170,7 +174,11 @@
     private string ModeloEscolhido = "llama-3.3-70b-versatile";
     private bool ChaveAberta;
     private bool MostrarChave;
-    private bool TemChave => !string.IsNullOrWhiteSpace(Cfg.Chave);
+    private string ChaveEmbutida = "";
+    private bool Embutida => !string.IsNullOrWhiteSpace(ChaveEmbutida);
+    private string ChaveUsada => Embutida ? ChaveEmbutida : Cfg.Chave;
+    private string ModeloUsado => Embutida ? "llama-3.3-70b-versatile" : Cfg.Modelo;
+    private bool TemChave => !string.IsNullOrWhiteSpace(ChaveUsada);
 
     private string Fonte = "planilha";
     private bool Slides;
@@ -186,10 +194,12 @@
 
     protected override async Task OnInitializedAsync()
     {
+        try { ChaveEmbutida = await JS.InvokeAsync<string?>("insimatch.chaveIA") ?? ""; }
+        catch { ChaveEmbutida = ""; }
         Cfg = await Armazenamento.CarregarAsync<ConfigIA>(ChaveConfig) ?? new ConfigIA();
         ChaveDigitada = Cfg.Chave;
         ModeloEscolhido = Cfg.Modelo;
-        ChaveAberta = !TemChave;
+        ChaveAberta = !TemChave && !Embutida;
         if (Tela is null) Fonte = "planilha";
     }
 
@@ -269,7 +279,7 @@
         Cts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
         try
         {
-            var json = await Groq.GerarJsonAsync(Cfg.Chave, Cfg.Modelo, PromptsIA.Sistema(Slides),
+            var json = await Groq.GerarJsonAsync(ChaveUsada, ModeloUsado, PromptsIA.Sistema(Slides),
                 PromptsIA.Usuario(dados, origem, Instrucoes, cortado), Cts.Token);
 
             ResultadoIA resultado;
