@@ -12,6 +12,35 @@ public class Apresentacao
     /// <summary>Estilo dos títulos: "" (padrão), "elegante", "impacto", "suave".</summary>
     public string Fonte { get; set; } = "";
     public bool MostrarRodape { get; set; } = true;
+
+    /// <summary>Marca da empresa (insi / insiTalent) nos slides.</summary>
+    public MarcaSlides Marca { get; set; } = new();
+}
+
+public class MarcaSlides
+{
+    public bool Ativa { get; set; }
+    /// <summary>insi, insiTalent, ambos ou personalizado.</summary>
+    public string Texto { get; set; } = "insiTalent";
+    public string Personalizado { get; set; } = "";
+    /// <summary>topo-dir, topo-esq, acima (acima do título), rodape (centro do rodapé), inf-esq, inf-dir, fundo (marca d'água).</summary>
+    public string Posicao { get; set; } = "topo-dir";
+    /// <summary>p, m ou g.</summary>
+    public string Tamanho { get; set; } = "m";
+    /// <summary>cor (com degradê), texto (cor do texto) ou selo (com fundo).</summary>
+    public string Estilo { get; set; } = "cor";
+    /// <summary>todos, capa (só capa / primeiro slide) ou exceto-capa.</summary>
+    public string Onde { get; set; } = "todos";
+
+    public bool Rodape => Posicao is "rodape" or "inf-esq" or "inf-dir";
+
+    /// <summary>A marca aparece neste slide?</summary>
+    public bool Mostrar(Slide s, int numero)
+    {
+        if (!Ativa || s.OcultarMarca) return false;
+        var capa = s.Estrutura == "capa" || numero == 1;
+        return Onde switch { "capa" => capa, "exceto-capa" => !capa, _ => true };
+    }
 }
 
 public class Slide
@@ -39,6 +68,8 @@ public class Slide
     public string Alinhamento { get; set; } = "";
     /// <summary>Coloca as imagens do outro lado (esquerda / acima).</summary>
     public bool InverterImagem { get; set; }
+    /// <summary>Esconde a marca da empresa só neste slide.</summary>
+    public bool OcultarMarca { get; set; }
 
     public bool AparenciaPersonalizada => Estrutura != "" || Fundo != "" || CorTexto != "" || CorDestaque != ""
                                           || TamanhoTexto != "" || Alinhamento != "" || InverterImagem;

@@ -1,0 +1,25 @@
+@* Marca da empresa nos slides: insi, insiTalent, os dois ou um texto próprio *@
+<span class="marca-slide mk-@M.Estilo mk-@M.Tamanho @Classe">
+    @switch (M.Texto)
+    {
+        case "insi":
+            <span class="mk-insi">insi</span>
+            break;
+        case "ambos":
+            <span class="mk-insi mk-caixa">insi</span>
+            <span class="mk-sep"></span>
+            <span class="mk-nome">insi<b>Talent</b></span>
+            break;
+        case "personalizado":
+            <span class="mk-nome">@(string.IsNullOrWhiteSpace(M.Personalizado) ? "Sua empresa" : M.Personalizado)</span>
+            break;
+        default:
+            <span class="mk-nome">insi<b>Talent</b></span>
+            break;
+    }
+</span>
+
+@code {
+    [Parameter, EditorRequired] public MarcaSlides M { get; set; } = default!;
+    [Parameter] public string Classe { get; set; } = "";
+}

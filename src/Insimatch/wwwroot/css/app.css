@@ -1901,3 +1901,72 @@ html.versao-teste body::after {
 .campo-card.oculto .campo-olho { color: var(--acento); }
 .campo-card.oculto .campo-cab { opacity: .55; }
 .campo-card.oculto .campo-cab strong { text-decoration: line-through; text-decoration-thickness: 1px; }
+
+/* =================== Marca da empresa nos slides =================== */
+.marca-slide {
+    display: inline-flex; align-items: center; gap: .55em; font-weight: 800; letter-spacing: -0.02em; line-height: 1;
+    white-space: nowrap; color: var(--texto);
+}
+.marca-slide.mk-p { font-size: clamp(10px, 1.25cqw, 17px); }
+.marca-slide.mk-m { font-size: clamp(12px, 1.75cqw, 25px); }
+.marca-slide.mk-g { font-size: clamp(15px, 2.6cqw, 38px); }
+.marca-slide b { font-weight: 800; }
+.marca-slide.mk-cor b, .marca-slide.mk-cor > .mk-insi:only-child {
+    background: linear-gradient(90deg, var(--acento), var(--acento-2)); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.marca-slide.mk-texto { opacity: .8; }
+.marca-slide.mk-texto b { color: inherit; }
+.marca-slide.mk-selo {
+    padding: .5em .85em; border-radius: 999px; background: var(--vidro); border: 1px solid var(--vidro-borda);
+    backdrop-filter: blur(8px); box-shadow: 0 6px 18px -10px rgba(0,0,0,.4);
+}
+.marca-slide.mk-selo b { background: linear-gradient(90deg, var(--acento), var(--acento-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.mk-caixa {
+    padding: .28em .45em .32em; border-radius: .38em; color: #fff; font-size: .9em;
+    background: linear-gradient(135deg, var(--acento), var(--acento-2));
+}
+.marca-slide.mk-texto .mk-caixa { background: transparent; color: inherit; border: 1.5px solid currentColor; padding: .2em .4em .25em; }
+.mk-sep { width: 1px; height: 1.05em; background: currentColor; opacity: .3; }
+
+/* Posições */
+.mk-pos-topo-dir, .mk-pos-topo-esq { position: absolute; top: 2.6cqw; z-index: 3; }
+.mk-pos-topo-dir { right: 3.4cqw; }
+.mk-pos-topo-esq { left: 4.2cqw; }
+.slide.marca-topo-esq { padding-top: 7.2cqw; }
+.slide.marca-topo-dir .slide-cab { padding-right: 20cqw; }
+.slide.marca-topo-dir.est-capa .slide-cab, .slide.marca-topo-dir.alinha-centro .slide-cab { padding-left: 11cqw; padding-right: 11cqw; }
+.mk-acima { margin-bottom: 1.3cqw; }
+.marca-slide.mk-pos-fundo {
+    position: absolute; inset: 0; z-index: 0; display: flex; justify-content: center; align-items: center;
+    font-size: 11cqw !important; opacity: .07; pointer-events: none; padding: 0; border: 0; background: none; box-shadow: none; backdrop-filter: none;
+}
+.slide.marca-fundo > :not(.marca-slide):not(.slide-capa-fundo) { position: relative; z-index: 1; }
+.slide.marca-fundo.est-capa > .slide-rodape, .slide.marca-fundo.est-secao > .slide-rodape { position: absolute; }
+.slide-rodape { position: relative; align-items: center; }
+.rod-lado { display: flex; align-items: center; gap: 1.4cqw; }
+.rod-centro { position: absolute; left: 50%; transform: translateX(-50%); }
+
+/* Editor: configuração da marca */
+.marca-config { display: flex; flex-direction: column; gap: 8px; padding: 6px 10px 12px; border-radius: 14px; border: 1px solid var(--vidro-borda); }
+.marca-config:not(.ativa) { padding-bottom: 6px; }
+.mk-opcoes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.mk-opcao, .mk-pos {
+    display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px 8px; cursor: pointer;
+    border-radius: 10px; border: 1px solid var(--vidro-borda); background: transparent; color: var(--texto-2); font: inherit;
+}
+.mk-opcao.sel, .mk-pos.sel { border-color: var(--acento); background: color-mix(in srgb, var(--acento) 12%, transparent); color: var(--texto); }
+.mk-opcao small, .mk-pos small { font-size: 11px; text-align: center; line-height: 1.2; }
+.mk-previa { min-height: 26px; display: grid; place-items: center; }
+.mk-previa .marca-slide { font-size: 15px; }
+.mk-posicoes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.mk-pos { padding: 8px 4px; }
+.mk-pos-ico { position: relative; width: 36px; height: 22px; border-radius: 4px; background: color-mix(in srgb, var(--texto) 12%, transparent); }
+.mk-pos-ico i { position: absolute; width: 11px; height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--acento), var(--acento-2)); }
+.pos-topo-dir i { top: 3px; right: 3px; }
+.pos-topo-esq i { top: 3px; left: 3px; }
+.pos-acima i { top: 6px; left: 5px; width: 8px; height: 3px; }
+.pos-acima::after { content: ""; position: absolute; left: 5px; top: 11px; width: 20px; height: 4px; border-radius: 2px; background: color-mix(in srgb, var(--texto) 40%, transparent); }
+.pos-inf-esq i { bottom: 3px; left: 3px; }
+.pos-rodape i { bottom: 3px; left: 12px; }
+.pos-inf-dir i { bottom: 3px; right: 3px; }
+.pos-fundo i { inset: 5px 7px; width: auto; height: auto; opacity: .35; border-radius: 3px; }

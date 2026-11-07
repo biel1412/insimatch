@@ -183,6 +183,10 @@
                                 </div>
                             </div>
                         </div>
+                        @if (Deck.Marca.Ativa)
+                        {
+                            <label class="check"><input type="checkbox" checked="@Atual.OcultarMarca" @onchange="OcultarMarcaAsync" /><span>Ocultar a marca neste slide</span></label>
+                        }
                         @if (Atual.Imagens.Count > 0 && Atual.Estrutura != "capa")
                         {
                             <label class="check"><input type="checkbox" checked="@Atual.InverterImagem" @onchange="InverterAsync" /><span>Imagens do outro lado (esquerda / acima)</span></label>
@@ -244,6 +248,74 @@
                 </select>
             </label>
             <label class="check"><input type="checkbox" checked="@Deck.MostrarRodape" @onchange="RodapeAsync" /><span>Mostrar rodapé (nome e número do slide)</span></label>
+
+            <div class="form-grupo">Marca da empresa</div>
+            <div class="marca-config @(Deck.Marca.Ativa ? "ativa" : "")">
+                <Interruptor Texto="Marcar slides com a marca" Dica="Mostra insi / insiTalent nos slides"
+                             Valor="Deck.Marca.Ativa" ValorChanged="v => DefinirAsync(() => Deck.Marca.Ativa = v)" />
+                @if (Deck.Marca.Ativa)
+                {
+                    <div class="ap-rotulo">O que mostrar</div>
+                    <div class="mk-opcoes">
+                        @foreach (var (id, nome) in TextosMarca)
+                        {
+                            var t = id;
+                            <button class="mk-opcao @(Deck.Marca.Texto == t ? "sel" : "")" @onclick="() => DefinirAsync(() => Deck.Marca.Texto = t)">
+                                <span class="mk-previa"><MarcaVisual M="@(new MarcaSlides { Texto = t, Personalizado = Deck.Marca.Personalizado, Estilo = Deck.Marca.Estilo, Tamanho = "p" })" /></span>
+                                <small>@nome</small>
+                            </button>
+                        }
+                    </div>
+                    @if (Deck.Marca.Texto == "personalizado")
+                    {
+                        <input @bind="Deck.Marca.Personalizado" @bind:event="oninput" @bind:after="SalvarAsync" maxlength="40" placeholder="Nome da empresa ou do time" />
+                    }
+
+                    <div class="ap-rotulo">Onde no slide</div>
+                    <div class="mk-posicoes">
+                        @foreach (var (id, nome) in PosicoesMarca)
+                        {
+                            var pos = id;
+                            <button class="mk-pos @(Deck.Marca.Posicao == pos ? "sel" : "")" title="@nome" @onclick="() => DefinirAsync(() => Deck.Marca.Posicao = pos)">
+                                <span class="mk-pos-ico pos-@pos"><i></i></span>
+                                <small>@nome</small>
+                            </button>
+                        }
+                    </div>
+
+                    <div class="ap-linha">
+                        <div>
+                            <div class="ap-rotulo">Tamanho</div>
+                            <div class="segmentado">
+                                @foreach (var (id, nome) in new[] { ("p", "P"), ("m", "M"), ("g", "G") })
+                                {
+                                    var tam = id;
+                                    <button class="@(Deck.Marca.Tamanho == tam ? "sel" : "")" @onclick="() => DefinirAsync(() => Deck.Marca.Tamanho = tam)">@nome</button>
+                                }
+                            </div>
+                        </div>
+                        <div>
+                            <div class="ap-rotulo">Estilo</div>
+                            <div class="segmentado">
+                                @foreach (var (id, nome) in new[] { ("cor", "Colorida"), ("texto", "Discreta"), ("selo", "Selo") })
+                                {
+                                    var est = id;
+                                    <button class="@(Deck.Marca.Estilo == est ? "sel" : "")" @onclick="() => DefinirAsync(() => Deck.Marca.Estilo = est)">@nome</button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <label>Em quais slides
+                        <select value="@Deck.Marca.Onde" @onchange="OndeMarcaAsync">
+                            <option value="todos">Todos os slides</option>
+                            <option value="capa">Só na capa (primeiro slide)</option>
+                            <option value="exceto-capa">Todos, menos a capa</option>
+                        </select>
+                    </label>
+                    <p class="dica">Para tirar a marca de um slide específico: aba Slide → Aparência deste slide.</p>
+                }
+            </div>
             <ul class="lista">
                 @for (var i = 0; i < Deck.Slides.Count; i++)
                 {
@@ -412,6 +484,15 @@
     private Task FundoLivreAsync(ChangeEventArgs e) => DefinirAsync(() => Atual!.Fundo = e.Value?.ToString() ?? string.Empty);
     private Task TextoLivreAsync(ChangeEventArgs e) => DefinirAsync(() => Atual!.CorTexto = e.Value?.ToString() ?? string.Empty);
     private Task InverterAsync(ChangeEventArgs e) => DefinirAsync(() => Atual!.InverterImagem = e.Value is true);
+    private static readonly (string Id, string Nome)[] TextosMarca =
+        { ("insi", "insi"), ("insiTalent", "insiTalent"), ("ambos", "Os dois"), ("personalizado", "Outro nome") };
+    private static readonly (string Id, string Nome)[] PosicoesMarca =
+    {
+        ("topo-dir", "Topo direito"), ("topo-esq", "Topo esquerdo"), ("acima", "Acima do título"),
+        ("inf-esq", "Rodapé esquerdo"), ("rodape", "Rodapé central"), ("inf-dir", "Rodapé direito"), ("fundo", "Marca d’água")
+    };
+    private Task OndeMarcaAsync(ChangeEventArgs e) => DefinirAsync(() => Deck!.Marca.Onde = e.Value?.ToString() ?? "todos");
+    private Task OcultarMarcaAsync(ChangeEventArgs e) => DefinirAsync(() => Atual!.OcultarMarca = e.Value is true);
     private Task FonteAsync(ChangeEventArgs e) => DefinirAsync(() => Deck!.Fonte = e.Value?.ToString() ?? string.Empty);
     private Task RodapeAsync(ChangeEventArgs e) => DefinirAsync(() => Deck!.MostrarRodape = e.Value is true);
 
