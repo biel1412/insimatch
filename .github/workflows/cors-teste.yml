@@ -1,0 +1,19 @@
+name: Teste CORS Groq
+on:
+  push:
+    branches: [tmp-preview]
+jobs:
+  cors:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Preflight
+        run: |
+          curl -sS -i -X OPTIONS https://api.groq.com/openai/v1/chat/completions \
+            -H "Origin: https://biel1412.github.io" \
+            -H "Access-Control-Request-Method: POST" \
+            -H "Access-Control-Request-Headers: authorization,content-type" | head -30
+      - name: POST sem chave (ver cabeçalhos no erro)
+        run: |
+          curl -sS -i https://api.groq.com/openai/v1/chat/completions \
+            -H "Origin: https://biel1412.github.io" -H "Content-Type: application/json" \
+            -d '{"model":"llama-3.3-70b-versatile","messages":[{"role":"user","content":"oi"}]}' | head -30
