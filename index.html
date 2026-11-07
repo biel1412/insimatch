@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>insiTalent</title>
+    <base href="/" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="icon" type="image/png" href="icon-192.png" />
+</head>
+
+<body>
+    <div id="app">
+        <div class="carregando">
+            <div class="carregando-logo">insi<span>Talent</span></div>
+            <div class="carregando-barra"><div></div></div>
+        </div>
+    </div>
+
+    <div id="blazor-error-ui">
+        Ocorreu um erro inesperado.
+        <a href="" class="reload">Recarregar</a>
+        <a class="dismiss">✕</a>
+    </div>
+    <script>
+        // Selo visível quando o site é a versão de teste (publicada em /teste/)
+        if (location.pathname.indexOf('/teste/') >= 0) document.documentElement.classList.add('versao-teste');
+    </script>
+    <script src="js/insimatch.js"></script>
+    <script src="_framework/blazor.webassembly.js"></script>
+</body>
+
+</html>
