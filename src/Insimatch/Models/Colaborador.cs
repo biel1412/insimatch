@@ -16,6 +16,8 @@ public class Colaborador
     public decimal MetaPro { get; set; }
     /// <summary>Meta Premium por dia trabalhado.</summary>
     public decimal MetaPremium { get; set; }
+    /// <summary>Meta de qualidade em % (padrão 99,94%).</summary>
+    public decimal MetaQualidade { get; set; } = 99.94m;
     public int DiasConsiderados { get; set; }
 
     // Qualidade (calculada a partir dos desvios)

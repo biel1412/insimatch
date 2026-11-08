@@ -45,7 +45,7 @@ public class ArmazenamentoService(IJSRuntime js)
     // ---------- CSV (separador ";" para abrir direto no Excel em pt-BR) ----------
 
     private static readonly string[] Cabecalho =
-        { "Nome", "Equipe", "Mes", "Volume", "MetaPro", "MetaPremium", "DiasConsiderados", "DesviosInternos", "DesviosExternos", "Parecer" };
+        { "Nome", "Equipe", "Mes", "Volume", "MetaPro", "MetaPremium", "MetaQualidade", "DiasConsiderados", "DesviosInternos", "DesviosExternos", "Parecer" };
 
     public static string GerarCsv(IEnumerable<Colaborador> lista)
     {
@@ -56,7 +56,7 @@ public class ArmazenamentoService(IJSRuntime js)
             sb.AppendLine(string.Join(';', new[]
             {
                 Esc(c.Nome), Esc(c.Equipe), c.Mes, c.Volume.ToString(), c.MetaPro.ToString("0.##", new CultureInfo("pt-BR")), c.MetaPremium.ToString("0.##", new CultureInfo("pt-BR")),
-                c.DiasConsiderados.ToString(),
+                c.MetaQualidade.ToString("0.00##", new CultureInfo("pt-BR")), c.DiasConsiderados.ToString(),
                 c.DesviosInternos.ToString(), c.DesviosExternos.ToString(), Esc(c.Parecer)
             }));
         }
@@ -81,7 +81,7 @@ public class ArmazenamentoService(IJSRuntime js)
 
         int iNome = Idx("nome", "colaborador"), iEquipe = Idx("equipe", "time", "setor"),
             iMes = Idx("mes", "mesreferencia", "referencia"), iVol = Idx("volume", "volumedomes", "volumerealizado"),
-            iPro = Idx("metapro", "pro"), iPrem = Idx("metapremium", "premium"),
+            iPro = Idx("metapro", "pro"), iPrem = Idx("metapremium", "premium"), iMq = Idx("metaqualidade", "metadequalidade"),
             iDias = Idx("diasconsiderados", "diastrabalhados", "dias"),
             iDi = Idx("desviosinternos", "internos"), iDe = Idx("desviosexternos", "externos"),
             iPar = Idx("parecer", "observacao");
@@ -101,6 +101,7 @@ public class ArmazenamentoService(IJSRuntime js)
                 Volume = (int)Num(Get(iVol)),
                 MetaPro = Num(Get(iPro)),
                 MetaPremium = Num(Get(iPrem)),
+                MetaQualidade = iMq >= 0 && Num(Get(iMq)) > 0 ? Num(Get(iMq)) : 99.94m,
                 DiasConsiderados = (int)Num(Get(iDias)),
                 DesviosInternos = (int)Num(Get(iDi)),
                 DesviosExternos = (int)Num(Get(iDe)),

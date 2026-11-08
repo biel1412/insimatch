@@ -67,9 +67,9 @@ public static class Relatorios
             Parecer = c.Parecer
         };
         r.Kpis.Add(new("Média diária", $"{media:N1}/dia", MetasTexto(c.MetaPro, c.MetaPremium, "/dia"), sVol));
-        r.Kpis.Add(new("Qualidade", $"{c.Qualidade:N2}%", $"ideal ≥ {Avaliacao.QualidadeIdeal:N2}%", sQual));
+        r.Kpis.Add(new("Qualidade", $"{c.Qualidade:N2}%", $"meta ≥ {Avaliacao.MetaQualTexto(c)}", sQual));
         r.Kpis.Add(new("Volume do mês", c.Volume.ToString("N0"), $"{c.DiasConsiderados} dias trabalhados"));
-        r.Kpis.Add(new("Desvios", c.TotalDesvios.ToString(), $"máx. {permitidos} para 99,94%",
+        r.Kpis.Add(new("Desvios", c.TotalDesvios.ToString(), $"máx. {permitidos} para {Avaliacao.MetaQualTexto(c)}",
             c.Volume > 0 ? (c.TotalDesvios <= permitidos ? Status.Excelente : Status.Critico) : Status.Neutro));
 
         var prod = new List<RelLinha>
@@ -82,7 +82,7 @@ public static class Relatorios
         };
         var qual = new List<RelLinha>
         {
-            new("Qualidade", $"{c.Qualidade:N2}%", $"≥ {Avaliacao.QualidadeIdeal:N2}%", sQual, Avaliacao.RotuloQualidade(c)),
+            new("Qualidade", $"{c.Qualidade:N2}%", $"≥ {Avaliacao.MetaQualTexto(c)}", sQual, Avaliacao.RotuloQualidade(c)),
             new("Desvios internos", c.DesviosInternos.ToString()),
             new("Desvios externos", c.DesviosExternos.ToString()),
             new("Total de desvios", c.TotalDesvios.ToString(), $"máx. {permitidos}",

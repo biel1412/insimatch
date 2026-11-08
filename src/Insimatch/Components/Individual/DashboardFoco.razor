@@ -19,7 +19,7 @@
                 new Indicador("Média diária", C.MediaDiaria.ToString("N1"), "/dia", Avaliacao.StatusVolume(C),
                     Avaliacao.RotuloVolume(C), metas.Count > 0 ? "Metas por dia: " + string.Join(" · ", metas) : null),
                 new Indicador("Qualidade", C.Qualidade.ToString("N2"), "%", Avaliacao.StatusQualidade(C),
-                    Avaliacao.RotuloQualidade(C), $"ideal ≥ {Avaliacao.QualidadeIdeal:N2}%"),
+                    Avaliacao.RotuloQualidade(C), $"meta ≥ {Avaliacao.MetaQualTexto(C)}"),
                 new Indicador("Volume do mês", C.Volume.ToString("N0"), null, Status.Neutro, null,
                     $"em {C.DiasConsiderados} dias trabalhados")
             };
@@ -31,6 +31,6 @@
         new Indicador("Dias trabalhados", C.DiasConsiderados.ToString()),
         new Indicador("Desvios internos", C.DesviosInternos.ToString()),
         new Indicador("Desvios externos", C.DesviosExternos.ToString()),
-        new Indicador("Máx. de desvios p/ 99,94%", Avaliacao.DesviosPermitidos(C).ToString())
+        new Indicador($"Máx. de desvios p/ {Avaliacao.MetaQualTexto(C)}", Avaliacao.DesviosPermitidos(C).ToString())
     };
 }

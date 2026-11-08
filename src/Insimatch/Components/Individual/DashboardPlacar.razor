@@ -44,7 +44,7 @@
                     <tr>
                         <td>Qualidade</td>
                         <td class="num">@C.Qualidade.ToString("N2")<small>%</small></td>
-                        <td>≥ @Avaliacao.QualidadeIdeal.ToString("N2")%</td>
+                        <td>≥ @Avaliacao.MetaQualTexto(C)</td>
                         <td><span class="tag @Avaliacao.Classe(sQual)">@Avaliacao.RotuloQualidade(C)</span></td>
                     </tr>
                     <tr>
@@ -62,7 +62,7 @@
                     <tr>
                         <td>Total de desvios</td>
                         <td class="num">@C.TotalDesvios</td>
-                        <td>máx. @permitidos para 99,94%</td>
+                        <td>máx. @permitidos para @Avaliacao.MetaQualTexto(C)</td>
                         <td>
                             <span class="tag @(C.Volume > 0 && C.TotalDesvios <= permitidos ? "st-excelente" : "st-critico")">
                                 @(C.Volume > 0 && C.TotalDesvios <= permitidos ? "Dentro do limite" : "Acima do limite")
@@ -81,7 +81,7 @@
             <ul class="criterios">
                 <li class="@(Avaliacao.QualidadeOk(C) ? "ok" : "nao")">
                     <b>@(Avaliacao.QualidadeOk(C) ? "✓" : "✕")</b>
-                    Qualidade no ideal (≥ 99,94%)
+                    Qualidade na meta (≥ @Avaliacao.MetaQualTexto(C))
                 </li>
                 <li class="@(volumeBem ? "ok" : "nao")">
                     <b>@(volumeBem ? "✓" : "✕")</b>

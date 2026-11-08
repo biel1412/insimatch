@@ -82,7 +82,7 @@
                 <span class="cartao-rotulo">Qualidade</span>
                 <span class="chip">@Avaliacao.RotuloQualidade(C)</span>
             </div>
-            <Medidor Valor="C.Qualidade" Meta="Avaliacao.QualidadeIdeal" StatusAtual="sQual" />
+            <Medidor Valor="C.Qualidade" Meta="Avaliacao.MetaQual(C)" StatusAtual="sQual" />
             <div class="rodape centro">
                 <span>(volume − desvios) ÷ volume</span>
             </div>
@@ -106,7 +106,7 @@
                 <div class="desvios-resumo @(C.TotalDesvios <= permitidos ? "ok" : "falta")">
                     <strong>@C.TotalDesvios</strong> desvio(s) no total
                     <span class="ponto">•</span>
-                    para manter @Avaliacao.QualidadeIdeal.ToString("N2")% com @C.Volume.ToString("N0") de volume, o máximo é <strong>@permitidos</strong>
+                    para manter @Avaliacao.MetaQualTexto(C) com @C.Volume.ToString("N0") de volume, o máximo é <strong>@permitidos</strong>
                 </div>
             }
         </div>

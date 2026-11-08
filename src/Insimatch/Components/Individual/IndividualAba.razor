@@ -50,6 +50,9 @@
                 <div class="calculado">Média diária (calculada): <strong>@Atual.MediaDiaria.ToString("N1")/dia</strong> · @Avaliacao.RotuloVolume(Atual)</div>
 
                 <div class="form-grupo">Qualidade</div>
+                <label>Meta de qualidade (%)
+                    <input type="number" min="0" max="100" step="0.01" placeholder="99,94" @bind="Atual.MetaQualidade" @bind:event="oninput" @bind:after="SalvarAsync" />
+                </label>
                 <div class="form-2">
                     <label>Desvios internos
                         <input type="number" min="0" @bind="Atual.DesviosInternos" @bind:event="oninput" @bind:after="SalvarAsync" />
@@ -60,7 +63,7 @@
                 </div>
 
                 <div class="calculado">Qualidade (calculada): <strong>@Atual.Qualidade.ToString("N2")%</strong> · @Avaliacao.RotuloQualidade(Atual)
-                    <br /><small>Máximo de desvios para 99,94%: @Avaliacao.DesviosPermitidos(Atual)</small></div>
+                    <br /><small>Máximo de desvios para @Avaliacao.MetaQualTexto(Atual): @Avaliacao.DesviosPermitidos(Atual)</small></div>
 
                 <div class="form-grupo">
                     Parecer
@@ -247,7 +250,7 @@
 
     private async Task NovoAsync()
     {
-        var c = new Colaborador { Mes = Atual?.Mes ?? DateTime.Today.ToString("yyyy-MM"), Equipe = Atual?.Equipe ?? "" };
+        var c = new Colaborador { Mes = Atual?.Mes ?? DateTime.Today.ToString("yyyy-MM"), Equipe = Atual?.Equipe ?? "", MetaQualidade = Atual?.MetaQualidade ?? 99.94m };
         Lista.Add(c);
         Atual = c;
         Aba = "dados";

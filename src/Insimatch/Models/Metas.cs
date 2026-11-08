@@ -8,21 +8,27 @@ public enum NivelMeta { SemMeta, Abaixo, Proximo, Pro, Premium }
 /// Critérios de análise:
 /// • Volume: a média diária (volume ÷ dias trabalhados) é comparada com a meta Pro e a meta Premium
 ///   de cada colaborador (as metas são por dia e podem variar de pessoa para pessoa).
-/// • Qualidade: calculada pelos desvios internos e externos sobre o volume; o ideal é ≥ 99,94%.
-/// • Está bem: qualidade no ideal e média diária pelo menos próxima da meta Pro.
+/// • Qualidade: calculada pelos desvios internos e externos sobre o volume; a meta é informada por colaborador (padrão 99,94%).
+/// • Está bem: qualidade na meta e média diária pelo menos próxima da meta Pro.
 /// </summary>
 public static class Avaliacao
 {
     public const decimal QualidadeIdeal = 99.94m;
 
+    /// <summary>Meta de qualidade do colaborador (99,94% se não informada).</summary>
+    public static decimal MetaQual(Colaborador c) => c.MetaQualidade is > 0 and <= 100 ? c.MetaQualidade : QualidadeIdeal;
+
+    /// <summary>Meta formatada, ex.: "99,94%".</summary>
+    public static string MetaQualTexto(Colaborador c) => $"{MetaQual(c):0.00##}%";
+
     /// <summary>A partir de quanto da meta Pro a média é considerada "próxima da meta".</summary>
     public const decimal FatorProximo = 0.90m;
 
-    public static bool QualidadeOk(Colaborador c) => c.Volume > 0 && c.Qualidade >= QualidadeIdeal;
+    public static bool QualidadeOk(Colaborador c) => c.Volume > 0 && c.Qualidade >= MetaQual(c);
 
-    /// <summary>Quantidade máxima de desvios (internos + externos) para manter 99,94%.</summary>
+    /// <summary>Quantidade máxima de desvios (internos + externos) para manter a meta de qualidade.</summary>
     public static int DesviosPermitidos(Colaborador c) =>
-        (int)Math.Floor(c.Volume * (100m - QualidadeIdeal) / 100m);
+        (int)Math.Floor(c.Volume * (100m - MetaQual(c)) / 100m);
 
     public static NivelMeta Nivel(Colaborador c)
     {
@@ -57,7 +63,7 @@ public static class Avaliacao
         c.Volume <= 0 ? Status.Neutro : QualidadeOk(c) ? Status.Excelente : Status.Critico;
 
     public static string RotuloQualidade(Colaborador c) =>
-        c.Volume <= 0 ? "Sem volume" : QualidadeOk(c) ? "Ideal" : "Abaixo do ideal";
+        c.Volume <= 0 ? "Sem volume" : QualidadeOk(c) ? "Na meta" : "Abaixo da meta";
 
     public static Status Geral(Colaborador c)
     {
@@ -134,10 +140,10 @@ public static class Avaliacao
         if (c.Volume > 0)
         {
             if (QualidadeOk(c))
-                f.Positivos.Add($"a qualidade de {c.Qualidade:N2}%, dentro do ideal de {QualidadeIdeal:N2}%");
+                f.Positivos.Add($"a qualidade de {c.Qualidade:N2}%, dentro da meta de {MetaQualTexto(c)}");
             else
             {
-                f.Atencao.Add($"a qualidade de {c.Qualidade:N2}%, abaixo do ideal de {QualidadeIdeal:N2}%");
+                f.Atencao.Add($"a qualidade de {c.Qualidade:N2}%, abaixo da meta de {MetaQualTexto(c)}");
                 f.Acoes.Add($"revisar as causas dos desvios para manter no máximo {Plural(DesviosPermitidos(c), "desvio", "desvios", "nenhum desvio")} no período");
             }
             if (c.TotalDesvios == 0) f.Positivos.Add("nenhum desvio registrado");
@@ -192,8 +198,8 @@ public static class Avaliacao
             : $"com {Plural(c.DesviosInternos, "desvio interno", "desvios internos", "nenhum desvio interno")} e " +
               $"{Plural(c.DesviosExternos, "desvio externo", "desvios externos", "nenhum desvio externo")}";
         partes.Add(QualidadeOk(c)
-            ? $"O índice de qualidade apurado foi de {c.Qualidade:N2}%, {desvios}, atendendo ao padrão mínimo de {QualidadeIdeal:N2}%."
-            : $"O índice de qualidade apurado foi de {c.Qualidade:N2}%, {desvios}, situando-se abaixo do padrão mínimo de {QualidadeIdeal:N2}%. " +
+            ? $"O índice de qualidade apurado foi de {c.Qualidade:N2}%, {desvios}, atendendo à meta de {MetaQualTexto(c)}."
+            : $"O índice de qualidade apurado foi de {c.Qualidade:N2}%, {desvios}, situando-se abaixo da meta de {MetaQualTexto(c)}. " +
               $"Para o volume realizado, o limite seria de {Plural(DesviosPermitidos(c), "desvio", "desvios", "nenhum desvio")}.");
 
         partes.Add(geral switch

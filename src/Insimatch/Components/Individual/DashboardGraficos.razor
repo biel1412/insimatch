@@ -11,7 +11,7 @@
     // Meia-lua (escala igual ao medidor: 99–100% quando próximo do ideal)
     var minimo = C.Qualidade >= 99m ? 99m : C.Qualidade >= 95m ? 95m : 0m;
     double Fr(decimal v) => (double)Math.Clamp((v - minimo) / (100m - minimo), 0, 1);
-    var th = Math.PI * (1 - Fr(Avaliacao.QualidadeIdeal));
+    var th = Math.PI * (1 - Fr(Avaliacao.MetaQual(C)));
     var mx1 = 100 + 64 * Math.Cos(th); var my1 = 110 - 64 * Math.Sin(th);
     var mx2 = 100 + 96 * Math.Cos(th); var my2 = 110 - 96 * Math.Sin(th);
 }
@@ -77,7 +77,7 @@
                 </svg>
                 <div class="ml-texto">
                     <div class="ml-valor-txt">@C.Qualidade.ToString("N2")<small>%</small></div>
-                    <div class="ml-meta">ideal ≥ @Avaliacao.QualidadeIdeal.ToString("N2")%</div>
+                    <div class="ml-meta">meta ≥ @Avaliacao.MetaQualTexto(C)</div>
                 </div>
             </div>
 
