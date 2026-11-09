@@ -1,0 +1,72 @@
+@* Formulário para criar (ou trocar) a senha do cofre *@
+<form class="nova-senha" @onsubmit="ConfirmarAsync" @onsubmit:preventDefault="true">
+    @if (PedirAtual)
+    {
+        <label>Senha atual
+            <input type="password" @bind="Atual" @bind:event="oninput" autocomplete="current-password" />
+        </label>
+    }
+    <label>@(PedirAtual ? "Nova senha" : "Crie uma senha")
+        <input type="password" @bind="Senha" @bind:event="oninput" autocomplete="new-password" placeholder="Mínimo de 8 caracteres" />
+    </label>
+    <div class="forca forca-@Forca"><i></i><i></i><i></i><i></i><span>@RotuloForca</span></div>
+    <label>Repita a senha
+        <input type="password" @bind="Repetida" @bind:event="oninput" autocomplete="new-password" />
+    </label>
+    @if (!string.IsNullOrEmpty(Erro))
+    {
+        <div class="aviso ia-erro">@Erro</div>
+    }
+    <p class="dica">⚠ A senha <strong>não pode ser recuperada</strong>. Se esquecer, só é possível apagar os dados.</p>
+    <div class="cofre-acoes">
+        <button type="button" class="btn" @onclick="OnCancelar">Cancelar</button>
+        <button type="submit" class="btn primario" disabled="@Ocupado">
+            @if (Ocupado) { <span class="ia-girando"></span> }
+            @(PedirAtual ? "Trocar senha" : "Ativar proteção")
+        </button>
+    </div>
+</form>
+
+@code {
+    [Parameter] public bool PedirAtual { get; set; }
+    [Parameter] public EventCallback<string> OnConfirmar { get; set; }
+    /// <summary>Para troca de senha: (atual, nova) → true se a senha atual estiver certa.</summary>
+    [Parameter] public Func<string, string, Task<bool>>? OnTrocar { get; set; }
+    [Parameter] public EventCallback OnCancelar { get; set; }
+
+    private string Atual = "", Senha = "", Repetida = "", Erro = "";
+    private bool Ocupado;
+
+    private int Forca
+    {
+        get
+        {
+            if (Senha.Length == 0) return 0;
+            var p = 0;
+            if (Senha.Length >= 8) p++;
+            if (Senha.Length >= 12) p++;
+            if (Senha.Any(char.IsDigit) && Senha.Any(char.IsLetter)) p++;
+            if (Senha.Any(c => !char.IsLetterOrDigit(c)) || (Senha.Any(char.IsUpper) && Senha.Any(char.IsLower))) p++;
+            return Math.Max(1, p);
+        }
+    }
+    private string RotuloForca => Forca switch { 0 => "", 1 => "Fraca", 2 => "Razoável", 3 => "Boa", _ => "Forte" };
+
+    private async Task ConfirmarAsync()
+    {
+        Erro = "";
+        if (Senha.Length < 8) { Erro = "Use pelo menos 8 caracteres."; return; }
+        if (Senha != Repetida) { Erro = "As senhas não são iguais."; return; }
+        Ocupado = true;
+        try
+        {
+            if (PedirAtual && OnTrocar is not null)
+            {
+                if (!await OnTrocar(Atual, Senha)) { Erro = "A senha atual está incorreta."; return; }
+            }
+            else await OnConfirmar.InvokeAsync(Senha);
+            Atual = Senha = Repetida = "";
+        }
+        finally { Ocupado = false; }
+    }
+}

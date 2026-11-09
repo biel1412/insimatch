@@ -1,0 +1,145 @@
+@* Privacidade e dados: modo sigiloso (sem salvar) ou salvar neste navegador com senha *@
+@inject CofreService Cofre
+
+<div class="dialogo-fundo" @onclick="Cofre.FecharPrivacidade">
+    <div class="dialogo dialogo-privacidade" role="dialog" aria-modal="true" aria-labelledby="priv-titulo" @onclick:stopPropagation="true">
+        <div class="dialogo-topo">
+            <div class="dialogo-previa"><span class="priv-ico">@(Cofre.Protegido ? "🔐" : "🕶")</span></div>
+            <div>
+                <h2 id="priv-titulo">Privacidade e dados</h2>
+                <p>Escolha como os dados pessoais (nomes, CPF/CNPJ, desempenho) ficam neste navegador.</p>
+            </div>
+            <button class="dialogo-x" title="Fechar" @onclick="Cofre.FecharPrivacidade">✕</button>
+        </div>
+
+        <div class="form">
+            <div class="opcoes-inicio">
+                <button class="opcao-inicio @(!Cofre.Protegido && !Ativando ? "sel" : "")" @onclick="EscolherSigilosoAsync">
+                    <span class="opcao-ico priv">🕶</span>
+                    <strong>Modo sigiloso @(Cofre.Protegido ? "" : "· atual")</strong>
+                    <span>Nada é salvo. Os dados ficam só nesta aba e somem ao fechar ou atualizar a página.</span>
+                </button>
+                <button class="opcao-inicio @(Cofre.Protegido || Ativando ? "sel" : "")" @onclick="EscolherProtegido">
+                    <span class="opcao-ico priv">🔐</span>
+                    <strong>Salvar com senha @(Cofre.Protegido ? "· atual" : "")</strong>
+                    <span>Salva neste navegador criptografado (AES-256). Pede a senha ao abrir e após 30 minutos sem uso.</span>
+                </button>
+            </div>
+
+            @if (Ativando && !Cofre.Protegido)
+            {
+                <div class="priv-bloco">
+                    <div class="ap-rotulo">Criar senha</div>
+                    <NovaSenha OnConfirmar="AtivarAsync" OnCancelar="() => { Ativando = false; }" />
+                </div>
+            }
+
+            @if (ConfirmarSigiloso)
+            {
+                <div class="priv-bloco alerta">
+                    <p><strong>Voltar ao modo sigiloso?</strong> Os dados salvos serão <strong>apagados deste navegador</strong>.
+                       Eles continuam abertos nesta aba até você fechá-la — exporte antes o que precisar guardar.</p>
+                    <div class="cofre-acoes">
+                        <button class="btn" @onclick="() => { ConfirmarSigiloso = false; }">Cancelar</button>
+                        <button class="btn perigo" @onclick="DesativarAsync">Apagar dados salvos e usar o modo sigiloso</button>
+                    </div>
+                </div>
+            }
+
+            @if (Cofre.Protegido && !ConfirmarSigiloso)
+            {
+                <div class="form-grupo">Proteção ativa</div>
+                @if (TrocandoSenha)
+                {
+                    <div class="priv-bloco">
+                        <NovaSenha PedirAtual="true" OnTrocar="TrocarAsync" OnCancelar="() => { TrocandoSenha = false; }" />
+                    </div>
+                }
+                else
+                {
+                    <div class="priv-acoes">
+                        <button class="btn" @onclick="BloquearAsync">🔒 Bloquear agora</button>
+                        <button class="btn" @onclick="() => { TrocandoSenha = true; Mensagem = string.Empty; }">Trocar senha</button>
+                    </div>
+                }
+            }
+
+            @if (!string.IsNullOrEmpty(Mensagem))
+            {
+                <div class="admin-ok">@Mensagem</div>
+            }
+
+            <div class="form-grupo">Descarte</div>
+            @if (!ConfirmarApagar)
+            {
+                <button class="btn perigo-leve" @onclick="() => { ConfirmarApagar = true; }">🗑 Apagar todos os dados deste navegador</button>
+            }
+            else
+            {
+                <div class="priv-bloco alerta">
+                    <p><strong>Apagar tudo?</strong> Colaboradores, painéis, slides e imagens deste navegador serão removidos
+                       @(Cofre.Protegido ? "(inclusive os salvos com senha)" : "desta sessão"). Não dá para desfazer.</p>
+                    <div class="cofre-acoes">
+                        <button class="btn" @onclick="() => { ConfirmarApagar = false; }">Cancelar</button>
+                        <button class="btn perigo" @onclick="ApagarAsync">Apagar tudo</button>
+                    </div>
+                </div>
+            }
+
+            <p class="dica">
+                Preferências visuais (cor, papel de parede, configurações) continuam salvas — não são dados pessoais.
+                Arquivos exportados (CSV, JSON, relatórios) ficam fora desta proteção: guarde-os em local restrito e apague quando não forem mais necessários.
+            </p>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool Ativando, ConfirmarSigiloso, TrocandoSenha, ConfirmarApagar;
+    private string Mensagem = "";
+
+    private void EscolherProtegido()
+    {
+        Mensagem = "";
+        ConfirmarSigiloso = false;
+        if (!Cofre.Protegido) Ativando = true;
+    }
+
+    private Task EscolherSigilosoAsync()
+    {
+        Mensagem = "";
+        Ativando = false;
+        if (Cofre.Protegido) ConfirmarSigiloso = true;
+        return Task.CompletedTask;
+    }
+
+    private async Task AtivarAsync(string senha)
+    {
+        await Cofre.CriarAsync(senha);
+        Ativando = false;
+        Mensagem = "✓ Proteção ativada. Os dados agora ficam salvos criptografados neste navegador.";
+    }
+
+    private async Task DesativarAsync()
+    {
+        await Cofre.DesativarAsync();
+        ConfirmarSigiloso = false;
+        Mensagem = "✓ Modo sigiloso ativado. Os dados salvos foram apagados do navegador.";
+    }
+
+    private async Task<bool> TrocarAsync(string atual, string nova)
+    {
+        var ok = await Cofre.TrocarSenhaAsync(atual, nova);
+        if (ok) { TrocandoSenha = false; Mensagem = "✓ Senha trocada."; StateHasChanged(); }
+        return ok;
+    }
+
+    private Task BloquearAsync() => Cofre.BloquearAsync();
+
+    private async Task ApagarAsync()
+    {
+        await Cofre.ApagarTudoAsync();
+        ConfirmarApagar = false;
+        Mensagem = "✓ Todos os dados deste navegador foram apagados.";
+    }
+}

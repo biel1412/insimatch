@@ -15,5 +15,6 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 builder.Services.AddScoped<ArmazenamentoService>();
 builder.Services.AddScoped(_ => new HttpClient());
 builder.Services.AddScoped<GeminiService>();
+builder.Services.AddScoped<CofreService>();
 
 await builder.Build().RunAsync();

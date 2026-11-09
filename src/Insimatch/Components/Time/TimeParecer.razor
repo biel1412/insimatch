@@ -1,9 +1,0 @@
-@* Parecer do time *@
-<ParecerBloco Texto="@T.Parecer"
-              Status="AvaliacaoTime.Geral(T)"
-              Assinatura="@(string.IsNullOrWhiteSpace(T.Nome) ? "insiTalent" : T.Nome)"
-              Periodo="@T.MesPorExtenso" />
-
-@code {
-    [Parameter, EditorRequired] public ResultadoTime T { get; set; } = default!;
-}

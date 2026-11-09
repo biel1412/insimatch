@@ -1,0 +1,122 @@
+@* Envolve todo o sistema: só mostra o conteúdo quando os dados estão liberados *@
+@implements IDisposable
+@inject CofreService Cofre
+
+@if (!Cofre.Carregado)
+{
+    <div class="cofre-tela"><div class="cofre-cartao"><span class="ia-girando"></span> Carregando…</div></div>
+}
+else if (Cofre.Legado)
+{
+    <div class="cofre-tela">
+        <div class="cofre-cartao">
+            <div class="cofre-ico aviso">!</div>
+            <h2>Dados salvos sem proteção</h2>
+            <p>Encontramos neste navegador dados de versões anteriores gravados <strong>sem criptografia</strong>.
+               Escolha o que fazer com eles:</p>
+            @if (!CriandoSenha)
+            {
+                <div class="cofre-opcoes">
+                    <button class="cofre-opcao" @onclick="() => { CriandoSenha = true; Erro = string.Empty; }">
+                        <strong>🔐 Proteger com senha</strong>
+                        <span>Os dados continuam salvos, agora criptografados. A senha é pedida ao abrir e após 30 minutos sem uso.</span>
+                    </button>
+                    <button class="cofre-opcao" @onclick="Cofre.LegadoParaMemoriaAsync">
+                        <strong>🕶 Usar no modo sigiloso</strong>
+                        <span>Os dados ficam abertos só nesta aba e são apagados do navegador agora. Ao fechar a aba, somem.</span>
+                    </button>
+                    <button class="cofre-opcao perigo" @onclick="Cofre.ApagarTudoAsync">
+                        <strong>🗑 Apagar tudo</strong>
+                        <span>Remove todos os dados deste navegador e começa do zero.</span>
+                    </button>
+                </div>
+            }
+            else
+            {
+                <NovaSenha OnConfirmar="CriarAsync" OnCancelar="() => { CriandoSenha = false; }" />
+            }
+        </div>
+    </div>
+}
+else if (!Cofre.Desbloqueado)
+{
+    <div class="cofre-tela">
+        <form class="cofre-cartao" @onsubmit="AbrirAsync" @onsubmit:preventDefault="true">
+            <div class="cofre-ico">🔒</div>
+            <h2>insiTalent bloqueado</h2>
+            <p>Os dados deste navegador estão protegidos. Digite a senha para abrir.</p>
+            <input type="password" class="cofre-senha" @bind="Senha" @bind:event="oninput" placeholder="Senha" autocomplete="current-password" autofocus />
+            @if (!string.IsNullOrEmpty(Erro))
+            {
+                <div class="aviso ia-erro">@Erro</div>
+            }
+            <button type="submit" class="btn primario cofre-entrar" disabled="@Ocupado">
+                @if (Ocupado) { <span class="ia-girando"></span> }
+                Abrir
+            </button>
+            @if (!ConfirmarApagar)
+            {
+                <button type="button" class="cofre-link" @onclick="() => { ConfirmarApagar = true; }">Esqueci a senha</button>
+            }
+            else
+            {
+                <div class="cofre-esqueci">
+                    <p>A senha não pode ser recuperada. A única saída é <strong>apagar todos os dados</strong> deste navegador.</p>
+                    <div class="cofre-acoes">
+                        <button type="button" class="btn" @onclick="() => { ConfirmarApagar = false; }">Cancelar</button>
+                        <button type="button" class="btn perigo" @onclick="Cofre.ApagarTudoAsync">Apagar tudo</button>
+                    </div>
+                </div>
+            }
+        </form>
+    </div>
+}
+else
+{
+    <div @key="Cofre.Versao" class="cofre-conteudo">@ChildContent</div>
+}
+
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private string Senha = "";
+    private string Erro = "";
+    private bool Ocupado;
+    private bool CriandoSenha;
+    private bool ConfirmarApagar;
+
+    protected override void OnInitialized() => Cofre.Mudou += Atualizar;
+
+    protected override async Task OnAfterRenderAsync(bool primeira)
+    {
+        if (primeira) await Cofre.AtualizarAsync();
+    }
+
+    private void Atualizar()
+    {
+        if (!Cofre.Desbloqueado) { Senha = ""; ConfirmarApagar = false; }
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private async Task AbrirAsync()
+    {
+        Erro = "";
+        if (string.IsNullOrEmpty(Senha)) { Erro = "Digite a senha."; return; }
+        Ocupado = true;
+        try
+        {
+            if (!await Cofre.AbrirAsync(Senha)) Erro = "Senha incorreta.";
+            else Senha = "";
+        }
+        finally { Ocupado = false; }
+    }
+
+    private async Task CriarAsync(string senha)
+    {
+        await Cofre.CriarAsync(senha);
+        CriandoSenha = false;
+    }
+
+    public void Dispose() => Cofre.Mudou -= Atualizar;
+}

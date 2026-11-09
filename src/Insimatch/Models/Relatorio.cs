@@ -97,45 +97,6 @@ public static class Relatorios
         return r;
     }
 
-    // ---------- Time ----------
-    public static RelatorioDados De(ResultadoTime t)
-    {
-        var sVol = AvaliacaoTime.StatusVolume(t);
-        var sQual = AvaliacaoTime.StatusQualidade(t);
-        var geral = AvaliacaoTime.Geral(t);
-        var r = new RelatorioDados
-        {
-            Tipo = "Resultado do time",
-            Titulo = string.IsNullOrWhiteSpace(t.Nome) ? "Time" : t.Nome,
-            Sigla = t.Iniciais,
-            Info = new() { t.MesPorExtenso },
-            Status = geral,
-            StatusRotulo = Avaliacao.RotuloGeral(geral),
-            Resumo = $"Volume: {AvaliacaoTime.RotuloVolume(t).ToLowerInvariant()} · Qualidade: {AvaliacaoTime.RotuloQualidade(t).ToLowerInvariant()}",
-            Parecer = t.Parecer
-        };
-        r.Kpis.Add(new("Atingimento do volume", $"{t.Atingimento:N1}%", $"{t.VolumeAtingido:N0} de {t.MetaVolume:N0}", sVol));
-        r.Kpis.Add(new("Qualidade do mês", $"{t.Qualidade:N2}%", $"meta ≥ {t.MetaQualidade:N2}%", sQual));
-        r.Kpis.Add(new("Diferença para a meta", (t.Diferenca >= 0 ? "+" : "") + t.Diferenca.ToString("N0"), "itens"));
-        r.Kpis.Add(new("Total de desvios", t.TotalDesvios.ToString(), $"{t.DesviosInternos} internos · {t.DesviosExternos} externos"));
-
-        r.Secoes.Add(new("Volume", new()
-        {
-            new("Volume atingido", t.VolumeAtingido.ToString("N0"), t.MetaVolume > 0 ? $"meta {t.MetaVolume:N0}" : "—",
-                sVol, AvaliacaoTime.RotuloVolume(t), t.MetaVolume > 0 ? t.Atingimento : null),
-            new("Diferença para a meta", (t.Diferenca >= 0 ? "+" : "") + t.Diferenca.ToString("N0"))
-        }));
-        r.Secoes.Add(new("Qualidade", new()
-        {
-            new("Qualidade do mês", $"{t.Qualidade:N2}%", $"≥ {t.MetaQualidade:N2}%", sQual, AvaliacaoTime.RotuloQualidade(t)),
-            new("Desvios internos", t.DesviosInternos.ToString()),
-            new("Desvios externos", t.DesviosExternos.ToString()),
-            new("Total de desvios", t.TotalDesvios.ToString())
-        }));
-        if (t.MetaVolume > 0) r.Barras.Add(new("Volume × meta", t.Atingimento, sVol));
-        return r;
-    }
-
     // ---------- Cliente e abas personalizadas ----------
     public static RelatorioDados De(Cliente cl, ContextoPainel? ctx = null)
     {

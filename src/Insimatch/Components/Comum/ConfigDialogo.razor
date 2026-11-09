@@ -42,6 +42,13 @@
                 <Interruptor Texto="Troca de abas no modo apresentação" Dica="Seletor de abas no topo durante a apresentação" @bind-Valor="C.MostrarTrocaAbasApresentacao" />
             </div>
 
+            <div class="form-grupo">Privacidade e dados</div>
+            <button class="cfg-dev" @onclick="AbrirPrivacidade">
+                <span class="dock-ico priv-mini">@(Cofre.Protegido ? "🔐" : "🕶")</span>
+                <span><strong>@(Cofre.Protegido ? "Salvando com senha (criptografado)" : "Modo sigiloso: nada é salvo")</strong><small>Trocar modo, bloquear, trocar senha ou apagar os dados</small></span>
+                <span class="campo-chev">›</span>
+            </button>
+
             <div class="form-grupo">Desenvolvedor</div>
             <button class="cfg-dev" @onclick="AbrirAdmin">
                 <span class="dock-ico"><IconeSvg Id="engrenagem" /></span>
@@ -67,11 +74,17 @@
     [Parameter] public EventCallback OnFechar { get; set; }
 
     [Inject] private NavigationManager Nav { get; set; } = default!;
+    [Inject] private CofreService Cofre { get; set; } = default!;
+    private async Task AbrirPrivacidade()
+    {
+        await OnFechar.InvokeAsync();
+        Cofre.AbrirPrivacidade();
+    }
     private void AbrirAdmin() => Nav.NavigateTo("admdev");
 
     private static readonly (string Id, string Nome)[] Fixas =
     {
-        ("individual", "Individual"), ("time", "Time"), ("cliente", "Cliente")
+        ("individual", "Individual")
     };
 
     private Configuracoes C = new();

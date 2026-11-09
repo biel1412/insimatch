@@ -1990,3 +1990,84 @@ html.versao-teste body::after {
 .lateral { overflow-x: hidden; }
 .lateral .form { min-width: 0; max-width: 100%; }
 .campo-card { max-width: 100%; }
+
+/* =================== Privacidade: cofre, bloqueio e modo sigiloso =================== */
+.cofre-conteudo { display: contents; }
+.cofre-tela {
+    position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 24px;
+    background: radial-gradient(1000px 600px at 30% 10%, color-mix(in srgb, var(--acento, #7c5cff) 22%, transparent), transparent 60%),
+                radial-gradient(900px 600px at 80% 90%, color-mix(in srgb, var(--acento-2, #22d3ee) 16%, transparent), transparent 60%),
+                var(--fundo, #0b1020);
+    color: var(--texto, #f1f5f9);
+}
+.cofre-cartao {
+    width: min(460px, 100%); display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center;
+    padding: 34px 30px 26px; border-radius: 24px; background: var(--vidro, rgba(255,255,255,.06));
+    border: 1px solid var(--vidro-borda, rgba(255,255,255,.12)); box-shadow: 0 30px 80px -30px rgba(0,0,0,.6); backdrop-filter: blur(18px);
+}
+.cofre-cartao h2 { margin: 0; font-size: 22px; }
+.cofre-cartao p { margin: 0; color: var(--texto-2); line-height: 1.55; font-size: 14px; }
+.cofre-ico {
+    width: 66px; height: 66px; border-radius: 20px; display: grid; place-items: center; font-size: 30px;
+    background: color-mix(in srgb, var(--acento, #7c5cff) 18%, transparent); border: 1px solid color-mix(in srgb, var(--acento, #7c5cff) 40%, transparent);
+}
+.cofre-ico.aviso { font-weight: 900; color: var(--amarelo, #fbbf24); background: color-mix(in srgb, var(--amarelo, #fbbf24) 14%, transparent); border-color: color-mix(in srgb, var(--amarelo, #fbbf24) 40%, transparent); }
+.cofre-senha {
+    width: 100%; margin-top: 6px; padding: 13px 14px; border-radius: 12px; font-size: 16px; text-align: center; letter-spacing: .1em;
+    background: var(--campo, rgba(255,255,255,.06)); border: 1px solid var(--vidro-borda); color: var(--texto); outline: none;
+}
+.cofre-senha:focus { border-color: var(--acento); }
+.cofre-entrar { width: 100%; justify-content: center; padding: 12px; font-size: 15px; }
+.cofre-link { background: none; border: 0; color: var(--texto-3); font: inherit; font-size: 13px; cursor: pointer; text-decoration: underline; }
+.cofre-esqueci { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 14px; background: color-mix(in srgb, var(--vermelho, #ff6b81) 10%, transparent); border: 1px solid color-mix(in srgb, var(--vermelho, #ff6b81) 35%, transparent); }
+.cofre-acoes { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; width: 100%; }
+.cofre-opcoes { display: flex; flex-direction: column; gap: 8px; width: 100%; text-align: left; }
+.cofre-opcao {
+    display: flex; flex-direction: column; gap: 4px; padding: 13px 15px; border-radius: 14px; cursor: pointer; font: inherit; text-align: left;
+    background: var(--hover, rgba(255,255,255,.05)); border: 1px solid var(--vidro-borda); color: var(--texto);
+}
+.cofre-opcao:hover { border-color: var(--acento); }
+.cofre-opcao span { font-size: 13px; color: var(--texto-3); line-height: 1.45; }
+.cofre-opcao.perigo:hover { border-color: var(--vermelho, #ff6b81); }
+.nova-senha { display: flex; flex-direction: column; gap: 10px; width: 100%; text-align: left; }
+.nova-senha label { display: flex; flex-direction: column; gap: 5px; font-size: 13px; font-weight: 600; color: var(--texto-2); }
+.nova-senha input { padding: 11px 12px; border-radius: 10px; background: var(--campo, rgba(255,255,255,.06)); border: 1px solid var(--vidro-borda); color: var(--texto); font-size: 14px; outline: none; }
+.nova-senha input:focus { border-color: var(--acento); }
+.forca { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--texto-3); }
+.forca i { flex: 1; height: 4px; border-radius: 9px; background: var(--vidro-borda); }
+.forca span { min-width: 60px; text-align: right; }
+.forca-1 i:nth-child(-n+1) { background: var(--vermelho, #ff6b81); }
+.forca-2 i:nth-child(-n+2) { background: var(--amarelo, #fbbf24); }
+.forca-3 i:nth-child(-n+3) { background: #4fa9ff; }
+.forca-4 i:nth-child(-n+4) { background: var(--verde, #34d399); }
+.btn.perigo { border-color: color-mix(in srgb, var(--vermelho, #ff6b81) 50%, transparent); color: var(--vermelho, #ff6b81); }
+.btn.perigo-leve { color: var(--texto-2); justify-content: center; }
+.btn.perigo-leve:hover { color: var(--vermelho, #ff6b81); border-color: var(--vermelho, #ff6b81); }
+
+.dialogo-privacidade { width: min(640px, 100%); }
+.priv-ico { font-size: 26px; }
+.opcao-ico.priv { font-size: 18px; display: grid; place-items: center; }
+.priv-bloco { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 14px; background: var(--vidro); border: 1px solid var(--vidro-borda); }
+.priv-bloco p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--texto-2); }
+.priv-bloco.alerta { background: color-mix(in srgb, var(--vermelho, #ff6b81) 8%, transparent); border-color: color-mix(in srgb, var(--vermelho, #ff6b81) 35%, transparent); }
+.priv-acoes { display: flex; gap: 8px; flex-wrap: wrap; }
+.priv-mini { font-size: 18px; display: grid; place-items: center; }
+
+/* Indicador no menu lateral */
+.dock-cofre {
+    margin-top: auto; width: 46px; height: 46px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--verde, #34d399) 35%, transparent);
+    background: color-mix(in srgb, var(--verde, #34d399) 10%, transparent); color: var(--verde, #34d399);
+    cursor: pointer; display: grid; place-items: center; position: relative; transition: background .15s;
+}
+.dock-cofre.protegido { color: var(--acento); border-color: color-mix(in srgb, var(--acento) 40%, transparent); background: color-mix(in srgb, var(--acento) 12%, transparent); }
+.dock-cofre svg { width: 21px; height: 21px; }
+.dock-cofre:hover { filter: brightness(1.2); }
+.dock-cofre::after {
+    content: attr(data-tip); position: absolute; left: calc(100% + 14px); top: 50%; transform: translate(-6px, -50%);
+    white-space: nowrap; padding: 7px 11px; border-radius: 10px; font-size: 12px; font-weight: 700; color: var(--texto);
+    background: color-mix(in srgb, var(--fundo) 88%, var(--texto) 6%); border: 1px solid var(--vidro-borda);
+    box-shadow: var(--sombra); opacity: 0; pointer-events: none; transition: opacity .15s, transform .15s; z-index: 50;
+}
+.dock-cofre:hover::after { opacity: 1; transform: translate(0, -50%); }
+.dock-cofre + .dock-config { margin-top: 8px; }
+.modo-apresentacao .dock-cofre { display: none; }
