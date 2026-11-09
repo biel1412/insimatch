@@ -71,6 +71,10 @@ public class Slide
     /// <summary>Esconde a marca da empresa só neste slide.</summary>
     public bool OcultarMarca { get; set; }
 
+    /// <summary>Imagens que a IA indicou no PDF (recortadas no navegador logo após gerar; não é salvo).</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public List<PedidoImagemPdf> ImagensPdfIA { get; set; } = new();
+
     public bool AparenciaPersonalizada => Estrutura != "" || Fundo != "" || CorTexto != "" || CorDestaque != ""
                                           || TamanhoTexto != "" || Alinhamento != "" || InverterImagem;
 }
@@ -128,6 +132,15 @@ public static class TemasSlides
         var n = Convert.ToInt32(m.Groups[1].Value, 16);
         return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
     }
+}
+
+/// <summary>Figura indicada pela IA dentro de um PDF: arquivo, página e área (0–1000: ymin, xmin, ymax, xmax).</summary>
+public class PedidoImagemPdf
+{
+    public int Pdf { get; set; } = 1;
+    public int Pagina { get; set; } = 1;
+    public int[]? Recorte { get; set; }
+    public string Legenda { get; set; } = "";
 }
 
 public class ImagemSlide

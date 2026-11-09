@@ -145,5 +145,52 @@ window.insimatch = {
         };
         window.insimatch._colar = h;
         document.addEventListener('paste', h);
+    },
+    // ---------- PDF: recorta figuras indicadas pela IA (pdf.js carregado só quando precisa) ----------
+    _pdfjs: null,
+    _pdfLib: async function () {
+        if (!window.insimatch._pdfjs) {
+            const base = document.baseURI;
+            const lib = await import(new URL('lib/pdfjs/pdf.min.mjs', base).href);
+            lib.GlobalWorkerOptions.workerSrc = new URL('lib/pdfjs/pdf.worker.min.mjs', base).href;
+            window.insimatch._pdfjs = lib;
+        }
+        return window.insimatch._pdfjs;
+    },
+    // pedidos: [{ pagina, recorte: [ymin, xmin, ymax, xmax] (0–1000) ou null }] → [{ dataUrl, w, h } ou null]
+    pdfRecortar: async function (base64, pedidos) {
+        const lib = await window.insimatch._pdfLib();
+        const bin = Uint8Array.from(atob(base64), function (c) { return c.charCodeAt(0); });
+        const tarefa = lib.getDocument({ data: bin });
+        const doc = await tarefa.promise;
+        const saida = [];
+        for (const p of pedidos) {
+            try {
+                if (!p || p.pagina < 1 || p.pagina > doc.numPages) { saida.push(null); continue; }
+                const pag = await doc.getPage(p.pagina);
+                const v1 = pag.getViewport({ scale: 1 });
+                let r = (p.recorte && p.recorte.length === 4) ? p.recorte.map(function (n) { return Math.min(1000, Math.max(0, n)) / 1000; }) : [0, 0, 1, 1];
+                let y0 = r[0], x0 = r[1], y1 = r[2], x1 = r[3];
+                if (y1 - y0 < 0.02 || x1 - x0 < 0.02) { y0 = 0; x0 = 0; y1 = 1; x1 = 1; }
+                const m = 0.012;
+                y0 = Math.max(0, y0 - m); x0 = Math.max(0, x0 - m); y1 = Math.min(1, y1 + m); x1 = Math.min(1, x1 + m);
+                const escala = Math.min(4, Math.max(1, 1600 / (v1.width * (x1 - x0))));
+                const vp = pag.getViewport({ scale: escala });
+                const c = document.createElement('canvas');
+                c.width = Math.ceil(vp.width); c.height = Math.ceil(vp.height);
+                const g = c.getContext('2d');
+                g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+                await pag.render({ canvas: c, canvasContext: g, viewport: vp }).promise;
+                const sx = Math.floor(x0 * c.width), sy = Math.floor(y0 * c.height);
+                const sw = Math.max(1, Math.floor((x1 - x0) * c.width)), sh = Math.max(1, Math.floor((y1 - y0) * c.height));
+                const o = document.createElement('canvas');
+                o.width = sw; o.height = sh;
+                o.getContext('2d').drawImage(c, sx, sy, sw, sh, 0, 0, sw, sh);
+                saida.push({ dataUrl: o.toDataURL('image/jpeg', 0.9), w: sw, h: sh });
+                pag.cleanup();
+            } catch (e) { console.warn('insiTalent: recorte do PDF falhou', e); saida.push(null); }
+        }
+        try { await tarefa.destroy(); } catch (e) { }
+        return saida;
     }
 };

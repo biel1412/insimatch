@@ -60,7 +60,21 @@ public static class PromptsIA
         - Datas seriais do Excel (números entre 30000 e 60000 numa coluna de data) devem ser tratadas como datas.
         """;
 
-    public static string Sistema(bool slides) => slides
+    /// <summary>Instrução extra quando há PDF: a IA indica onde estão as figuras para o site recortá-las.</summary>
+    public const string ImagensPdf = """
+
+        IMAGENS DO PDF: quando o PDF tiver gráficos, fotos, diagramas, logotipos ou tabelas visuais que ajudem a explicar
+        um slide, inclua no slide o campo "imagensPdf" (no máximo 2 por slide):
+          "imagensPdf": [{ "pdf": 1, "pagina": 3, "recorte": [ymin, xmin, ymax, xmax], "legenda": "texto curto" }]
+        - "pdf": número do PDF na ordem em que foi enviado (1 ou 2); "pagina": começa em 1.
+        - "recorte": área da figura na página em coordenadas de 0 a 1000 (0,0 = canto superior esquerdo), cobrindo só a
+          figura com uma pequena margem. Use null para usar a página inteira (ex.: um slide que já é uma imagem).
+        - Não use para páginas só de texto, nem repita a mesma figura em vários slides. Se não houver figura útil, omita o campo.
+        """;
+
+    public static string Sistema(bool slides, bool comPdf = false) => SistemaBase(slides) + (slides && comPdf ? ImagensPdf : "");
+
+    private static string SistemaBase(bool slides) => slides
         ? $$"""
             Você é um analista que transforma dados em apresentações claras para reuniões no Microsoft Teams.
             Monte uma APRESENTAÇÃO EM SLIDES no formato JSON abaixo.
@@ -200,12 +214,36 @@ public static class ConversorIA
                 Subtitulo = Txt(s, "subtitulo"),
                 Estrutura = estruturas.Contains(Txt(s, "estrutura").Trim().ToLowerInvariant()) ? Txt(s, "estrutura").Trim().ToLowerInvariant() : "",
                 Texto = Txt(s, "texto").Replace("\\n", "\n"),
-                Campos = Lista(s, "campos").Select(ParaCampo).Where(c => c is not null).Select(c => c!).Take(6).ToList()
+                Campos = Lista(s, "campos").Select(ParaCampo).Where(c => c is not null).Select(c => c!).Take(6).ToList(),
+                ImagensPdfIA = Lista(s, "imagensPdf").Select(ParaPedidoPdf).Where(x => x is not null).Select(x => x!).Take(2).ToList()
             };
             ap.Slides.Add(slide);
         }
         if (ap.Slides.Count == 0) throw new InvalidOperationException("A IA não retornou nenhum slide. Tente de novo ou dê mais instruções.");
         return ap;
+    }
+
+    private static PedidoImagemPdf? ParaPedidoPdf(JsonElement e)
+    {
+        if (e.ValueKind != JsonValueKind.Object) return null;
+        var pagina = (int)(Num(e, "pagina") ?? 0);
+        if (pagina < 1) return null;
+        int[]? recorte = null;
+        if (Prop(e, "recorte") is { ValueKind: JsonValueKind.Array } arr)
+        {
+            var v = arr.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.Number).Select(x => (int)Math.Round(x.GetDouble())).ToArray();
+            // Aceita 0–1 (fração) além de 0–1000
+            if (v.Length == 4 && v.All(x => x is >= 0 and <= 1) && arr.EnumerateArray().Any(x => x.GetDouble() is > 0 and < 1))
+                v = arr.EnumerateArray().Select(x => (int)Math.Round(x.GetDouble() * 1000)).ToArray();
+            if (v.Length == 4 && v[2] > v[0] && v[3] > v[1]) recorte = v.Select(x => Math.Clamp(x, 0, 1000)).ToArray();
+        }
+        return new PedidoImagemPdf
+        {
+            Pdf = Math.Max(1, (int)(Num(e, "pdf") ?? 1)),
+            Pagina = pagina,
+            Recorte = recorte,
+            Legenda = Txt(e, "legenda")
+        };
     }
 
     private static CampoCliente? ParaCampo(JsonElement e)

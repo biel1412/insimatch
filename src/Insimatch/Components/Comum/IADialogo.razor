@@ -192,7 +192,7 @@ else
                 {
                     <button class="btn" @onclick="Cancelar">Cancelar</button>
                     <button class="btn primario" disabled>
-                        <span class="ia-girando"></span> Gerando…
+                        <span class="ia-girando"></span> @(string.IsNullOrEmpty(Etapa) ? "Gerando…" : Etapa)
                     </button>
                 }
                 else
@@ -222,6 +222,42 @@ else
     private List<ImagemIA> Imagens = new();
     private DotNetObjectReference<IADialogo>? Ref;
     private const int MaxPdfs = 2;
+    private string Etapa = "";
+    private record RecortePdf(string dataUrl, int w, int h);
+
+    /// <summary>Recorta no navegador as figuras que a IA indicou no PDF e coloca nos slides (máx. 2 por slide).</summary>
+    private async Task RecortarImagensPdfAsync(Apresentacao deck)
+    {
+        var pedidos = deck.Slides.SelectMany(s => s.ImagensPdfIA.Select(p => (Slide: s, Pedido: p))).ToList();
+        if (pedidos.Count == 0) return;
+        Etapa = $"Recortando {pedidos.Count} imagem(ns) do PDF…";
+        StateHasChanged();
+        foreach (var grupo in pedidos.GroupBy(x => Math.Clamp(x.Pedido.Pdf, 1, Pdfs.Count)))
+        {
+            var lista = grupo.ToList();
+            RecortePdf?[] recortes;
+            try
+            {
+                recortes = await JS.InvokeAsync<RecortePdf?[]>("insimatch.pdfRecortar", Cts?.Token ?? default,
+                    Pdfs[grupo.Key - 1].Base64, lista.Select(x => new { pagina = x.Pedido.Pagina, recorte = x.Pedido.Recorte }).ToArray());
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                Console.WriteLine("Recorte do PDF falhou: " + ex.Message);
+                continue;   // sem as imagens, os slides continuam com texto e números
+            }
+            for (var i = 0; i < lista.Count && i < recortes.Length; i++)
+            {
+                var r = recortes[i];
+                var slide = lista[i].Slide;
+                if (r is null || string.IsNullOrEmpty(r.dataUrl) || slide.Imagens.Count >= 2) continue;
+                var img = new ImagemSlide { Largura = r.w, Altura = r.h, Legenda = lista[i].Pedido.Legenda };
+                await JS.InvokeVoidAsync("insimatch.imgSalvar", img.Id, r.dataUrl);
+                slide.Imagens.Add(img);
+            }
+        }
+        Etapa = "";
+    }
     private const long MaxBytesPdf = 14L * 1024 * 1024;
     private record PdfIA(string Nome, long Bytes, string Base64);
     private List<PdfIA> Pdfs = new();
@@ -379,16 +415,18 @@ else
         }
 
         Gerando = true;
+        Etapa = "";
         Cts = new CancellationTokenSource(TimeSpan.FromSeconds(Fonte == "pdf" || Slides ? 150 : 90));
         try
         {
-            var json = await Gemini.GerarJsonAsync(Cfg.Chave, Cfg.Modelo, PromptsIA.Sistema(Slides),
+            var json = await Gemini.GerarJsonAsync(Cfg.Chave, Cfg.Modelo, PromptsIA.Sistema(Slides, Fonte == "pdf"),
                 PromptsIA.Usuario(dados, origem, Instrucoes, cortado), Cts.Token, anexos);
 
             ResultadoIA resultado;
             if (Slides)
             {
                 var deck = ConversorIA.ParaSlides(json);
+                if (Fonte == "pdf") await RecortarImagensPdfAsync(deck);
                 var nome = Nome(deck.Nome);
                 if (string.IsNullOrWhiteSpace(deck.Nome)) deck.Nome = nome;
                 resultado = new ResultadoIA(nome, true, null, deck);
@@ -402,7 +440,7 @@ else
         }
         catch (OperationCanceledException)
         {
-            Erro = "Geração cancelada (ou o Gemini demorou mais de 90 segundos).";
+            Erro = "Geração cancelada (ou o Gemini demorou demais para responder).";
         }
         catch (IAErro ex)
         {
