@@ -362,6 +362,13 @@
             </div>
         }
         <div class="espaco"></div>
+        @if (!Apresentacao && Deck is not null)
+        {
+            <button class="btn btn-ppt" title="Baixar a apresentação em PowerPoint (.pptx), editável" disabled="@ExportandoPpt" @onclick="ExportarPptAsync">
+                @if (ExportandoPpt) { <span class="ia-girando"></span> <span>Gerando…</span> }
+                else { <span class="ppt-ico">P</span> <span>PowerPoint</span> }
+            </button>
+        }
         @Ferramentas
     </div>
 
@@ -424,6 +431,56 @@
     private int Indice;
     private Slide? Atual => Deck is null || Deck.Slides.Count == 0 ? null : Deck.Slides[Math.Clamp(Indice, 0, Deck.Slides.Count - 1)];
     private readonly Dictionary<string, string> Imagens = new();
+    private bool ExportandoPpt;
+
+    /// <summary>Monta os dados de cada slide (cores já resolvidas, textos formatados) e gera o .pptx no navegador.</summary>
+    private async Task ExportarPptAsync()
+    {
+        if (Deck is null) return;
+        ExportandoPpt = true;
+        StateHasChanged();
+        try
+        {
+            var nome = string.IsNullOrWhiteSpace(Deck.Nome) ? Contexto.RotuloSup : Deck.Nome;
+            var total = Deck.Slides.Count;
+            var marca = Deck.Marca;
+            var slides = Deck.Slides.Select((s, i) =>
+            {
+                var (fundo, texto, destaque, destaque2) = TemasSlides.Cores(Deck, s);
+                return new
+                {
+                    titulo = s.Titulo, subtitulo = s.Subtitulo,
+                    linhas = SlidesRegras.Linhas(s.Texto).Select(l => new { topico = l.Topico, texto = l.Texto }),
+                    estrutura = s.Estrutura, tamanho = s.TamanhoTexto, centro = s.Alinhamento == "centro", inverter = s.InverterImagem,
+                    fundo, texto, destaque, destaque2,
+                    marca = marca.Mostrar(s, i + 1),
+                    numero = i + 1,
+                    campos = s.Campos.Where(c => !c.Oculto).Select(c => new
+                    {
+                        nome = c.Nome,
+                        valor = AvaliacaoCliente.Valor(c),
+                        meta = c.Meta.HasValue && c.Numerico ? "meta " + AvaliacaoCliente.MetaTexto(c) : "",
+                        status = c.TemMeta ? AvaliacaoCliente.RotuloCampo(c) : "",
+                        nivel = c.TemMeta ? AvaliacaoCliente.StatusCampo(c).ToString() : "",
+                        corTexto = c.CorTexto, corFundo = c.CorFundo
+                    }),
+                    imagens = s.Imagens.Take(SlidesRegras.MaxImagens)
+                        .Where(img => Imagens.ContainsKey(img.Id))
+                        .Select(img => new { dados = Imagens[img.Id], w = img.Largura, h = img.Altura, legenda = img.Legenda, inteira = img.Inteira })
+                };
+            }).ToList();
+            var dados = new
+            {
+                nome, total, fonte = Deck.Fonte, rodape = Deck.MostrarRodape,
+                marca = new { texto = marca.Texto, personalizado = marca.Personalizado, posicao = marca.Posicao, tamanho = marca.Tamanho, estilo = marca.Estilo },
+                slides
+            };
+            var arquivo = string.Concat(nome.Split(Path.GetInvalidFileNameChars())).Trim();
+            await JS.InvokeVoidAsync("insimatch.exportarPptx", dados, (string.IsNullOrWhiteSpace(arquivo) ? "apresentacao" : arquivo) + ".pptx");
+        }
+        catch (Exception ex) { Console.WriteLine("Exportar PowerPoint falhou: " + ex.Message); }
+        finally { ExportandoPpt = false; }
+    }
     private readonly HashSet<string> Abertos = new();
     private string Aba = "slide";
     private string Mensagem = "";

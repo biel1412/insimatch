@@ -101,8 +101,8 @@ public static class TemasSlides
 
     public static TemaSlide Achar(string? id) => Lista.FirstOrDefault(t => t.Id == (id ?? "")) ?? Lista[0];
 
-    /// <summary>Classes e variáveis CSS do slide: o que o slide definir vale sobre o tema da apresentação.</summary>
-    public static (string Classes, string Estilo) Visual(Apresentacao? deck, Slide s)
+    /// <summary>Cores efetivas do slide (vazio = cores do site).</summary>
+    public static (string Fundo, string Texto, string Destaque, string Destaque2) Cores(Apresentacao? deck, Slide s)
     {
         var t = Achar(deck?.Tema);
         var fundo = s.Fundo != "" ? s.Fundo : t.Fundo;
@@ -110,6 +110,13 @@ public static class TemasSlides
                   : fundo != "" ? (Luminancia(fundo) > 0.55 ? "#0f172a" : "#ffffff") : "";
         var destaque = s.CorDestaque != "" ? s.CorDestaque : t.Destaque;
         var destaque2 = s.CorDestaque != "" ? s.CorDestaque : t.Destaque2;
+        return (fundo, texto, destaque, destaque2);
+    }
+
+    /// <summary>Classes e variáveis CSS do slide: o que o slide definir vale sobre o tema da apresentação.</summary>
+    public static (string Classes, string Estilo) Visual(Apresentacao? deck, Slide s)
+    {
+        var (fundo, texto, destaque, destaque2) = Cores(deck, s);
 
         var cls = new List<string>();
         var est = new System.Text.StringBuilder();

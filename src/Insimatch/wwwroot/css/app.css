@@ -2071,3 +2071,11 @@ html.versao-teste body::after {
 .dock-cofre:hover::after { opacity: 1; transform: translate(0, -50%); }
 .dock-cofre + .dock-config { margin-top: 8px; }
 .modo-apresentacao .dock-cofre { display: none; }
+
+/* Botão PowerPoint (aba de slides) */
+.btn-ppt { gap: 8px; }
+.ppt-ico {
+    width: 18px; height: 18px; border-radius: 4px; display: grid; place-items: center; font-size: 11px; font-weight: 900;
+    color: #fff; background: linear-gradient(135deg, #d24726, #f0703a);
+}
+.btn-ppt:disabled { opacity: .7; }
