@@ -126,7 +126,7 @@ public class GeminiService(HttpClient http)
             generationConfig = new
             {
                 temperature = 0.2,
-                maxOutputTokens = 16384,
+                maxOutputTokens = 32768,
                 responseMimeType = "application/json"
             }
         };

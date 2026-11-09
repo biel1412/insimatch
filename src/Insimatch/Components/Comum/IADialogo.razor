@@ -166,7 +166,7 @@ else
                 <button class="opcao-inicio @(Slides ? "sel" : "")" @onclick="() => { Slides = true; }">
                     <span class="opcao-ico"><IconeSvg Id="slides" /></span>
                     <strong>Apresentação em slides</strong>
-                    <span>4 a 8 slides com tópicos e números.</span>
+                    <span>Até 32 slides com tópicos e números.</span>
                 </button>
             </div>
 
@@ -379,7 +379,7 @@ else
         }
 
         Gerando = true;
-        Cts = new CancellationTokenSource(TimeSpan.FromSeconds(Fonte == "pdf" ? 150 : 90));
+        Cts = new CancellationTokenSource(TimeSpan.FromSeconds(Fonte == "pdf" || Slides ? 150 : 90));
         try
         {
             var json = await Gemini.GerarJsonAsync(Cfg.Chave, Cfg.Modelo, PromptsIA.Sistema(Slides),
