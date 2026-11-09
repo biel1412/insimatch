@@ -13,7 +13,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7z" /><circle cx="12" cy="12" r="3" /></svg>
         }
     </button>
-    <button class="campo-cab" @onclick="AlternarAsync" aria-expanded="@(Aberto ? "true" : "false")">
+    <button class="campo-cab" @onclick="AlternarAsync" aria-expanded="@(Aberto ? "true" : "false")" title="@C.Nome">
         <span class="campo-ico">@AvaliacaoCliente.IconeTipo(C.Tipo)</span>
         <span class="campo-cab-txt">
             <strong>@(string.IsNullOrWhiteSpace(C.Nome) ? "Campo sem nome" : C.Nome)</strong>
