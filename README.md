@@ -2,24 +2,15 @@
 
 Painel para apresentar resultados na tela compartilhada do Microsoft Teams: **resultado individual**, **resultado do time**, **resultado do cliente** e abas criadas por você.
 
-Escrito em **C# com Blazor WebAssembly** e hospedado no **GitHub Pages**: abre direto no navegador, sem instalar nada.
+Escrito em **C# com Blazor WebAssembly**: abre direto no navegador, sem instalar nada.
 
 🔗 **Acesse:** https://biel1412.github.io/insimatch/
 
-## Funções (menu lateral)
-
-| Aba | Para quê | Modelos de apresentação |
-|---|---|---|
-| **Individual** | Feedback mensal de um colaborador | Cartões · Gráficos · Placar · Foco · Mosaico |
-| **Time** | Resultado consolidado do time no mês | Cartões · Placar · Foco |
-| **Cliente** | Painel configurável para qualquer cliente | Cartões · Placar · Foco |
-| **Suas abas** | Abas criadas por você no botão **+ Nova** do menu | Cartões · Placar · Foco |
 
 ### Abas personalizadas
 No menu lateral, **+ Nova** cria uma aba com nome, ícone (26 opções) e nome de cada registro. Há quatro formatos:
 
-| Formato | O que é |
-|---|---|
+
 | **Em branco** | Painel de indicadores do zero (campos livres, metas, gráficos e parecer, como a aba Cliente). |
 | **Exemplo pronto** | O mesmo painel, já com campos de exemplo. |
 | **Slides** | Várias páginas com título, texto (linhas com “-” viram tópicos), campos flexíveis e **até 2 imagens por slide**. As imagens são carregadas no editor e a plataforma escolhe a posição: ao lado do conteúdo, em destaque abaixo, em tela cheia ou em galeria. Modelos: Slide (setas ← → do teclado), Rolagem e Visão geral. As imagens ficam no IndexedDB do navegador; exportar (.json) leva os slides e as imagens. |
@@ -80,16 +71,7 @@ Em todas as abas, o **parecer** só aparece quando você escolhe um. **✨ Gerar
 4. Escolha cor, fundo e modelo, clique em **▶ Apresentar** e compartilhe a tela no Teams.
 5. Use **‹ ›** no topo para passar entre colaboradores, times ou atualizações.
 
-### Planilha CSV (individual)
 
-Separador `;` (abre direto no Excel em português):
-
-```
-Nome;Equipe;Mes;Volume;MetaPro;MetaPremium;DiasConsiderados;DesviosInternos;DesviosExternos;Parecer
-Maria Souza;Atendimento;2026-10;3410;150;180;22;1;0;
-```
-
-> 🔒 Os dados ficam salvos **somente no navegador** de quem usa (localStorage). Nada é enviado para servidor algum.
 
 ## Desenvolvimento local
 
@@ -100,20 +82,4 @@ cd src/Insimatch
 dotnet run
 ```
 
-## Publicação
 
-Todo `push` na branch `main` dispara `.github/workflows/deploy.yml`, que compila e publica no GitHub Pages.
-
-## Estrutura
-
-```
-src/Insimatch/
-├── Pages/Home.razor                 # dock, barra de ferramentas, cor, fundo e modelo
-├── Components/Individual/           # aba Individual e seus 5 modelos
-├── Components/Time/                 # aba Time e seus modelos
-├── Components/Clientes/             # aba Cliente: editor de campos, visuais, gráficos e modelos
-├── Components/Comum/                # cabeçalho, parecer, Foco, Placar, medidor, papel de parede
-├── Models/                          # dados e critérios (Colaborador, ResultadoTime, Cliente, AbaPersonalizada, Icones)
-├── Services/ArmazenamentoService.cs # localStorage e CSV
-└── wwwroot/                         # HTML, CSS e JS
-```
