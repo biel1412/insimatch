@@ -395,6 +395,10 @@ else
             return;
         }
 
+        // Sem arquivo na origem escolhida, mas com instruções escritas: usa só o texto
+        var semArquivo = (Fonte == "planilha" && Abas.Count == 0) || (Fonte == "pdf" && Pdfs.Count == 0) || (Fonte == "imagem" && Imagens.Count == 0);
+        if (semArquivo && !string.IsNullOrWhiteSpace(Instrucoes)) Fonte = "texto";
+
         string dados, origem;
         var cortado = false;
         List<(string Mime, string Base64)>? anexos = null;
@@ -406,21 +410,21 @@ else
         }
         else if (Fonte == "pdf")
         {
-            if (Pdfs.Count == 0) { Erro = "Escolha um arquivo PDF primeiro."; return; }
+            if (Pdfs.Count == 0) { Erro = "Escolha um PDF ou escreva nas instruções o que a IA deve montar."; return; }
             anexos = Pdfs.Select(p => ("application/pdf", p.Base64)).ToList();
             dados = $"Os dados estão no(s) {Pdfs.Count} PDF(s) anexado(s). Leia com atenção textos, tabelas, números e gráficos de todas as páginas.";
             origem = $"PDF: {string.Join(", ", Pdfs.Select(p => p.Nome))}";
         }
         else if (Fonte == "imagem")
         {
-            if (Imagens.Count == 0) { Erro = "Escolha ou cole uma imagem primeiro."; return; }
+            if (Imagens.Count == 0) { Erro = "Escolha ou cole uma imagem, ou escreva nas instruções o que a IA deve montar."; return; }
             anexos = Imagens.Select(i => (i.Mime, i.Base64)).ToList();
             dados = $"Os dados estão nas {Imagens.Count} imagem(ns) anexada(s). Leia com atenção todos os números, nomes e rótulos visíveis.";
             origem = "imagem(ns) enviada(s): prints de tela, relatórios ou fotos";
         }
         else
         {
-            if (Abas.Count == 0) { Erro = "Escolha uma planilha primeiro."; return; }
+            if (Abas.Count == 0) { Erro = "Escolha uma planilha ou escreva nas instruções o que a IA deve montar."; return; }
             (dados, cortado) = Insimatch.Services.PlanilhaService.ParaTexto(Abas, LimiteTexto);
             origem = $"planilha “{NomeArquivo}”";
         }
