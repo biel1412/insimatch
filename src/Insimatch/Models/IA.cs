@@ -14,7 +14,11 @@ public class ConfigIA
 }
 
 /// <summary>O que a IA gerou: um painel (lista de campos) ou uma apresentação em slides.</summary>
-public record ResultadoIA(string NomeAba, bool Slides, Cliente? Painel, Apresentacao? Deck);
+/// <summary>Resultado da IA: Formato = "painel", "slides" ou "fluxo".</summary>
+public record ResultadoIA(string NomeAba, string Formato, Cliente? Painel, Apresentacao? Deck, Fluxo? Fluxo = null)
+{
+    public bool Slides => Formato == "slides";
+}
 
 /// <summary>Instruções para a IA montar um painel ou slides no formato da plataforma.</summary>
 public static class PromptsIA
@@ -73,6 +77,48 @@ public static class PromptsIA
         """;
 
     public static string Sistema(bool slides, bool comPdf = false) => SistemaBase(slides) + (slides && comPdf ? ImagensPdf : "");
+
+    /// <summary>Instruções por formato: "painel", "slides" ou "fluxo".</summary>
+    public static string Sistema(string formato, bool comPdf = false) =>
+        formato == "fluxo" ? SistemaFluxo : Sistema(formato == "slides", comPdf);
+
+    private const string SistemaFluxo = """
+        Você é um analista de processos que transforma descrições, documentos e dados em FLUXOGRAMAS claros
+        para reuniões no Microsoft Teams. Monte um FLUXOGRAMA no formato JSON abaixo.
+
+        {
+          "nome": "nome curto do processo",
+          "descricao": "uma linha explicando o objetivo do processo",
+          "etapas": [
+            {
+              "id": "e1",
+              "texto": "texto curto da etapa (até 8 palavras, verbo no infinitivo: 'Receber solicitação')",
+              "tipo": "inicio | etapa | decisao | documento | dados | fim",
+              "proximos": [ { "para": "e2", "rotulo": "" } ]
+            }
+          ]
+        }
+
+        Tipos:
+        - "inicio": o gatilho que abre o processo (exatamente 1).
+        - "etapa": uma ação ou tarefa.
+        - "decisao": uma pergunta com 2 ou mais saídas; escreva o texto como pergunta ("Documentação completa?")
+          e dê "rotulo" a cada saída ("Sim", "Não", ou a condição).
+        - "documento": geração ou envio de documento, relatório, e-mail, formulário.
+        - "dados": registro ou consulta em sistema, planilha ou base de dados.
+        - "fim": desfecho do processo (1 ou mais; ex.: "Concluído", "Cancelado").
+
+        Regras:
+        - Responda SOMENTE com um objeto JSON válido, sem texto antes ou depois.
+        - Escreva tudo em português do Brasil.
+        - Use de 4 a 30 etapas; ids únicos ("e1", "e2"...); todo "para" deve apontar para um id existente.
+        - Todo caminho deve chegar a uma etapa "fim". Etapas "fim" não têm próximos.
+        - Laços (voltar a uma etapa anterior, ex.: corrigir e reenviar) são permitidos quando fizerem parte do processo.
+        - Baseie-se no processo descrito nos dados e nas instruções. Complete apenas passos óbvios que ligam duas etapas;
+          não invente regras, prazos, áreas ou sistemas que não foram citados.
+        - Se os dados forem uma tabela (ex.: etapas, responsáveis, status), use a ordem e as dependências que ela indica.
+        - Prefira textos curtos; detalhes longos não cabem nas caixas do fluxograma.
+        """;
 
     private static string SistemaBase(bool slides) => slides
         ? $$"""
@@ -198,6 +244,58 @@ public static class ConversorIA
         if (cl.Campos.Count == 0) throw new InvalidOperationException("A IA não retornou nenhum indicador. Tente de novo ou dê mais instruções.");
         return cl;
     }
+
+    /// <summary>Converte o JSON da IA em fluxograma (ids novos, ligações inválidas descartadas).</summary>
+    public static Fluxo ParaFluxo(string json)
+    {
+        using var doc = JsonDocument.Parse(json);
+        var r = doc.RootElement;
+        var f = new Fluxo { Nome = Txt(r, "nome"), Descricao = Txt(r, "descricao") };
+        var mapa = new Dictionary<string, NoFluxo>(StringComparer.OrdinalIgnoreCase);
+        var pendentes = new List<(NoFluxo No, JsonElement Proximos)>();
+        var i = 0;
+        foreach (var e in Lista(r, "etapas").Take(40))
+        {
+            var texto = Txt(e, "texto").Trim();
+            if (texto.Length == 0) continue;
+            if (texto.Length > 90) texto = texto[..87].TrimEnd() + "…";
+            var no = new NoFluxo { Texto = texto, Tipo = TipoFluxo(Txt(e, "tipo")) };
+            var id = Txt(e, "id").Trim();
+            if (id.Length == 0 || mapa.ContainsKey(id)) id = $"_auto{i}";
+            mapa[id] = no;
+            f.Nos.Add(no);
+            if (Prop(e, "proximos") is { ValueKind: JsonValueKind.Array } prox) pendentes.Add((no, prox));
+            i++;
+        }
+        foreach (var (no, prox) in pendentes)
+        {
+            foreach (var p in prox.EnumerateArray())
+            {
+                string destino, rotulo = "";
+                if (p.ValueKind == JsonValueKind.String) destino = p.GetString() ?? "";
+                else if (p.ValueKind == JsonValueKind.Object) { destino = Txt(p, "para"); if (destino == "") destino = Txt(p, "destino"); rotulo = Txt(p, "rotulo"); }
+                else continue;
+                if (!mapa.TryGetValue(destino.Trim(), out var alvo) || alvo == no) continue;
+                if (no.Proximos.Any(x => x.Destino == alvo.Id)) continue;
+                no.Proximos.Add(new Ligacao { Destino = alvo.Id, Rotulo = rotulo.Length > 30 ? rotulo[..30] : rotulo });
+            }
+        }
+        // Sem nenhuma ligação (IA devolveu só a lista): liga em sequência
+        if (f.Nos.Count > 1 && f.Nos.All(n => n.Proximos.Count == 0))
+            for (var k = 0; k < f.Nos.Count - 1; k++) f.Nos[k].Proximos.Add(new Ligacao { Destino = f.Nos[k + 1].Id });
+        if (f.Nos.Count == 0) throw new JsonException("Fluxograma sem etapas.");
+        return f;
+    }
+
+    private static TipoNo TipoFluxo(string t) => Normalizar(t) switch
+    {
+        "inicio" or "start" or "comeco" => TipoNo.Inicio,
+        "decisao" or "pergunta" or "condicao" or "decision" => TipoNo.Decisao,
+        "documento" or "doc" or "relatorio" or "document" => TipoNo.Documento,
+        "dados" or "sistema" or "registro" or "data" or "banco" => TipoNo.Dados,
+        "fim" or "final" or "termino" or "end" or "encerramento" => TipoNo.Fim,
+        _ => TipoNo.Etapa
+    };
 
     public static Apresentacao ParaSlides(string json)
     {

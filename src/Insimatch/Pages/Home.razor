@@ -318,11 +318,13 @@
         var nova = new AbaPersonalizada
         {
             Nome = r.NomeAba,
-            Icone = r.Slides ? "slides" : "raio",
-            Singular = r.Slides ? "slide" : "registro",
-            Tipo = r.Slides ? "slides" : "painel"
+            Icone = r.Formato switch { "slides" => "slides", "fluxo" => "fluxo", _ => "raio" },
+            Singular = r.Formato switch { "slides" => "slide", "fluxo" => "etapa", _ => "registro" },
+            Tipo = r.Formato switch { "slides" => "slides", "fluxo" => "fluxo", _ => "painel" }
         };
-        if (r.Slides && r.Deck is not null)
+        if (r.Formato == "fluxo" && r.Fluxo is not null)
+            await Armazenamento.SalvarAsync(nova.ChaveDados, r.Fluxo);
+        else if (r.Slides && r.Deck is not null)
             await Armazenamento.SalvarAsync(nova.ChaveDados, r.Deck);
         else if (r.Painel is not null)
             await Armazenamento.SalvarAsync(nova.ChaveDados, new List<Cliente> { r.Painel });

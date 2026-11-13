@@ -157,16 +157,21 @@ else
 
             @* ---------- Formato ---------- *@
             <div class="form-grupo">2. O que montar</div>
-            <div class="opcoes-inicio">
-                <button class="opcao-inicio @(!Slides ? "sel" : "")" @onclick="() => { Slides = false; }">
+            <div class="opcoes-inicio tres">
+                <button class="opcao-inicio @(Formato == "painel" ? "sel" : "")" @onclick='() => Formato = "painel"'>
                     <span class="opcao-ico"><IconeSvg Id="grafico" /></span>
                     <strong>Painel de indicadores</strong>
                     <span>Campos com metas, gráficos e parecer.</span>
                 </button>
-                <button class="opcao-inicio @(Slides ? "sel" : "")" @onclick="() => { Slides = true; }">
+                <button class="opcao-inicio @(Slides ? "sel" : "")" @onclick='() => Formato = "slides"'>
                     <span class="opcao-ico"><IconeSvg Id="slides" /></span>
                     <strong>Apresentação em slides</strong>
                     <span>Até 32 slides com tópicos e números.</span>
+                </button>
+                <button class="opcao-inicio @(Formato == "fluxo" ? "sel" : "")" @onclick='() => Formato = "fluxo"'>
+                    <span class="opcao-ico"><IconeSvg Id="fluxo" /></span>
+                    <strong>Fluxograma</strong>
+                    <span>Etapas e decisões do processo, desenhadas automaticamente.</span>
                 </button>
             </div>
 
@@ -176,9 +181,7 @@ else
             </label>
             <label>Instruções para a IA @(Fonte == "texto" ? "(obrigatório)" : "")
                 <textarea rows="@(Fonte == "texto" ? 6 : 3)" @bind="Instrucoes" @bind:event="oninput"
-                          placeholder="@(Fonte == "texto"
-                              ? "Ex.: monte 5 slides sobre o resultado de outubro: volume 14.040 (meta 14.200), qualidade 99,93% (meta 99,94%), 11 desvios. Destaque os pontos de melhoria."
-                              : "Ex.: compare as equipes; a meta de qualidade é 99,94%; destaque quem ficou abaixo da meta.")"></textarea>
+                          placeholder="@ExemploInstrucoes"></textarea>
             </label>
 
             @if (!string.IsNullOrEmpty(Erro))
@@ -287,7 +290,15 @@ else
         catch (Exception ex) { Erro = "Não foi possível ler o PDF: " + ex.Message; }
         finally { Lendo = false; }
     }
-    private bool Slides;
+    private string Formato = "painel";
+    private bool Slides => Formato == "slides";
+    private string ExemploInstrucoes => Formato == "fluxo"
+        ? (Fonte == "texto"
+            ? "Ex.: processo de admissão: o RH recebe a requisição, confere os documentos; se faltar algo, pede as pendências; depois cadastra no sistema e agenda a integração."
+            : "Ex.: monte o fluxo de atendimento descrito; destaque as decisões e quem é responsável por cada etapa.")
+        : Fonte == "texto"
+            ? "Ex.: monte 5 slides sobre o resultado de outubro: volume 14.040 (meta 14.200), qualidade 99,93% (meta 99,94%), 11 desvios. Destaque os pontos de melhoria."
+            : "Ex.: compare as equipes; a meta de qualidade é 99,94%; destaque quem ficou abaixo da meta.";
     private string NomeAba = "";
     private string Instrucoes = "";
     private List<Insimatch.Services.PlanilhaAba> Abas = new();
@@ -419,7 +430,7 @@ else
         Cts = new CancellationTokenSource(TimeSpan.FromSeconds(Fonte == "pdf" || Slides ? 150 : 90));
         try
         {
-            var json = await Gemini.GerarJsonAsync(Cfg.Chave, Cfg.Modelo, PromptsIA.Sistema(Slides, Fonte == "pdf"),
+            var json = await Gemini.GerarJsonAsync(Cfg.Chave, Cfg.Modelo, PromptsIA.Sistema(Formato, Fonte == "pdf"),
                 PromptsIA.Usuario(dados, origem, Instrucoes, cortado), Cts.Token, anexos);
 
             ResultadoIA resultado;
@@ -429,12 +440,19 @@ else
                 if (Fonte == "pdf") await RecortarImagensPdfAsync(deck);
                 var nome = Nome(deck.Nome);
                 if (string.IsNullOrWhiteSpace(deck.Nome)) deck.Nome = nome;
-                resultado = new ResultadoIA(nome, true, null, deck);
+                resultado = new ResultadoIA(nome, "slides", null, deck);
+            }
+            else if (Formato == "fluxo")
+            {
+                var fluxo = ConversorIA.ParaFluxo(json);
+                var nome = Nome(fluxo.Nome);
+                if (string.IsNullOrWhiteSpace(fluxo.Nome)) fluxo.Nome = nome;
+                resultado = new ResultadoIA(nome, "fluxo", null, null, fluxo);
             }
             else
             {
                 var painel = ConversorIA.ParaPainel(json);
-                resultado = new ResultadoIA(Nome(painel.Nome), false, painel, null);
+                resultado = new ResultadoIA(Nome(painel.Nome), "painel", painel, null);
             }
             await OnCriar.InvokeAsync(resultado);
         }
