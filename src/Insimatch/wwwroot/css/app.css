@@ -2035,6 +2035,11 @@ html.versao-teste body::after {
 
 /* Gerar com IA: 4 origens e PDFs */
 .opcoes-inicio.quatro { grid-template-columns: repeat(4, 1fr); }
+.ia-pronto { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 12px;
+    border: 1px solid color-mix(in srgb, var(--verde) 45%, transparent); background: color-mix(in srgb, var(--verde) 12%, transparent); }
+.ia-pronto > div { display: grid; gap: 2px; min-width: 0; }
+.ia-pronto strong { color: var(--verde); overflow-wrap: anywhere; }
+.ia-pronto span { font-size: .82rem; opacity: .8; overflow-wrap: anywhere; }
 @media (max-width: 760px) { .opcoes-inicio.quatro { grid-template-columns: 1fr 1fr; } }
 .ia-pdfs { display: flex; flex-direction: column; gap: 8px; }
 .ia-pdf { position: relative; display: flex; align-items: center; gap: 12px; padding: 10px 44px 10px 12px; border-radius: 12px; background: var(--vidro); border: 1px solid var(--vidro-borda); }

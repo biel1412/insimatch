@@ -26,7 +26,7 @@ else
             <div class="dialogo-previa ia-previa">✨</div>
             <div>
                 <h2 id="ia-titulo">Gerar com IA</h2>
-                <p>A IA lê os dados e monta uma nova aba no formato da plataforma. Nada do que já existe é alterado.</p>
+                <p>A IA lê os dados e monta uma nova aba no formato da plataforma (ou uma planilha Excel para baixar). Nada do que já existe é alterado.</p>
             </div>
             <button class="dialogo-x" title="Fechar" disabled="@Gerando" @onclick="Fechar">✕</button>
         </div>
@@ -157,7 +157,7 @@ else
 
             @* ---------- Formato ---------- *@
             <div class="form-grupo">2. O que montar</div>
-            <div class="opcoes-inicio tres">
+            <div class="opcoes-inicio quatro">
                 <button class="opcao-inicio @(Formato == "painel" ? "sel" : "")" @onclick='() => Formato = "painel"'>
                     <span class="opcao-ico"><IconeSvg Id="grafico" /></span>
                     <strong>Painel de indicadores</strong>
@@ -173,10 +173,15 @@ else
                     <strong>Fluxograma</strong>
                     <span>Etapas e decisões do processo, desenhadas automaticamente.</span>
                 </button>
+                <button class="opcao-inicio @(Formato == "excel" ? "sel" : "")" @onclick='() => Formato = "excel"'>
+                    <span class="opcao-ico"><IconeSvg Id="tabela" /></span>
+                    <strong>Planilha Excel</strong>
+                    <span>Arquivo .xlsx com abas, fórmulas e formatação, para baixar.</span>
+                </button>
             </div>
 
             <div class="form-grupo">3. Detalhes @(Fonte == "texto" ? "" : "(opcional)")</div>
-            <label>Nome da nova aba
+            <label>@(Formato == "excel" ? "Nome do arquivo" : "Nome da nova aba")
                 <input @bind="NomeAba" @bind:event="oninput" maxlength="40" placeholder="Ex.: Resultados de outubro" />
             </label>
             <label>Instruções para a IA @(Fonte == "texto" ? "(obrigatório)" : "")
@@ -184,6 +189,13 @@ else
                           placeholder="@ExemploInstrucoes"></textarea>
             </label>
 
+            @if (ArquivoExcel is { } pronto && Formato == "excel" && !Gerando)
+            {
+                <div class="ia-pronto">
+                    <div><strong>✓ Planilha pronta: @pronto.Nome</strong><span>@ResumoExcel</span></div>
+                    <button class="btn" @onclick="BaixarExcelAsync">Baixar de novo</button>
+                </div>
+            }
             @if (!string.IsNullOrEmpty(Erro))
             {
                 <div class="aviso ia-erro">@Erro</div>
@@ -292,7 +304,11 @@ else
     }
     private string Formato = "painel";
     private bool Slides => Formato == "slides";
-    private string ExemploInstrucoes => Formato == "fluxo"
+    private string ExemploInstrucoes => Formato == "excel"
+        ? (Fonte == "texto"
+            ? "Ex.: monte um controle mensal de metas com colunas Colaborador, Volume, Meta, Atingimento (%) e Status; 10 linhas em branco, totais e destaque em vermelho abaixo de 100%."
+            : "Ex.: organize os dados numa tabela, crie uma aba de resumo por equipe com fórmulas e destaque quem ficou abaixo de 99,94% de qualidade.")
+        : Formato == "fluxo"
         ? (Fonte == "texto"
             ? "Ex.: processo de admissão: o RH recebe a requisição, confere os documentos; se faltar algo, pede as pendências; depois cadastra no sistema e agenda a integração."
             : "Ex.: monte o fluxo de atendimento descrito; destaque as decisões e quem é responsável por cada etapa.")
@@ -389,6 +405,7 @@ else
     private async Task GerarAsync()
     {
         Erro = "";
+        ArquivoExcel = null;
         if (!TemChave)
         {
             Erro = "Entre em contato com o suporte responsável para verificar se você está autorizado.";
@@ -431,7 +448,7 @@ else
 
         Gerando = true;
         Etapa = "";
-        Cts = new CancellationTokenSource(TimeSpan.FromSeconds(Fonte == "pdf" || Slides ? 150 : 90));
+        Cts = new CancellationTokenSource(TimeSpan.FromSeconds(Fonte == "pdf" || Slides || Formato == "excel" ? 150 : 90));
         try
         {
             var json = await Gemini.GerarJsonAsync(Cfg.Chave, Cfg.Modelo, PromptsIA.Sistema(Formato, Fonte == "pdf"),
@@ -445,6 +462,15 @@ else
                 var nome = Nome(deck.Nome);
                 if (string.IsNullOrWhiteSpace(deck.Nome)) deck.Nome = nome;
                 resultado = new ResultadoIA(nome, "slides", null, deck);
+            }
+            else if (Formato == "excel")
+            {
+                var planilha = ConversorIA.ParaExcel(json);
+                var arquivo = Insimatch.Services.ExcelService.NomeArquivo(!string.IsNullOrWhiteSpace(NomeAba) ? NomeAba : planilha.Nome);
+                ArquivoExcel = (arquivo, Insimatch.Services.ExcelService.Gerar(planilha));
+                ResumoExcel = $"{planilha.Abas.Count} aba(s): " + string.Join(", ", planilha.Abas.Select(a => $"{a.Nome} ({a.Linhas.Count} linha(s))"));
+                await BaixarExcelAsync();
+                return;
             }
             else if (Formato == "fluxo")
             {
@@ -482,6 +508,15 @@ else
             Cts?.Dispose();
             Cts = null;
         }
+    }
+
+    private (string Nome, byte[] Bytes)? ArquivoExcel;
+    private string ResumoExcel = "";
+
+    private async Task BaixarExcelAsync()
+    {
+        if (ArquivoExcel is { } a)
+            await JS.InvokeVoidAsync("insimatch.baixarBytes", a.Nome, a.Bytes, Insimatch.Services.ExcelService.Mime);
     }
 
     private string Nome(string sugerido)

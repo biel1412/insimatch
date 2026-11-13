@@ -19,6 +19,17 @@ window.insimatch = {
         a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
     },
+    baixarBytes: function (nomeArquivo, bytes, tipo) {
+        const blob = new Blob([bytes], { type: tipo || "application/octet-stream" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = nomeArquivo;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+    },
     imprimir: function () {
         window.print();
     },

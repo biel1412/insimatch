@@ -29,6 +29,7 @@ public static class Icones
         new("atendimento", "Atendimento", "<path d=\"M4.5 13v-1a7.5 7.5 0 0 1 15 0v1\"/><rect x=\"3.5\" y=\"13\" width=\"4\" height=\"6\" rx=\"1.5\"/><rect x=\"16.5\" y=\"13\" width=\"4\" height=\"6\" rx=\"1.5\"/><path d=\"M18.5 19c0 1.2-1.5 2-4 2H12\"/>"),
         new("engrenagem", "Processos", "<circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7\"/>"),
         new("slides", "Apresentação", "<rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M12 16v4M8 20h8\"/><path d=\"M7 12l3-3 2.5 2L17 7\"/>"),
+        new("tabela", "Tabela", "<rect x=\"3\" y=\"4\" width=\"18\" height=\"16\" rx=\"2\"/><path d=\"M3 9.5h18\"/><path d=\"M3 14.8h18\"/><path d=\"M9 9.5V20\"/><path d=\"M15 9.5V20\"/>"),
         new("fluxo", "Fluxo", "<rect x=\"3\" y=\"3\" width=\"8\" height=\"5.5\" rx=\"1.6\"/><rect x=\"13\" y=\"15.5\" width=\"8\" height=\"5.5\" rx=\"1.6\"/><path d=\"M7 8.5v4h10v3\"/><path d=\"M15 13.5l2 2 2-2\"/>"),
         new("camadas", "Camadas", "<path d=\"M12 3.5l8.5 4.5-8.5 4.5-8.5-4.5z\"/><path d=\"M3.5 12l8.5 4.5 8.5-4.5\"/><path d=\"M3.5 16l8.5 4.5 8.5-4.5\"/>"),
         new("pessoa", "Pessoa", "<circle cx=\"12\" cy=\"8\" r=\"3.6\"/><path d=\"M4.8 20c.8-4 3.7-6.2 7.2-6.2s6.4 2.2 7.2 6.2\"/>"),

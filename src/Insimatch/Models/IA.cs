@@ -80,7 +80,72 @@ public static class PromptsIA
 
     /// <summary>Instruções por formato: "painel", "slides" ou "fluxo".</summary>
     public static string Sistema(string formato, bool comPdf = false) =>
-        formato == "fluxo" ? SistemaFluxo : Sistema(formato == "slides", comPdf);
+        formato switch
+        {
+            "fluxo" => SistemaFluxo,
+            "excel" => SistemaExcel,
+            _ => Sistema(formato == "slides", comPdf)
+        };
+
+    private const string SistemaExcel = """
+        Você é um especialista em Excel que transforma dados, documentos e pedidos em PLANILHAS prontas para uso
+        no trabalho (controles, relatórios, metas, cadastros). Monte uma PLANILHA no formato JSON abaixo.
+
+        {
+          "nome": "nome curto do arquivo",
+          "abas": [
+            {
+              "nome": "nome da aba (até 31 caracteres, sem : \ / ? * [ ])",
+              "colunas": [
+                { "titulo": "Colaborador", "tipo": "texto", "largura": 22 },
+                { "titulo": "Volume", "tipo": "inteiro", "largura": 12 },
+                { "titulo": "Meta", "tipo": "inteiro", "largura": 12 },
+                { "titulo": "Atingimento", "tipo": "percentual", "largura": 14 }
+              ],
+              "linhas": [
+                ["Ana Souza", 1250, 1200, "=IFERROR(B2/C2,0)"],
+                ["Bruno Lima", 980, 1200, "=IFERROR(B3/C3,0)"]
+              ],
+              "total": ["Total", "=SUM(B2:B3)", "=SUM(C2:C3)", "=IFERROR(B4/C4,0)"],
+              "destaques": [
+                { "coluna": "Atingimento", "se": "<", "valor": 1, "cor": "vermelho" },
+                { "coluna": "Atingimento", "se": ">=", "valor": 1, "cor": "verde" }
+              ]
+            }
+          ]
+        }
+
+        Posições (essencial para as fórmulas):
+        - A linha 1 de cada aba é o cabeçalho (os títulos das colunas). A 1ª coluna é A, a 2ª é B, e assim por diante.
+        - O item 0 de "linhas" fica na linha 2 da planilha, o item 1 na linha 3... (linha da planilha = posição + 2).
+        - "total" (opcional) fica logo abaixo da última linha de dados: com N linhas de dados, o total fica na linha N + 2.
+        - Cada linha tem exatamente um valor por coluna, na mesma ordem das colunas (use "" para célula vazia).
+
+        Tipos de coluna: "texto", "inteiro", "numero" (2 casas), "moeda" (R$), "percentual", "data".
+        - Percentual: escreva como fração (99,94% = 0.9994; 150% = 1.5).
+        - Data: "AAAA-MM-DD". Moeda e números: só o número, com ponto decimal (1234.5), sem "R$" nem separador de milhar.
+
+        Fórmulas:
+        - Comece com "=" e escreva em INGLÊS com vírgula separando argumentos, como o arquivo .xlsx exige:
+          SUM, AVERAGE, MIN, MAX, COUNT, COUNTA, COUNTIF, COUNTIFS, SUMIF, SUMIFS, AVERAGEIF, IF, AND, OR,
+          IFERROR, ROUND, VLOOKUP, INDEX, MATCH, TODAY, TEXT. Não use XLOOKUP, FILTER, LET, IFS nem funções novas.
+        - Use fórmulas para tudo que é calculado (totais, médias, percentuais, diferenças, status), em vez de escrever o resultado.
+          Assim o Excel calcula sem erro e atualiza quando o usuário mudar um dado.
+        - Divisões sempre com IFERROR(...,0). Textos dentro de fórmula entre aspas duplas: =IF(D2>=1,"Na meta","Abaixo").
+        - Para citar outra aba: 'Nome da aba'!B2 (com aspas simples).
+
+        Destaques (formatação condicional, opcional): "coluna" é o título da coluna; "se" é <, <=, >, >=, = ou <>;
+        "valor" é número (na mesma escala da coluna, ex.: 0.9994 para 99,94%) ou texto; "cor": vermelho, verde, amarelo ou azul.
+
+        Regras:
+        - Responda SOMENTE com um objeto JSON válido, sem texto antes ou depois. Tudo em português do Brasil (exceto nomes de funções).
+        - De 1 a 6 abas; até 20 colunas e até 300 linhas por aba. Se os dados forem maiores, priorize o que o pedido pede
+          e resuma o restante numa aba de resumo.
+        - Use os números dos dados exatamente como estão; não invente nomes nem valores. Se o pedido for um modelo em branco,
+          crie as colunas e fórmulas com algumas linhas vazias ("") prontas para preencher.
+        - Se houver um "Resumo calculado" nos dados, ele pode virar uma aba de resumo, mas prefira fórmulas sobre a aba de dados.
+        - Títulos de coluna curtos e claros; larguras entre 8 e 50 (aproximadamente o número de caracteres).
+        """;
 
     private const string SistemaFluxo = """
         Você é um analista de processos que transforma descrições, documentos e dados em FLUXOGRAMAS claros
@@ -286,6 +351,83 @@ public static class ConversorIA
         if (f.Nos.Count == 0) throw new JsonException("Fluxograma sem etapas.");
         return f;
     }
+
+    /// <summary>Converte o JSON da IA numa planilha Excel (limites e tipos tolerantes).</summary>
+    public static PlanilhaExcel ParaExcel(string json)
+    {
+        using var doc = JsonDocument.Parse(json);
+        var r = doc.RootElement;
+        var p = new PlanilhaExcel { Nome = Txt(r, "nome") };
+        foreach (var a in Lista(r, "abas").Take(10))
+        {
+            var aba = new AbaExcel { Nome = Txt(a, "nome") };
+            foreach (var c in Lista(a, "colunas").Take(30))
+            {
+                var titulo = c.ValueKind == JsonValueKind.String ? c.GetString() ?? "" : Txt(c, "titulo");
+                aba.Colunas.Add(new ColunaExcel
+                {
+                    Titulo = titulo.Trim(),
+                    Tipo = TipoColuna(c.ValueKind == JsonValueKind.Object ? Txt(c, "tipo") : ""),
+                    Largura = c.ValueKind == JsonValueKind.Object ? (double)(Num(c, "largura") ?? 0) : 0
+                });
+            }
+            foreach (var l in Lista(a, "linhas").Take(1000))
+                if (l.ValueKind == JsonValueKind.Array) aba.Linhas.Add(LinhaExcel(l, aba.Colunas.Count));
+            if (Prop(a, "total") is { ValueKind: JsonValueKind.Array } t) aba.Total = LinhaExcel(t, aba.Colunas.Count);
+            if (aba.Colunas.Count == 0)
+            {
+                // Sem colunas declaradas: usa a primeira linha como cabeçalho
+                if (aba.Linhas.Count == 0) continue;
+                aba.Colunas = aba.Linhas[0].Select(v => new ColunaExcel { Titulo = Convert.ToString(v, CultureInfo.InvariantCulture) ?? "" }).ToList();
+                aba.Linhas.RemoveAt(0);
+            }
+            foreach (var d in Lista(a, "destaques").Take(20))
+            {
+                var nomeCol = Txt(d, "coluna");
+                var idx = aba.Colunas.FindIndex(c => Igual(c.Titulo, nomeCol));
+                if (idx < 0 && Prop(d, "coluna") is { ValueKind: JsonValueKind.Number } n && n.TryGetInt32(out var i)) idx = i;
+                if (idx < 0 || idx >= aba.Colunas.Count) continue;
+                var op = (Txt(d, "se") is { Length: > 0 } se ? se : Txt(d, "operador")).Trim();
+                if (op is not ("<" or "<=" or ">" or ">=" or "=" or "<>")) continue;
+                object? valor = Prop(d, "valor") switch
+                {
+                    { ValueKind: JsonValueKind.Number } v => v.GetDouble(),
+                    { ValueKind: JsonValueKind.String } v => v.GetString(),
+                    _ => null
+                };
+                if (valor is null) continue;
+                aba.Destaques.Add(new DestaqueExcel { Coluna = idx, Operador = op, Valor = valor, Cor = Normalizar(Txt(d, "cor")) is { Length: > 0 } cor ? cor : "vermelho" });
+            }
+            p.Abas.Add(aba);
+        }
+        if (p.Abas.Count == 0) throw new JsonException("Planilha sem abas.");
+        return p;
+    }
+
+    private static List<object?> LinhaExcel(JsonElement l, int colunas)
+    {
+        var lista = new List<object?>();
+        foreach (var v in l.EnumerateArray().Take(colunas == 0 ? 30 : colunas))
+            lista.Add(v.ValueKind switch
+            {
+                JsonValueKind.Number => v.GetDouble(),
+                JsonValueKind.String => v.GetString(),
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+                _ => null
+            });
+        return lista;
+    }
+
+    private static string TipoColuna(string t) => Normalizar(t) switch
+    {
+        "inteiro" or "int" or "integer" or "quantidade" => "inteiro",
+        "numero" or "number" or "decimal" or "num" => "numero",
+        "moeda" or "currency" or "valor" or "dinheiro" or "r$" => "moeda",
+        "percentual" or "percent" or "porcentagem" or "%" => "percentual",
+        "data" or "date" => "data",
+        _ => "texto"
+    };
 
     private static TipoNo TipoFluxo(string t) => Normalizar(t) switch
     {
