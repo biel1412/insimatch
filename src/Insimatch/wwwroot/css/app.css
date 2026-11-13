@@ -348,7 +348,8 @@ button, input, textarea { font-family: inherit; }
    Seletores sem ".app" para que as amostras do seletor de cor também usem as variáveis. */
 /* Base escura (repõe tudo, para uma amostra escura dentro de um tema claro) */
 [data-tema="noturno"], [data-tema="oceano"], [data-tema="esmeralda"], [data-tema="aurora"], [data-tema="rubi"],
-[data-tema="solar"], [data-tema="lavanda"], [data-tema="grafite"], [data-tema="meia-noite"], [data-tema="coral"] {
+[data-tema="solar"], [data-tema="lavanda"], [data-tema="grafite"], [data-tema="meia-noite"], [data-tema="coral"],
+[data-tema="safira"], [data-tema="ametista"], [data-tema="petroleo"], [data-tema="floresta"], [data-tema="oliva"], [data-tema="cobre"], [data-tema="vinho"], [data-tema="neon"], [data-tema="chocolate"] {
     --texto: #eef1fb; --texto-2: #a3abc8; --texto-3: #6b7394;
     --vidro: rgba(255, 255, 255, 0.045); --vidro-borda: rgba(255, 255, 255, 0.09);
     --campo: rgba(255, 255, 255, 0.04); --hover: rgba(255, 255, 255, 0.09); --trilho: rgba(255, 255, 255, 0.07);
@@ -399,8 +400,45 @@ button, input, textarea { font-family: inherit; }
     --brilho-1: rgba(255, 122, 107, 0.2); --brilho-2: rgba(58, 214, 196, 0.13); --lateral: rgba(10, 20, 22, 0.82);
 }
 
+[data-tema="safira"] {
+    --fundo: #060b1f; --acento: #6366f1; --acento-2: #38bdf8;
+    --brilho-1: rgba(99, 102, 241, 0.22); --brilho-2: rgba(56, 189, 248, 0.12); --lateral: rgba(6, 11, 31, 0.82);
+}
+[data-tema="ametista"] {
+    --fundo: #120a1f; --acento: #8b5cf6; --acento-2: #22d3ee;
+    --brilho-1: rgba(139, 92, 246, 0.22); --brilho-2: rgba(34, 211, 238, 0.12); --lateral: rgba(18, 10, 31, 0.82);
+}
+[data-tema="petroleo"] {
+    --fundo: #031417; --acento: #14b8a6; --acento-2: #38bdf8;
+    --brilho-1: rgba(20, 184, 166, 0.22); --brilho-2: rgba(56, 189, 248, 0.12); --lateral: rgba(3, 20, 23, 0.82);
+}
+[data-tema="floresta"] {
+    --fundo: #07120a; --acento: #4ade80; --acento-2: #fde047;
+    --brilho-1: rgba(74, 222, 128, 0.22); --brilho-2: rgba(253, 224, 71, 0.12); --lateral: rgba(7, 18, 10, 0.82);
+}
+[data-tema="oliva"] {
+    --fundo: #10120a; --acento: #a3b84a; --acento-2: #e9c46a;
+    --brilho-1: rgba(163, 184, 74, 0.22); --brilho-2: rgba(233, 196, 106, 0.12); --lateral: rgba(16, 18, 10, 0.84);
+}
+[data-tema="cobre"] {
+    --fundo: #140c08; --acento: #e07a3f; --acento-2: #f4c27a;
+    --brilho-1: rgba(224, 122, 63, 0.22); --brilho-2: rgba(244, 194, 122, 0.12); --lateral: rgba(20, 12, 8, 0.84);
+}
+[data-tema="vinho"] {
+    --fundo: #18070f; --acento: #e11d74; --acento-2: #a78bfa;
+    --brilho-1: rgba(225, 29, 116, 0.22); --brilho-2: rgba(167, 139, 250, 0.12); --lateral: rgba(24, 7, 15, 0.82);
+}
+[data-tema="neon"] {
+    --fundo: #08080c; --acento: #39ff88; --acento-2: #ff3df0;
+    --brilho-1: rgba(57, 255, 136, 0.22); --brilho-2: rgba(255, 61, 240, 0.12); --lateral: rgba(8, 8, 12, 0.85);
+}
+[data-tema="chocolate"] {
+    --fundo: #120c09; --acento: #c08457; --acento-2: #f2d0a4;
+    --brilho-1: rgba(192, 132, 87, 0.22); --brilho-2: rgba(242, 208, 164, 0.12); --lateral: rgba(18, 12, 9, 0.85);
+}
+
 /* Base clara */
-[data-tema="claro"], [data-tema="areia"], [data-tema="artico"] {
+[data-tema="claro"], [data-tema="areia"], [data-tema="artico"], [data-tema="ceu"], [data-tema="menta"], [data-tema="lilas"], [data-tema="rosa"], [data-tema="pessego"], [data-tema="nevoa"] {
     --texto: #111933; --texto-2: #4b5575; --texto-3: #7f88a6;
     --vidro: rgba(255, 255, 255, 0.85); --vidro-borda: rgba(17, 25, 51, 0.09);
     --campo: #ffffff; --hover: rgba(17, 25, 51, 0.06); --trilho: rgba(17, 25, 51, 0.08);
@@ -422,9 +460,33 @@ button, input, textarea { font-family: inherit; }
     --fundo: #edf5fb; --acento: #0284c7; --acento-2: #7c3aed; --texto: #0c2233; --texto-2: #3e5568; --texto-3: #7891a4;
     --brilho-1: rgba(2, 132, 199, 0.12); --brilho-2: rgba(124, 58, 237, 0.08);
 }
-:is([data-tema="claro"], [data-tema="areia"], [data-tema="artico"]) .medidor .valor,
-:is([data-tema="claro"], [data-tema="areia"], [data-tema="artico"]) .barra div { filter: none; box-shadow: none; }
-:is([data-tema="claro"], [data-tema="areia"], [data-tema="artico"]) .medidor .marca-meta { stroke: var(--texto); }
+[data-tema="ceu"] {
+    --fundo: #eef6ff; --acento: #2563eb; --acento-2: #0891b2; --texto: #0b1b33; --texto-2: #3c5070; --texto-3: #7a8ca6;
+    --brilho-1: rgba(37, 99, 235, 0.11); --brilho-2: rgba(8, 145, 178, 0.09);
+}
+[data-tema="menta"] {
+    --fundo: #eefaf4; --acento: #059669; --acento-2: #0ea5e9; --texto: #0b2a20; --texto-2: #3d5c50; --texto-3: #7b968b;
+    --brilho-1: rgba(5, 150, 105, 0.11); --brilho-2: rgba(14, 165, 233, 0.09);
+}
+[data-tema="lilas"] {
+    --fundo: #f4f1fd; --acento: #7c3aed; --acento-2: #db2777; --texto: #1d1533; --texto-2: #4f4668; --texto-3: #8a82a3;
+    --brilho-1: rgba(124, 58, 237, 0.11); --brilho-2: rgba(219, 39, 119, 0.09);
+}
+[data-tema="rosa"] {
+    --fundo: #fdf2f6; --acento: #db2777; --acento-2: #7c3aed; --texto: #2b1020; --texto-2: #634052; --texto-3: #9c7c8b;
+    --brilho-1: rgba(219, 39, 119, 0.11); --brilho-2: rgba(124, 58, 237, 0.09);
+}
+[data-tema="pessego"] {
+    --fundo: #fdf3ec; --acento: #ea580c; --acento-2: #be123c; --texto: #2b1a10; --texto-2: #634a3b; --texto-3: #9c8474;
+    --brilho-1: rgba(234, 88, 12, 0.11); --brilho-2: rgba(190, 18, 60, 0.09);
+}
+[data-tema="nevoa"] {
+    --fundo: #f2f3f5; --acento: #334155; --acento-2: #0ea5e9; --texto: #111827; --texto-2: #4b5563; --texto-3: #8b93a1;
+    --brilho-1: rgba(51, 65, 85, 0.11); --brilho-2: rgba(14, 165, 233, 0.09);
+}
+:is([data-tema="claro"], [data-tema="areia"], [data-tema="artico"], [data-tema="ceu"], [data-tema="menta"], [data-tema="lilas"], [data-tema="rosa"], [data-tema="pessego"], [data-tema="nevoa"]) .medidor .valor,
+:is([data-tema="claro"], [data-tema="areia"], [data-tema="artico"], [data-tema="ceu"], [data-tema="menta"], [data-tema="lilas"], [data-tema="rosa"], [data-tema="pessego"], [data-tema="nevoa"]) .barra div { filter: none; box-shadow: none; }
+:is([data-tema="claro"], [data-tema="areia"], [data-tema="artico"], [data-tema="ceu"], [data-tema="menta"], [data-tema="lilas"], [data-tema="rosa"], [data-tema="pessego"], [data-tema="nevoa"]) .medidor .marca-meta { stroke: var(--texto); }
 
 /* ================= Botões de tema/modelo ================= */
 .bolinha {
