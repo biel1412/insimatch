@@ -1,0 +1,13 @@
+name: limpeza
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/limpeza.yml]
+permissions:
+  contents: write
+jobs:
+  apagar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: git push origin --delete teste-ia tmp-e2e-out || true
