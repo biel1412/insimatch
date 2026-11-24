@@ -25,26 +25,19 @@
                 <span class="cartao-rotulo">Média diária × metas <em>· itens por dia trabalhado</em></span>
                 <span class="chip">@Avaliacao.RotuloVolume(C)</span>
             </div>
-            <div class="colunas">
-                <div class="coluna realizado">
-                    <span class="col-valor">@media.ToString("N1")</span>
-                    <div class="col-barra" style="height:@Pct((double)media / topo)"></div>
-                    <span class="col-nome">Realizado</span>
-                </div>
+            <div class="plot">
+                <div class="plot-barra" style="height:@Pct((double)media / topo)"></div>
+                <span class="plot-valor @((double)media / topo >= 0.2 ? "dentro" : "")" style="bottom:@Pct((double)media / topo)">@media.ToString("N1")</span>
                 @if (C.MetaPro > 0)
                 {
-                    <div class="coluna meta @(media >= C.MetaPro ? "batida" : "")">
-                        <span class="col-valor">@C.MetaPro.ToString("0.#")</span>
-                        <div class="col-barra" style="height:@Pct((double)C.MetaPro / topo)"></div>
-                        <span class="col-nome">Meta Pro</span>
+                    <div class="plot-meta @(media >= C.MetaPro ? "batida" : "")" style="bottom:@Pct((double)C.MetaPro / topo)">
+                        <span>Meta Pro <b>@C.MetaPro.ToString("0.#")</b></span>
                     </div>
                 }
                 @if (C.MetaPremium > 0)
                 {
-                    <div class="coluna meta @(media >= C.MetaPremium ? "batida" : "")">
-                        <span class="col-valor">@C.MetaPremium.ToString("0.#")</span>
-                        <div class="col-barra" style="height:@Pct((double)C.MetaPremium / topo)"></div>
-                        <span class="col-nome">Meta Premium</span>
+                    <div class="plot-meta premium @(media >= C.MetaPremium ? "batida" : "")" style="bottom:@Pct((double)C.MetaPremium / topo)">
+                        <span>Premium <b>@C.MetaPremium.ToString("0.#")</b></span>
                     </div>
                 }
             </div>

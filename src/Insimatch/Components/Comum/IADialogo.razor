@@ -23,7 +23,7 @@ else
 <div class="dialogo-fundo" @onclick="FecharSeLivre">
     <div class="dialogo dialogo-ia" role="dialog" aria-modal="true" aria-labelledby="ia-titulo" @onclick:stopPropagation="true">
         <div class="dialogo-topo">
-            <div class="dialogo-previa ia-previa">✨</div>
+            <div class="dialogo-previa ia-previa"><IconeSvg Id="raio" /></div>
             <div>
                 <h2 id="ia-titulo">Gerar com IA</h2>
                 <p>A IA lê os dados e monta uma nova aba no formato da plataforma (ou uma planilha Excel para baixar). Nada do que já existe é alterado.</p>
@@ -213,7 +213,7 @@ else
                 else
                 {
                     <button class="btn" @onclick="Fechar">Fechar</button>
-                    <button class="btn primario" disabled="@(!TemChave)" @onclick="GerarAsync">✨ Gerar</button>
+                    <button class="btn primario" disabled="@(!TemChave)" @onclick="GerarAsync">Gerar</button>
                 }
             </div>
         </div>

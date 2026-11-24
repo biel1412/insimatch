@@ -22,7 +22,7 @@
     --lateral: rgba(10, 14, 30, 0.75);
     --brilho-1: rgba(124, 108, 255, 0.22);
     --brilho-2: rgba(46, 230, 197, 0.14);
-    --esquema: dark;
+    --esquema: dark; --avatar-txt: #0b1020;
 
     --raio: 20px;
     --sombra: 0 20px 50px -20px rgba(0, 0, 0, 0.6);
@@ -349,14 +349,14 @@ button, input, textarea { font-family: inherit; }
 /* Base escura (repõe tudo, para uma amostra escura dentro de um tema claro) */
 [data-tema="noturno"], [data-tema="oceano"], [data-tema="esmeralda"], [data-tema="aurora"], [data-tema="rubi"],
 [data-tema="solar"], [data-tema="lavanda"], [data-tema="grafite"], [data-tema="meia-noite"], [data-tema="coral"],
-[data-tema="safira"], [data-tema="ametista"], [data-tema="petroleo"], [data-tema="floresta"], [data-tema="oliva"], [data-tema="cobre"], [data-tema="vinho"], [data-tema="neon"], [data-tema="chocolate"] {
+[data-tema="safira"], [data-tema="ametista"], [data-tema="petroleo"], [data-tema="floresta"], [data-tema="oliva"], [data-tema="cobre"], [data-tema="vinho"], [data-tema="neon"], [data-tema="chocolate"], [data-tema="executivo-escuro"] {
     --texto: #eef1fb; --texto-2: #a3abc8; --texto-3: #6b7394;
     --vidro: rgba(255, 255, 255, 0.045); --vidro-borda: rgba(255, 255, 255, 0.09);
     --campo: rgba(255, 255, 255, 0.04); --hover: rgba(255, 255, 255, 0.09); --trilho: rgba(255, 255, 255, 0.07);
     --sutil: rgba(0, 0, 0, 0.18);
     --verde: #2fe0a0; --azul: #4fa9ff; --amarelo: #ffc857; --vermelho: #ff6b81;
     --sombra: 0 20px 50px -20px rgba(0, 0, 0, 0.6);
-    --esquema: dark;
+    --esquema: dark; --avatar-txt: #0b1020;
 }
 [data-tema="noturno"] {
     --fundo: #0b1020; --acento: #7c6cff; --acento-2: #2ee6c5;
@@ -438,14 +438,14 @@ button, input, textarea { font-family: inherit; }
 }
 
 /* Base clara */
-[data-tema="claro"], [data-tema="areia"], [data-tema="artico"], [data-tema="ceu"], [data-tema="menta"], [data-tema="lilas"], [data-tema="rosa"], [data-tema="pessego"], [data-tema="nevoa"] {
+[data-tema="claro"], [data-tema="areia"], [data-tema="artico"], [data-tema="ceu"], [data-tema="menta"], [data-tema="lilas"], [data-tema="rosa"], [data-tema="pessego"], [data-tema="nevoa"], [data-tema="executivo"] {
     --texto: #111933; --texto-2: #4b5575; --texto-3: #7f88a6;
     --vidro: rgba(255, 255, 255, 0.85); --vidro-borda: rgba(17, 25, 51, 0.09);
     --campo: #ffffff; --hover: rgba(17, 25, 51, 0.06); --trilho: rgba(17, 25, 51, 0.08);
     --sutil: rgba(17, 25, 51, 0.04); --lateral: rgba(255, 255, 255, 0.9);
     --verde: #0d9f6e; --azul: #2563eb; --amarelo: #d58a00; --vermelho: #e11d48;
     --sombra: 0 18px 40px -24px rgba(17, 25, 51, 0.35);
-    --esquema: light;
+    --esquema: light; --avatar-txt: #ffffff;
 }
 [data-tema="claro"] {
     --fundo: #f3f5fb; --acento: #5b4cf0; --acento-2: #0bb39a;
@@ -484,9 +484,9 @@ button, input, textarea { font-family: inherit; }
     --fundo: #f2f3f5; --acento: #334155; --acento-2: #0ea5e9; --texto: #111827; --texto-2: #4b5563; --texto-3: #8b93a1;
     --brilho-1: rgba(51, 65, 85, 0.11); --brilho-2: rgba(14, 165, 233, 0.09);
 }
-:is([data-tema="claro"], [data-tema="areia"], [data-tema="artico"], [data-tema="ceu"], [data-tema="menta"], [data-tema="lilas"], [data-tema="rosa"], [data-tema="pessego"], [data-tema="nevoa"]) .medidor .valor,
-:is([data-tema="claro"], [data-tema="areia"], [data-tema="artico"], [data-tema="ceu"], [data-tema="menta"], [data-tema="lilas"], [data-tema="rosa"], [data-tema="pessego"], [data-tema="nevoa"]) .barra div { filter: none; box-shadow: none; }
-:is([data-tema="claro"], [data-tema="areia"], [data-tema="artico"], [data-tema="ceu"], [data-tema="menta"], [data-tema="lilas"], [data-tema="rosa"], [data-tema="pessego"], [data-tema="nevoa"]) .medidor .marca-meta { stroke: var(--texto); }
+:is([data-tema="claro"], [data-tema="areia"], [data-tema="artico"], [data-tema="ceu"], [data-tema="menta"], [data-tema="lilas"], [data-tema="rosa"], [data-tema="pessego"], [data-tema="nevoa"], [data-tema="executivo"]) .medidor .valor,
+:is([data-tema="claro"], [data-tema="areia"], [data-tema="artico"], [data-tema="ceu"], [data-tema="menta"], [data-tema="lilas"], [data-tema="rosa"], [data-tema="pessego"], [data-tema="nevoa"], [data-tema="executivo"]) .barra div { filter: none; box-shadow: none; }
+:is([data-tema="claro"], [data-tema="areia"], [data-tema="artico"], [data-tema="ceu"], [data-tema="menta"], [data-tema="lilas"], [data-tema="rosa"], [data-tema="pessego"], [data-tema="nevoa"], [data-tema="executivo"]) .medidor .marca-meta { stroke: var(--texto); }
 
 /* ================= Botões de tema/modelo ================= */
 .bolinha {
@@ -2146,3 +2146,102 @@ html.versao-teste body::after {
     color: #fff; background: linear-gradient(135deg, #d24726, #f0703a);
 }
 .btn-ppt:disabled { opacity: .7; }
+
+
+/* ================= Temas sóbrios =================
+   Executivo (padrão): fundo neutro, superfícies brancas opacas, um azul corporativo e cores de status discretas. */
+[data-tema="executivo"] {
+    --fundo: #f4f5f7; --acento: #2457c5; --acento-2: #2457c5;
+    --texto: #18202c; --texto-2: #556070; --texto-3: #8a93a0;
+    --vidro: #ffffff; --vidro-borda: #e1e4e9; --campo: #ffffff; --hover: rgba(24, 32, 44, 0.05);
+    --trilho: #eceef2; --sutil: #f7f8fa; --lateral: #ffffff;
+    --verde: #18794e; --azul: #2457c5; --amarelo: #a86200; --vermelho: #c42b3b;
+    --brilho-1: transparent; --brilho-2: transparent;
+}
+[data-tema="executivo-escuro"] {
+    --fundo: #14161b; --acento: #6b9bf2; --acento-2: #6b9bf2;
+    --texto: #e9ebef; --texto-2: #a5abb6; --texto-3: #727986;
+    --vidro: #1c1f26; --vidro-borda: #2c3039; --campo: #181b21; --hover: rgba(255, 255, 255, 0.06);
+    --trilho: #2a2e37; --sutil: #181a20; --lateral: #181a20;
+    --verde: #45b383; --azul: #6b9bf2; --amarelo: #d9a441; --vermelho: #e5646f;
+    --brilho-1: transparent; --brilho-2: transparent;
+}
+
+/* ================= Estilo sóbrio (vale para todos os temas) =================
+   Sem degradês decorativos, brilhos, desfoques, bolhas ou rótulos em maiúsculas espaçadas.
+   Cor de destaque única: --acento-2 e --cor-2 passam a ser iguais a --acento e --cor. */
+:root, .app, .cofre-tela, .admin-pagina {
+    --acento-2: var(--acento); --brilho-1: transparent; --brilho-2: transparent;
+    --raio: 12px; --sombra: 0 1px 2px rgba(16, 24, 40, 0.06);
+}
+.st-excelente, .st-bom, .st-atencao, .st-critico, .neutro { --cor-2: var(--cor); }
+
+/* superfícies planas */
+.painel-topo, .parecer, .cartao.destaque, .foco-item { background: var(--vidro); }
+.painel-topo { border-radius: var(--raio); padding: 22px 24px; }
+.cartao::before, .cartao::after, .foco-item::before { display: none; }
+.foco-item { border: 1px solid var(--vidro-borda); box-shadow: var(--sombra); }
+.lateral, .dock, .grupo-ferr, .seg-abas, .dialogo-fundo, .rel-modal, .marca-slide.mk-selo { backdrop-filter: none; -webkit-backdrop-filter: none; }
+.dialogo, .popover, .cofre-cartao { box-shadow: 0 16px 40px -16px rgba(16, 24, 40, 0.28); }
+.cofre-tela, .admin-pagina { background: var(--fundo, #14161b); }
+
+/* sem brilhos */
+.avatar { background: var(--acento); color: var(--avatar-txt, #fff); box-shadow: none; border-radius: 12px; width: 64px; height: 64px; font-size: 22px; }
+.selo { background: transparent; border-radius: 10px; padding: 10px 16px; }
+.selo-luz { box-shadow: none; width: 10px; height: 10px; }
+.barra div, .coluna.realizado .col-barra, .pontos span.on, .campo-st, .rel-luz, .particula,
+.dock-logo, .dock-indicador, .dock-indicador::before, .btn.primario, .dialogo-previa, .veredito-anel,
+.slide-mini.sel .slide-mini-quadro { box-shadow: none; }
+.slide-mini.sel .slide-mini-quadro { outline: 2px solid var(--acento); outline-offset: 2px; }
+.medidor .valor, .ml-valor, .anel-valor, .fx-no rect, .fx-no polygon, .fx-no path, .dock-item.ativo .dock-ico svg { filter: none; }
+.dock-indicador { background: color-mix(in srgb, var(--acento) 10%, var(--vidro)); border-color: color-mix(in srgb, var(--acento) 25%, transparent); }
+.btn-ia { background: var(--vidro); border: 1px solid var(--vidro-borda); color: var(--texto); }
+.btn-ia .btn-ico, .ia-previa svg { width: 18px; height: 18px; }
+.ia-previa { color: #fff; }
+.ppt-ico { background: #c4401f; }
+.secao-titulo::after { background: var(--vidro-borda); }
+.secao-titulo span { color: var(--acento); background: color-mix(in srgb, var(--acento) 8%, transparent); border-color: color-mix(in srgb, var(--acento) 20%, transparent); }
+
+/* selos discretos: texto colorido com fundo leve, cantos retos */
+.chip { border-radius: 6px; border: 0; padding: 4px 8px; font-weight: 600; background: color-mix(in srgb, var(--cor) 10%, transparent); }
+
+/* rótulos em caixa normal */
+.form-grupo, .rotulo-sup, .selo-rotulo, .marco i, .placar th, .placar tr.grupo td, .veredito .cartao-rotulo,
+.foco-rotulo, .fila-rotulo, .pop-secao, .fx-ligacoes-titulo, .col-nome, .mini-tag, .ferr-txt small,
+.rel-tipo, .rel-veredito small, .rel-kpi small, .rel-secao h2, .rel-tabela th {
+    text-transform: none; letter-spacing: 0;
+}
+.rotulo-sup { font-size: 13px; font-weight: 600; }
+.selo-rotulo, .form-grupo, .placar th, .pop-secao, .fx-ligacoes-titulo { font-size: 12.5px; }
+.ferr-txt small { font-size: 11px; font-weight: 600; }
+.secao-titulo { text-transform: none; letter-spacing: -0.01em; font-size: 16px; color: var(--texto); }
+.rel-secao h2 { font-size: 14px; }
+
+/* relatório: capa e barras sólidas */
+.rel-capa { background: color-mix(in srgb, var(--r-ac) 90%, #000 10%); }
+
+/* ================= Gráfico de média × metas (linhas de referência) ================= */
+.plot { position: relative; height: 280px; margin: 34px 6px 6px; border-bottom: 1px solid var(--vidro-borda); }
+.plot-barra {
+    position: absolute; bottom: 0; left: 6%; width: 34%; min-height: 3px; border-radius: 4px 4px 0 0;
+    background: var(--cor); transition: height .6s cubic-bezier(.2,.8,.2,1);
+}
+.plot-valor {
+    position: absolute; left: 6%; width: 34%; text-align: center; padding-bottom: 6px;
+    font-size: 26px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1;
+}
+.plot-meta { position: absolute; left: 0; right: 0; height: 0; border-top: 2px dashed var(--texto-2); }
+.plot-meta.premium { border-top-style: dotted; border-color: var(--texto-3); }
+.plot-meta span {
+    position: absolute; right: 0; bottom: 4px; padding: 0 0 0 8px; background: var(--vidro);
+    font-size: 13px; font-weight: 600; color: var(--texto-2); white-space: nowrap;
+}
+.plot-meta span b { color: var(--texto); font-variant-numeric: tabular-nums; }
+.plot-meta.batida span::before { content: "✓ "; color: var(--verde); font-weight: 800; }
+
+.plot-valor.dentro { transform: translateY(100%); padding: 10px 0 0; color: var(--avatar-txt, #fff); }
+.pc-amostra { --acento-2: var(--acento); }
+.pc-amostra i, .pop-item.sel .pc-amostra, .pop-item.sel .mini-papel { box-shadow: none; }
+.pop-item.sel .pc-amostra, .pop-item.sel .mini-papel { outline: 2px solid var(--acento); outline-offset: 2px; }
+.foco-item { container-type: inline-size; }
+.foco-valor { font-size: clamp(40px, 20cqw, 104px); }

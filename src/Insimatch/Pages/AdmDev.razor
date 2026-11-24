@@ -14,7 +14,7 @@
             </div>
             <div>
                 <h2>Área do desenvolvedor</h2>
-                <p>@(Logado ? "Configure a IA usada em “✨ Gerar com IA”." : "Acesso restrito. Entre com o usuário de desenvolvedor.")</p>
+                <p>@(Logado ? "Configure a IA usada em “Gerar com IA”." : "Acesso restrito. Entre com o usuário de desenvolvedor.")</p>
             </div>
             <button class="dialogo-x" title="Voltar ao insiTalent" @onclick="Voltar">✕</button>
         </div>
@@ -172,7 +172,7 @@
         if (string.IsNullOrWhiteSpace(ChaveDigitada)) { Erro = "Cole a chave do Gemini primeiro."; return; }
         Cfg = new ConfigIA { Chave = ChaveDigitada.Trim(), Modelo = ModeloEscolhido };
         await Armazenamento.SalvarAsync(ConfigIA.ChaveArmazenamento, Cfg);
-        Mensagem = "✓ Salvo. “✨ Gerar com IA” já pode ser usado neste navegador.";
+        Mensagem = "✓ Salvo. “Gerar com IA” já pode ser usado neste navegador.";
     }
 
     private async Task RemoverAsync()

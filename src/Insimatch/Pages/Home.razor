@@ -152,6 +152,7 @@
 
     private static readonly Visual[] Temas =
     {
+        new("executivo", "Executivo", "Sóbrias"), new("executivo-escuro", "Executivo escuro", "Sóbrias"),
         new("noturno", "Noturno", "Escuras"), new("oceano", "Oceano", "Escuras"), new("esmeralda", "Esmeralda", "Escuras"),
         new("aurora", "Aurora", "Escuras"), new("rubi", "Rubi", "Escuras"), new("solar", "Solar", "Escuras"),
         new("lavanda", "Lavanda", "Escuras"), new("coral", "Coral", "Escuras"), new("meia-noite", "Meia-noite", "Escuras"),
@@ -176,8 +177,8 @@
 
     private static readonly Visual[] Fundos =
     {
-        new("brilho", "Brilho", "Clássicos"), new("grade", "Grade", "Clássicos"), new("pontos", "Pontos", "Clássicos"),
-        new("geometrico", "Geométrico", "Clássicos"), new("listras", "Listras", "Clássicos"), new("liso", "Liso", "Clássicos"),
+        new("liso", "Liso", "Clássicos"), new("grade", "Grade", "Clássicos"), new("pontos", "Pontos", "Clássicos"),
+        new("geometrico", "Geométrico", "Clássicos"), new("listras", "Listras", "Clássicos"), new("brilho", "Brilho", "Clássicos"),
         new("ondas", "Ondas", "Formas"), new("topografia", "Topografia", "Formas"), new("hexagonos", "Hexágonos", "Formas"),
         new("malha", "Malha", "Formas"),
         new("aurora", "Aurora", "Feitos para movimento"), new("fluido", "Fluido", "Feitos para movimento"),
@@ -463,7 +464,7 @@
         @if (Config.MostrarIA)
         {
             <button class="btn btn-ia" title="Gerar painel ou slides com IA a partir de uma planilha" @onclick="() => { Popover = null; IAAberta = true; }">
-                ✨ Gerar com IA
+                <IconeSvg Id="raio" Classe="btn-ico" /> Gerar com IA
             </button>
         }
         @if (Config.MostrarRelatorio)
@@ -473,7 +474,7 @@
             </button>
         }
         <button class="btn primario" @onclick="AlternarApresentacao">
-            @(Apresentacao ? "✎ Editar" : "▶ Apresentar")
+            @(Apresentacao ? "Editar" : "Apresentar")
         </button>
         @if (Config.MostrarTelaCheia)
         {
